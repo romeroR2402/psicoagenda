@@ -1,0 +1,871 @@
+<title>PsicoAgenda</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+<style>
+/* Layout: responsive web app — top bar with role switch, sidebar nav on desktop, bottom nav on phones */
+:root{
+  --bg:#eceef6; --screen:#f7f6fb; --card:#ffffff; --ink:#1e1c2f; --muted:#6f6d88; --line:#e7e5f0;
+  --accent:#f4621f; --accent-2:#ff9a52; --accent-soft:#ffe9dd; --on-accent:#ffffff;
+  --calm:#4f63e8; --calm-soft:#e8ebff;
+  --wash-a:#e7dffd; --wash-b:#ffe7d8; --wash-c:#dde8ff;
+  --frame:#1e1c2f; --scrim:rgba(20,16,40,.38);
+  --ok:#137a52; --ok-soft:#dcf4e8; --warn:#9a5900; --warn-soft:#fff0d6; --bad:#bf3434; --bad-soft:#fde5e5;
+  --shadow:0 12px 30px -14px rgba(48,34,110,.25);
+  --f-display:"Bricolage Grotesque","Plus Jakarta Sans",system-ui,sans-serif;
+  --f-body:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f0e16; --screen:#16151f; --card:#22212e; --ink:#f1f0f8; --muted:#a6a4bc; --line:#343244; --accent:#ff7a3a; --accent-2:#ffa766; --accent-soft:#3a2216; --on-accent:#1a0d05;
+  --calm:#8d9aff; --calm-soft:#252a4f; --wash-a:#271f47; --wash-b:#36221a; --wash-c:#1a2445;
+  --frame:#2c2a3a; --scrim:rgba(0,0,0,.55);
+  --ok:#55cf9b; --ok-soft:#13342a; --warn:#f2b555; --warn-soft:#3a2b12; --bad:#ff8585; --bad-soft:#3e1b1f;
+  --shadow:0 12px 30px -14px rgba(0,0,0,.6); color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0f0e16; --screen:#16151f; --card:#22212e; --ink:#f1f0f8; --muted:#a6a4bc;
+  --line:#343244; --accent:#ff7a3a; --accent-2:#ffa766; --accent-soft:#3a2216; --on-accent:#1a0d05;
+  --calm:#8d9aff; --calm-soft:#252a4f; --wash-a:#271f47; --wash-b:#36221a; --wash-c:#1a2445;
+  --frame:#2c2a3a; --scrim:rgba(0,0,0,.55);
+  --ok:#55cf9b; --ok-soft:#13342a; --warn:#f2b555; --warn-soft:#3a2b12; --bad:#ff8585; --bad-soft:#3e1b1f;
+  --shadow:0 12px 30px -14px rgba(0,0,0,.6); color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--screen);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.45}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:40;background:var(--card)}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none;padding:0}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,label:focus-within{outline:2px solid var(--calm);outline-offset:2px}
+button:disabled{cursor:not-allowed;opacity:.45}
+
+.shell[data-view="psy"] #cli,.shell[data-view="cli"] #psy{display:none}
+.app{position:relative;min-height:100vh;display:grid;grid-template-columns:248px minmax(0,1fr);grid-template-rows:auto 1fr}
+.app::before{content:"";position:absolute;inset:0 0 auto;height:420px;background:linear-gradient(160deg,var(--wash-a),var(--wash-b) 55%,transparent);pointer-events:none;-webkit-mask-image:linear-gradient(#000 35%,transparent);mask-image:linear-gradient(#000 35%,transparent)}
+@media (min-width:901px){.chips{display:none}}
+#cli.app::before{background:linear-gradient(170deg,var(--wash-c),var(--wash-a) 60%,transparent)}
+.topbar{grid-column:1/-1;position:sticky;top:env(safe-area-inset-top,0px);z-index:15;display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding-block:12px;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px));
+  background:color-mix(in srgb,var(--card) 82%,transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--f-display);font-weight:800;font-size:18px;letter-spacing:-.01em}
+.brand i{width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent-2));display:grid;place-items:center;color:var(--on-accent);font-style:normal}
+.switch{display:flex;background:var(--screen);border:1px solid var(--line);border-radius:14px;padding:4px;gap:4px}
+.switch button{padding:7px 14px;border-radius:10px;font-weight:700;font-size:13px;color:var(--muted)}
+.switch button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
+.scroll{position:relative;min-width:0;padding-block:28px 60px;padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px))}
+.view{max-width:1140px;margin:0 auto}
+.cols{display:grid;gap:28px;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);align-items:start;margin-top:22px}
+.cols>div{min-width:0}
+.cols>div>:first-child{margin-top:0}
+.stick{position:sticky;top:96px}
+
+/* nav */
+.nav{position:sticky;top:68px;align-self:start;height:calc(100vh - 68px);display:flex;flex-direction:column;gap:4px;padding:22px 14px;border-right:1px solid var(--line);z-index:5}
+.nav button{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:14px;color:var(--muted);font-weight:600;font-size:14px;position:relative;text-align:left}
+.nav button:hover{background:var(--card)}
+.nav button[aria-current="page"]{background:var(--card);color:var(--accent);box-shadow:var(--shadow)}
+.nav .fab,.nav .fab:hover{order:-1;margin-bottom:14px;justify-content:center;background:linear-gradient(140deg,var(--accent-2),var(--accent));color:var(--on-accent);font-weight:700;
+  box-shadow:0 12px 24px -10px color-mix(in srgb,var(--accent) 70%,transparent)}
+.badge{min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--accent);color:var(--on-accent);font-size:10px;font-weight:800;display:grid;place-items:center}
+.nav .badge{margin-left:auto}
+
+/* common bits */
+.hdr{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:8px 0 16px}
+.hello{display:flex;align-items:center;gap:12px;min-width:0}
+.hello small{display:block;color:var(--muted);font-size:12px}
+.hello b{display:block;font-family:var(--f-display);font-size:19px;line-height:1.15;letter-spacing:-.01em}
+.hello>div>span{display:block;font-size:12px;color:var(--muted)}
+.icon-btn{width:42px;height:42px;border-radius:50%;background:var(--card);display:grid;place-items:center;box-shadow:var(--shadow);position:relative;flex:none}
+.icon-btn .badge{position:absolute;top:-3px;right:-3px}
+.av{--c:#888;width:36px;height:36px;border-radius:50%;background:var(--c);color:#fff;font-weight:700;font-size:13px;display:grid;place-items:center;flex:none;border:2px solid var(--card)}
+.av.lg{width:50px;height:50px;font-size:17px}
+.av.sm{width:26px;height:26px;font-size:10px}
+.title{font-family:var(--f-display);font-size:30px;font-weight:700;letter-spacing:-.02em;margin:0 0 18px}
+.sec{margin-top:22px}
+.sec-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.sec-h h3{margin:0;font-size:16px;font-weight:700}
+.link{color:var(--muted);font-size:12.5px;font-weight:600}
+.chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:2px 0}
+.chip{flex:none;display:flex;align-items:center;gap:6px;padding:8px 13px;border-radius:12px;background:var(--card);font-weight:600;font-size:12.5px;color:var(--muted);border:1px solid var(--line)}
+.chip.on{background:var(--accent);color:var(--on-accent);border-color:transparent}
+.chip b{font-size:11px;background:var(--accent-soft);color:var(--accent);border-radius:7px;padding:0 6px}
+.chip.on b{background:color-mix(in srgb,var(--on-accent) 25%,transparent);color:var(--on-accent)}
+.card{background:var(--card);border-radius:20px;padding:14px;box-shadow:var(--shadow)}
+.hscroll{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(min(100%,280px),1fr));padding:4px 0 6px}
+.hscroll>*{scroll-snap-align:start}
+.muted{color:var(--muted)}
+.empty{padding:16px;border:1.5px dashed var(--line);border-radius:18px;color:var(--muted);text-align:center;font-size:13px;width:100%}
+
+/* day chips */
+.days{display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;padding:4px 2px 12px}
+.day{flex:none;width:52px;padding:9px 0 10px;border-radius:16px;background:var(--card);border:1px solid var(--line);display:flex;flex-direction:column;align-items:center;gap:2px;position:relative}
+.day small{font-size:10.5px;font-weight:700;color:var(--muted);letter-spacing:.04em}
+.day b{font-family:var(--f-display);font-size:20px;font-variant-numeric:tabular-nums}
+.day.on{background:linear-gradient(170deg,var(--accent-2),var(--accent));color:var(--on-accent);border-color:transparent;box-shadow:0 10px 20px -10px var(--accent)}
+.day.on small{color:var(--on-accent)}
+.day .dot{position:absolute;bottom:5px;width:5px;height:5px;border-radius:50%;background:var(--calm)}
+.day.on .dot{background:var(--on-accent)}
+
+/* pills */
+.pill{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700;white-space:nowrap}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.st-confirmed{color:var(--ok);background:var(--ok-soft)}
+.st-review{color:var(--calm);background:var(--calm-soft)}
+.st-unpaid{color:var(--warn);background:var(--warn-soft)}
+.st-rejected,.st-cancelled{color:var(--bad);background:var(--bad-soft)}
+
+/* request / appointment card */
+.rq{background:var(--card);border-radius:18px;padding:13px 14px 13px 18px;box-shadow:var(--shadow);position:relative;display:flex;flex-direction:column;gap:10px}
+.rq::before{content:"";position:absolute;left:8px;top:14px;bottom:14px;width:3px;border-radius:3px;background:var(--bar,var(--line))}
+.rq.b-confirmed{--bar:var(--ok)} .rq.b-review{--bar:var(--calm)} .rq.b-unpaid{--bar:var(--warn)} .rq.b-rejected,.rq.b-cancelled{--bar:var(--bad)}
+.rq-top{display:flex;align-items:center;gap:10px}
+.rq-top>div{flex:1;min-width:0}
+.tl .rq-top{flex-wrap:wrap;row-gap:6px}
+.tl .rq-top>div{flex-basis:calc(100% - 46px)}
+.tl .rq-top .pill{margin-left:46px}
+.rq-top b{display:block;font-size:14px}
+.rq-top small{display:block;color:var(--muted);font-size:12px}
+.meta{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--muted)}
+.meta span{display:inline-flex;align-items:center;gap:5px}
+.actions{display:flex;gap:8px}
+.btn{flex:1;padding:10px 12px;border-radius:12px;font-weight:700;font-size:13px;text-align:center}
+.btn.pri{background:var(--accent);color:var(--on-accent)}
+.btn.sec{background:var(--accent-soft);color:var(--accent)}
+.btn.neu{background:var(--screen);border:1px solid var(--line)}
+.btn.danger{background:var(--bad-soft);color:var(--bad)}
+.btn.big{padding:14px;font-size:14.5px;border-radius:16px;width:100%}
+.mini{min-width:0}
+
+/* overview / ring */
+.ov{background:linear-gradient(160deg,var(--card),color-mix(in srgb,var(--card) 70%,var(--wash-a)));border-radius:24px;padding:18px;box-shadow:var(--shadow)}
+.ov h2{font-family:var(--f-display);font-size:23px;line-height:1.1;margin:0 0 6px;letter-spacing:-.02em}
+.ov p{margin:0;color:var(--muted);font-size:12.5px}
+.ov-row{display:flex;align-items:center;gap:14px;margin-top:14px}
+.ring{position:relative;width:88px;height:88px;flex:none}
+.ring svg{display:block}
+.ring div{position:absolute;inset:0;display:grid;place-items:center;text-align:center;line-height:1.05}
+.ring b{font-family:var(--f-display);font-size:21px;font-variant-numeric:tabular-nums}
+.ring small{display:block;font-size:10px;color:var(--muted);font-weight:600}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;flex:1}
+.stat{background:var(--screen);border-radius:14px;padding:8px 10px}
+.stat b{font-family:var(--f-display);font-size:18px;font-variant-numeric:tabular-nums;display:block}
+.stat small{font-size:11px;color:var(--muted)}
+
+/* timeline */
+.tl{display:flex;flex-direction:column;gap:10px;margin-top:6px}
+.trow{display:grid;grid-template-columns:52px 1fr;gap:8px;align-items:start}
+.tlab{font-size:11.5px;color:var(--muted);font-weight:600;padding-top:12px;font-variant-numeric:tabular-nums}
+.free{width:100%;text-align:left;padding:12px 14px;border-radius:16px;border:1.5px dashed var(--line);color:var(--muted);font-size:12.5px;font-weight:600}
+.free:hover{border-color:var(--accent);color:var(--accent)}
+.free.blocked{border-style:solid;background:repeating-linear-gradient(135deg,var(--screen) 0 6px,var(--line) 6px 7px)}
+.date-h{display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:15px;margin:2px 0 10px}
+
+/* client */
+.chero{border-radius:26px;padding:18px;background:linear-gradient(150deg,var(--calm),color-mix(in srgb,var(--calm) 55%,var(--accent-2)));color:#fff;box-shadow:var(--shadow)}
+.chero small{opacity:.85}
+.chero h2{font-family:var(--f-display);font-size:22px;line-height:1.15;margin:4px 0 14px;font-weight:700}
+.next{background:var(--card);color:var(--ink);border-radius:20px;padding:14px;display:flex;gap:12px;align-items:center}
+.next>div{flex:1;min-width:0}
+.next .big{font-family:var(--f-display);font-size:20px;font-weight:700;display:block;line-height:1.1}
+.psy-card{display:flex;gap:12px;align-items:center}
+.psy-card>div{flex:1;min-width:0}
+.price{font-family:var(--f-display);font-size:20px;font-weight:700;font-variant-numeric:tabular-nums}
+.slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+.slot{padding:12px 10px;border-radius:14px;background:var(--card);border:1.5px solid var(--line);font-weight:700;font-size:13.5px;font-variant-numeric:tabular-nums;display:flex;flex-direction:column;align-items:flex-start;gap:1px;text-align:left}
+.slot small{font-weight:600;font-size:11px;color:var(--muted)}
+.slot.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.slot.on small{color:var(--accent)}
+.slot:disabled{opacity:1;background:transparent;color:var(--muted);text-decoration:line-through;text-decoration-color:color-mix(in srgb,var(--muted) 60%,transparent)}
+.slot.mine:disabled{text-decoration:none;border-style:dashed;color:var(--calm)}
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:4px;gap:4px}
+.seg button{padding:9px;border-radius:10px;font-weight:700;font-size:13px;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--calm-soft);color:var(--calm)}
+.sum{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:16px;padding:14px;border-radius:18px;background:var(--card);box-shadow:var(--shadow)}
+.sum small{display:block;color:var(--muted);font-size:11.5px}
+.sum b{font-size:13.5px}
+.srv{display:flex;align-items:center;gap:12px}
+.srv .ic{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;background:var(--calm-soft);color:var(--calm);flex:none}
+.srv>div{flex:1;min-width:0}
+.srv b{display:block;font-size:14px}
+.srv small{color:var(--muted);font-size:12px}
+.bar{height:6px;border-radius:6px;background:var(--line);overflow:hidden;margin-top:8px}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent-2),var(--accent));border-radius:6px}
+.list{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(min(100%,330px),1fr))}
+.cols .list{grid-template-columns:minmax(0,1fr)}
+.tl{max-width:860px}
+
+/* comprobantes */
+.rcpt{display:flex;align-items:center;gap:10px;padding:6px 10px 6px 6px;border-radius:14px;background:var(--screen);border:1px solid var(--line);text-align:left;width:100%}
+.rcpt:hover{border-color:var(--calm)}
+.rcpt img{width:42px;height:54px;object-fit:cover;border-radius:8px;flex:none;background:var(--card)}
+.rcpt b{display:block;font-size:12.5px}
+.rcpt small{font-size:11px;color:var(--muted);font-weight:600}
+small.drv-ok{color:var(--ok)} small.drv-error{color:var(--bad)} small.drv-pending{color:var(--calm)}
+.upload{position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;padding:18px;border:1.5px dashed var(--accent);border-radius:16px;background:var(--accent-soft);color:var(--accent);font-weight:700;font-size:13px;text-align:center;cursor:pointer;margin-bottom:12px;overflow-wrap:anywhere}
+.upload img{max-height:220px;max-width:100%;border-radius:10px;box-shadow:var(--shadow)}
+.upload input{position:absolute;opacity:0;width:1px;height:1px}
+.big-rcpt{display:block;width:100%;max-height:58vh;object-fit:contain;border-radius:16px;background:var(--card);margin-bottom:12px}
+.kv a{color:var(--calm)}
+
+/* sheet */
+.sheet-wrap{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:20px}
+.scrim{position:absolute;inset:0;background:var(--scrim);width:100%}
+.sheet{position:relative;width:min(560px,100%);max-height:86vh;overflow-y:auto;background:var(--screen);border-radius:26px;padding:24px 26px 28px;animation:up .22s ease-out;box-shadow:0 30px 60px -20px rgba(0,0,0,.35)}
+.sheet h3{font-family:var(--f-display);font-size:20px;margin:0 0 4px;letter-spacing:-.01em}
+.sheet .sub{color:var(--muted);font-size:12.5px;margin:0 0 14px}
+@keyframes up{from{transform:translateY(30px);opacity:.4}to{transform:none;opacity:1}}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.field>span{font-size:12px;font-weight:700;color:var(--muted)}
+.field input,.field textarea,.field select{width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--line);background:var(--card);font-size:13.5px}
+.field textarea{min-height:96px;resize:vertical}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;background:var(--card);border-radius:16px;padding:12px 14px;font-size:13px;margin-bottom:12px}
+.kv dt{color:var(--muted)} .kv dd{margin:0;font-weight:700;text-align:right;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.err{color:var(--bad);font-size:12.5px;font-weight:600;min-height:1em;margin:0 0 8px}
+.q{background:var(--card);border-radius:16px;padding:12px;margin-bottom:10px}
+.q p{margin:0 0 8px;font-weight:600;font-size:13.5px}
+.opts{display:flex;flex-wrap:wrap;gap:6px}
+.opts label{position:relative}
+.opts input{position:absolute;opacity:0;inset:0}
+.opts span{display:block;padding:7px 10px;border-radius:10px;border:1px solid var(--line);font-size:12px;font-weight:600;color:var(--muted);background:var(--screen)}
+.opts input:checked+span{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.check{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--card);border-radius:14px;margin-bottom:8px;font-weight:600;font-size:13.5px}
+.check input{width:18px;height:18px;accent-color:var(--accent)}
+.check small{margin-left:auto;color:var(--muted);font-weight:600;font-size:11.5px}
+.note{display:flex;gap:10px;padding:11px 12px;background:var(--card);border-radius:14px;margin-bottom:8px;font-size:13px}
+.note i{width:8px;height:8px;border-radius:50%;background:var(--accent);margin-top:6px;flex:none}
+.note.read i{background:var(--line)}
+.note small{display:block;color:var(--muted);font-size:11px}
+.ans{font-size:12.5px;margin:8px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:5px}
+.ans li{display:flex;justify-content:space-between;gap:10px}
+.ans li span{color:var(--muted)}
+.ans li b{text-align:right}
+
+.toast{position:fixed;right:max(20px,env(safe-area-inset-right,0px));top:calc(80px + env(safe-area-inset-top,0px));width:min(380px,calc(100% - 32px));z-index:60;background:var(--ink);color:var(--screen);padding:12px 16px;border-radius:14px;font-size:13px;font-weight:600;
+  box-shadow:0 14px 30px -10px rgba(0,0,0,.4);transform:translateY(-12px);opacity:0;visibility:hidden;transition:transform .3s ease,opacity .3s ease,visibility .3s;pointer-events:none}
+.toast.show{transform:none;opacity:1;visibility:visible}
+
+@media (max-width:900px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  .topbar{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .scroll{padding-block:18px 120px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .cols{grid-template-columns:minmax(0,1fr);gap:22px}
+  .stick{position:static}
+  .title{font-size:24px}
+  .nav{position:fixed;left:0;right:0;bottom:0;top:auto;height:auto;display:grid;grid-template-columns:repeat(5,1fr);align-items:center;gap:0;
+    padding:8px max(8px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px));
+    border-right:0;border-top:1px solid var(--line);background:color-mix(in srgb,var(--card) 90%,transparent);backdrop-filter:blur(14px);z-index:15}
+  .nav button,.nav button:hover,.nav button[aria-current="page"]{flex-direction:column;gap:3px;padding:4px 2px;font-size:10.5px;justify-content:center;background:none;box-shadow:none}
+  .nav .fab,.nav .fab:hover{order:0;width:56px;height:56px;margin:-30px auto 0;border-radius:50%;padding:0;background:linear-gradient(140deg,var(--accent-2),var(--accent))}
+  .fab-l{display:none}
+  .nav .badge{position:absolute;top:-4px;right:calc(50% - 20px);margin:0}
+  .sheet-wrap{place-items:end stretch;padding:0}
+  .sheet{width:100%;border-radius:28px 28px 0 0;padding:10px 18px calc(26px + env(safe-area-inset-bottom,0px));max-height:88vh}
+  .sheet::before{content:"";display:block;width:40px;height:5px;border-radius:5px;background:var(--line);margin:0 auto 12px}
+  .hscroll{display:flex;overflow-x:auto;scrollbar-width:none;scroll-snap-type:x mandatory}
+  .hscroll>*{flex:none;width:min(280px,85%);scroll-snap-align:start}
+  .toast{left:16px;right:16px;width:auto;top:calc(72px + env(safe-area-inset-top,0px))}
+}
+@media (max-width:480px){.brand{font-size:16px}.switch button{padding:7px 10px}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="shell" id="stage" data-view="psy">
+  <div class="app" id="psy">
+    <header class="topbar"><div class="brand"><i>Ψ</i>PsicoAgenda</div>
+      <div class="switch" role="group" aria-label="Ver como"><button data-a="view" data-v="psy" aria-pressed="true">Psicóloga</button><button data-a="view" data-v="cli" aria-pressed="false">Paciente</button></div></header>
+    <nav class="nav" aria-label="Navegación psicóloga"></nav>
+    <main class="scroll"></main>
+    <div class="sheet-wrap" hidden></div>
+    <div class="toast" role="status"></div>
+  </div>
+  <div class="app" id="cli">
+    <header class="topbar"><div class="brand"><i>Ψ</i>PsicoAgenda</div>
+      <div class="switch" role="group" aria-label="Ver como"><button data-a="view" data-v="psy" aria-pressed="false">Psicóloga</button><button data-a="view" data-v="cli" aria-pressed="true">Paciente</button></div></header>
+    <nav class="nav" aria-label="Navegación paciente"></nav>
+    <main class="scroll"></main>
+    <div class="sheet-wrap" hidden></div>
+    <div class="toast" role="status"></div>
+  </div>
+</div>
+
+<script>
+(() => {
+const KEY = 'psicoagenda-v2';
+// URL de la aplicación web de Google Apps Script (ver drive-pagos.gs). Vacío = no se sube a Drive.
+const DRIVE_UPLOAD_URL = '';
+const PSY = { name: 'Laura Méndez', short: 'Dra. Laura Méndez', title: 'Psicóloga clínica · Céd. 10458213' };
+const CLIENT = 'Sofía Ramírez';
+const PATIENTS = ['Sofía Ramírez', 'Diego Torres', 'Mariana López', 'Andrés Gil', 'Valeria Cruz'];
+const PRICE = 650;
+const HOURS = [9, 10, 11, 12, 13, 16, 17, 18];
+const ACTIVE = ['unpaid', 'review', 'confirmed'];
+const DOW = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+const MON = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+const FREQ = ['Nunca', 'Varios días', 'Más de la mitad de los días', 'Casi todos los días'];
+const COLORS = ['#e8743b', '#5162e0', '#1f9a70', '#c74f8e', '#b88a12', '#7a58ea'];
+
+const pad = n => String(n).padStart(2, '0');
+const dkey = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const pkey = k => { const [y, m, d] = k.split('-').map(Number); return new Date(y, m - 1, d); };
+const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+const today = new Date(); today.setHours(0, 0, 0, 0);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const hl = h => `${h > 12 ? h - 12 : h}:00 ${h < 12 ? 'am' : 'pm'}`;
+const hr = h => `${hl(h)} – ${hl(h + 1)}`;
+const short = k => { const d = pkey(k); return `${DOW[d.getDay()]} ${d.getDate()} ${MON[d.getMonth()]}`; };
+const long = k => { const s = pkey(k).toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' }); return s[0].toUpperCase() + s.slice(1); };
+const money = n => '$' + n.toLocaleString('es-MX') + ' MXN';
+const ago = t => { const m = Math.round((Date.now() - t) / 6e4); if (m < 1) return 'ahora'; if (m < 60) return `hace ${m} min`; const h = Math.round(m / 60); if (h < 24) return `hace ${h} h`; return `hace ${Math.round(h / 24)} d`; };
+const workdays = n => { const out = []; let d = new Date(today); while (out.length < n) { if (d.getDay() >= 1 && d.getDay() <= 5) out.push(dkey(d)); d = addDays(d, 1); } return out; };
+const avc = n => COLORS[[...n].reduce((a, c) => a + c.charCodeAt(0), 0) % COLORS.length];
+const ini = n => n.split(' ').map(w => w[0]).slice(0, 2).join('');
+const av = (n, cls = '') => `<span class="av ${cls}" style="--c:${avc(n)}" aria-hidden="true">${esc(ini(n))}</span>`;
+const sortA = (a, b) => (a.date + pad(a.hour)).localeCompare(b.date + pad(b.hour));
+
+const IC = {
+  home: '<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
+  cal: '<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+  pay: '<rect x="2.5" y="5" width="19" height="14" rx="3"/><path d="M2.5 10h19M6.5 15h4"/>',
+  form: '<rect x="5" y="4" width="14" height="17" rx="2.5"/><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h3"/>',
+  bell: '<path d="M6 9a6 6 0 1 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9"/><path d="M10 20a2 2 0 0 0 4 0"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  video: '<rect x="3" y="6" width="13" height="12" rx="2.5"/><path d="m16 10 5-3v10l-5-3"/>',
+  pin: '<path d="M12 21s-7-6-7-11a7 7 0 0 1 14 0c0 5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/>',
+  check: '<path d="M20 6 9 17l-5-5"/>',
+  upload: '<path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/>',
+  list: '<path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/>',
+};
+const ic = (n, s = 20) => `<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n]}</svg>`;
+
+const slug = t => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z0-9]+/g, '-');
+const fname = a => `${a.date}_${pad(a.hour)}00_${slug(a.patient)}.jpg`;
+
+// Comprobante de muestra para los datos de ejemplo, marcado como EJEMPLO.
+function sampleReceipt(a) {
+  const c = document.createElement('canvas'); c.width = 420; c.height = 560;
+  const g = c.getContext('2d');
+  g.fillStyle = '#ffffff'; g.fillRect(0, 0, 420, 560);
+  g.fillStyle = '#1e3a8a'; g.fillRect(0, 0, 420, 90);
+  g.fillStyle = '#ffffff'; g.font = '700 22px sans-serif'; g.fillText('Transferencia SPEI', 28, 52);
+  g.fillStyle = '#16875c'; g.font = '700 16px sans-serif'; g.fillText('Operación exitosa', 28, 130);
+  g.fillStyle = '#1e1c2f'; g.font = '800 38px sans-serif'; g.fillText('$650.00 MXN', 28, 180);
+  g.font = '15px sans-serif'; g.fillStyle = '#6f6d88';
+  [['Ordenante', a.patient], ['Beneficiaria', 'Laura Méndez'], ['Referencia', a.ref], ['Fecha', a.date], ['Concepto', 'Sesión de psicoterapia']]
+    .forEach(([k, v], i) => { g.fillStyle = '#6f6d88'; g.fillText(k, 28, 240 + i * 52); g.fillStyle = '#1e1c2f'; g.font = '600 16px sans-serif'; g.fillText(v, 28, 262 + i * 52); g.font = '15px sans-serif'; });
+  g.save(); g.translate(210, 330); g.rotate(-0.5); g.fillStyle = 'rgba(244,98,31,.22)'; g.font = '800 72px sans-serif'; g.textAlign = 'center'; g.fillText('EJEMPLO', 0, 0); g.restore();
+  return c.toDataURL('image/jpeg', 0.7);
+}
+
+function seed() {
+  const s = seedBase();
+  s.appts.forEach(a => { if (a.ref) { a.receipt = { name: fname(a), data: sampleReceipt(a) }; a.drive = { status: 'off' }; } });
+  return s;
+}
+
+function seedBase() {
+  const w = workdays(12), t = Date.now();
+  return {
+    v: 1,
+    blocked: [`${w[1]}|9`, `${w[4]}|18`],
+    appts: [
+      { id: 'a1', patient: 'Diego Torres', date: w[0], hour: 10, mode: 'En línea', status: 'confirmed', ref: 'SPEI 482193' },
+      { id: 'a2', patient: 'Mariana López', date: w[0], hour: 12, mode: 'Presencial', status: 'confirmed', ref: 'SPEI 551027' },
+      { id: 'a3', patient: 'Andrés Gil', date: w[0], hour: 17, mode: 'Presencial', status: 'review', ref: 'SPEI 771054' },
+      { id: 'a4', patient: 'Valeria Cruz', date: w[1], hour: 11, mode: 'En línea', status: 'unpaid', ref: '' },
+      { id: 'a5', patient: CLIENT, date: w[2], hour: 10, mode: 'En línea', status: 'confirmed', ref: 'SPEI 390112' },
+      { id: 'a6', patient: 'Diego Torres', date: w[3], hour: 16, mode: 'En línea', status: 'review', ref: 'SPEI 902461' },
+      { id: 'a7', patient: 'Mariana López', date: w[5], hour: 12, mode: 'Presencial', status: 'confirmed', ref: 'SPEI 118830' },
+    ],
+    surveys: [
+      { id: 's1', title: 'Estado de ánimo', desc: 'Últimas 2 semanas · antes de sesión', questions: [
+        { q: 'Poco interés o placer en hacer cosas', type: 'freq' },
+        { q: 'Sentirte decaído/a, deprimido/a o sin esperanza', type: 'freq' },
+        { q: 'Problemas para dormir, o dormir demasiado', type: 'freq' },
+        { q: 'Sentirte cansado/a o con poca energía', type: 'freq' },
+        { q: 'Dificultad para concentrarte', type: 'freq' }] },
+      { id: 's2', title: 'Ansiedad', desc: 'Últimas 2 semanas · tamizaje breve', questions: [
+        { q: 'Sentirte nervioso/a, ansioso/a o con los nervios de punta', type: 'freq' },
+        { q: 'No poder dejar de preocuparte', type: 'freq' },
+        { q: 'Dificultad para relajarte', type: 'freq' }] },
+      { id: 's3', title: 'Satisfacción con la sesión', desc: 'Después de cada sesión', questions: [
+        { q: '¿Qué tan escuchado/a te sentiste?', type: 'scale' },
+        { q: '¿Qué tan útil fue la sesión?', type: 'scale' },
+        { q: '¿Algo que quieras comentarme?', type: 'text' }] },
+    ],
+    sends: [
+      { id: 'e1', survey: 's1', patient: CLIENT, status: 'sent', at: t - 864e5 },
+      { id: 'e2', survey: 's1', patient: 'Mariana López', status: 'done', at: t - 3 * 864e5, answers: [1, 2, 1, 2, 1] },
+      { id: 'e3', survey: 's3', patient: 'Diego Torres', status: 'done', at: t - 2 * 864e5, answers: [5, 4, 'La técnica de respiración me sirvió mucho esta semana.'] },
+      { id: 'e4', survey: 's2', patient: 'Andrés Gil', status: 'sent', at: t - 4 * 36e5 },
+    ],
+    notes: [
+      { to: 'psy', text: 'Andrés Gil reportó su pago (SPEI 771054). Revisa y aprueba su cita.', at: t - 2 * 36e5, read: false },
+      { to: 'cli', text: 'Tu psicóloga te envió la encuesta “Estado de ánimo”.', at: t - 864e5, read: false },
+    ],
+  };
+}
+
+let S;
+try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) { S = null; }
+if (!S || S.v !== 1) S = seed();
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
+
+const P = { tab: 'home', day: workdays(1)[0], sheet: null, data: null };
+const C = { tab: 'home', day: workdays(1)[0], slot: null, mode: 'En línea', sheet: null, data: null };
+let uid = Date.now();
+
+const occupant = (k, h) => S.appts.find(a => a.date === k && a.hour === h && ACTIVE.includes(a.status));
+const isBlocked = (k, h) => S.blocked.includes(`${k}|${h}`);
+const notify = (to, text) => S.notes.unshift({ to, text, at: Date.now(), read: false });
+const unread = to => S.notes.filter(n => n.to === to && !n.read).length;
+const surveyOf = id => S.surveys.find(s => s.id === id);
+const score = (sv, ans) => { let v = 0, max = 0; sv.questions.forEach((q, i) => { if (q.type === 'freq') { v += +ans[i]; max += 3; } if (q.type === 'scale') { v += +ans[i]; max += 5; } }); return { v, max }; };
+
+const LBL = {
+  psy: { unpaid: 'Esperando pago', review: 'Pago reportado', confirmed: 'Confirmada', rejected: 'Rechazada', cancelled: 'Cancelada' },
+  cli: { unpaid: 'Pago pendiente', review: 'En revisión', confirmed: 'Confirmada', rejected: 'No aprobada', cancelled: 'Cancelada' },
+};
+const pill = (st, who) => `<span class="pill st-${st}">${LBL[who][st]}</span>`;
+
+function ring(v, max, top, sub) {
+  const r = 36, c = 2 * Math.PI * r, p = max ? Math.min(v / max, 1) : 0;
+  return `<div class="ring"><svg viewBox="0 0 88 88" width="88" height="88" aria-hidden="true">
+    <circle cx="44" cy="44" r="${r}" fill="none" stroke="var(--line)" stroke-width="9"/>
+    <circle cx="44" cy="44" r="${r}" fill="none" stroke="var(--accent)" stroke-width="9" stroke-linecap="round" stroke-dasharray="${(c * p).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 44 44)"/>
+  </svg><div><span><b>${top}</b><small>${sub}</small></span></div></div>`;
+}
+
+function dayChips(sel, keys, action, dotFn) {
+  return `<div class="days" role="list">${keys.map(k => { const d = pkey(k); return `<button class="day ${k === sel ? 'on' : ''}" role="listitem" data-a="${action}" data-k="${k}" aria-pressed="${k === sel}" aria-label="${long(k)}"><small>${DOW[d.getDay()].toUpperCase()}</small><b>${pad(d.getDate())}</b>${dotFn && dotFn(k) ? '<span class="dot"></span>' : ''}</button>`; }).join('')}</div>`;
+}
+
+/* ---------- Psicóloga ---------- */
+const DRV = { ok: 'Guardado en Drive › Pagos', pending: 'Subiendo a Drive…', error: 'No se pudo subir a Drive', off: 'Drive sin conectar' };
+const drvTxt = a => `<small class="drv-${(a.drive || {}).status || 'off'}">${DRV[(a.drive || {}).status || 'off']}</small>`;
+const rcpt = a => a.receipt ? `<button class="rcpt" data-a="sheet" data-s="receipt" data-id="${a.id}"><img src="${a.receipt.data}" alt="Comprobante de ${esc(a.patient)}"><span><b>Ver comprobante</b>${drvTxt(a)}</span></button>` : '';
+
+function reqCard(a, mini) {
+  let acts = '';
+  if (a.status === 'review') acts = `<div class="actions"><button class="btn danger" data-a="reject" data-id="${a.id}">Rechazar</button><button class="btn pri" data-a="approve" data-id="${a.id}" ${a.receipt ? '' : 'disabled'}>Aprobar y apartar</button></div>`;
+  if (a.status === 'unpaid') acts = `<div class="actions"><button class="btn danger" data-a="reject" data-id="${a.id}">Rechazar</button><button class="btn sec" data-a="remind" data-id="${a.id}">Recordar pago</button></div>`;
+  return `<article class="rq b-${a.status} ${mini ? 'mini' : ''}">
+    <div class="rq-top">${av(a.patient)}<div><b>${esc(a.patient)}</b><small>${short(a.date)} · ${hr(a.hour)}</small></div>${mini ? '' : pill(a.status, 'psy')}</div>
+    <div class="meta"><span>${ic(a.mode === 'En línea' ? 'video' : 'pin', 14)}${a.mode}</span><span>${ic('pay', 14)}${a.ref ? esc(a.ref) : 'Sin pago reportado'}</span></div>
+    ${rcpt(a)}
+    ${acts}</article>`;
+}
+
+function psyHome() {
+  const h = new Date().getHours();
+  const greet = h < 12 ? 'Buenos días' : h < 19 ? 'Buenas tardes' : 'Buenas noches';
+  const review = S.appts.filter(a => a.status === 'review').sort(sortA);
+  const week = workdays(5);
+  const cap = week.reduce((n, k) => n + HOURS.filter(x => !isBlocked(k, x)).length, 0);
+  const conf = S.appts.filter(a => a.status === 'confirmed' && week.includes(a.date)).length;
+  const unpaid = S.appts.filter(a => a.status === 'unpaid').length;
+  const done = S.sends.filter(s => s.status === 'done').length;
+  const todayK = workdays(1)[0];
+  const todays = S.appts.filter(a => a.date === todayK && ACTIVE.includes(a.status)).sort(sortA);
+  return `
+  <div class="hdr"><div class="hello">${av(PSY.name, 'lg')}<div><small>${greet}</small><b>${PSY.short}</b><span>${PSY.title.split(' · ')[0]}</span></div></div>
+    <button class="icon-btn" data-a="sheet" data-s="notes" aria-label="Avisos">${ic('bell')}${unread('psy') ? `<span class="badge">${unread('psy')}</span>` : ''}</button></div>
+  <div class="chips">
+    <button class="chip on" data-a="tab" data-t="home">${ic('home', 15)}Inicio</button>
+    <button class="chip" data-a="tab" data-t="agenda">${ic('cal', 15)}Agenda</button>
+    <button class="chip" data-a="tab" data-t="req">${ic('pay', 15)}Solicitudes ${review.length ? `<b>${review.length}</b>` : ''}</button>
+    <button class="chip" data-a="tab" data-t="surveys">${ic('form', 15)}Encuestas</button>
+  </div>
+  <div class="cols"><div>
+  <section class="sec"><div class="sec-h"><h3>Pagos por aprobar</h3><button class="link" data-a="tab" data-t="req">Ver todo ›</button></div>
+    <div class="hscroll">${review.length ? review.map(a => reqCard(a, true)).join('') : '<div class="empty">No hay pagos por revisar.</div>'}</div></section>
+  <section class="sec"><div class="sec-h"><h3>Hoy · ${short(todayK)}</h3><button class="link" data-a="pday" data-k="${todayK}">Agenda ›</button></div>
+    <div class="list">${todays.length ? todays.map(a => `<div class="card srv">${av(a.patient)}<div><b>${esc(a.patient)}</b><small>${hr(a.hour)} · ${a.mode}</small></div>${pill(a.status, 'psy')}</div>`).join('') : '<div class="empty">Sin citas hoy.</div>'}</div></section>
+  </div><div class="stick">
+  <section class="ov">
+    <h2>Tu consulta, en orden.</h2>
+    <p>Las citas se apartan solo cuando verificas el pago. Envía encuestas antes de cada sesión.</p>
+    <div class="ov-row">${ring(conf, cap, `${conf}/${cap}`, 'esta semana')}
+      <div class="stats">
+        <div class="stat"><b>${review.length}</b><small>Por aprobar</small></div>
+        <div class="stat"><b>${unpaid}</b><small>Sin pago</small></div>
+        <div class="stat"><b>${done}</b><small>Encuestas resp.</small></div>
+        <div class="stat"><b>${money(PRICE).replace(' MXN', '')}</b><small>Por sesión</small></div>
+      </div></div>
+  </section></div></div>`;
+}
+
+function psyAgenda() {
+  const keys = workdays(10);
+  if (!keys.includes(P.day)) P.day = keys[0];
+  const rows = HOURS.map(h => {
+    const a = occupant(P.day, h);
+    let body;
+    if (a) body = reqCard(a, false);
+    else if (isBlocked(P.day, h)) body = `<button class="free blocked" data-a="block" data-k="${P.day}" data-h="${h}">Bloqueado · toca para liberar</button>`;
+    else body = `<button class="free" data-a="block" data-k="${P.day}" data-h="${h}">Disponible para pacientes · toca para bloquear</button>`;
+    return `<div class="trow"><span class="tlab">${hl(h)}</span><div>${body}</div></div>`;
+  }).join('');
+  const n = S.appts.filter(a => a.date === P.day && a.status === 'confirmed').length;
+  return `<h2 class="title">Agenda</h2>
+    ${dayChips(P.day, keys, 'pday', k => S.appts.some(a => a.date === k && ACTIVE.includes(a.status)))}
+    <div class="date-h"><span>${long(P.day)}</span><span class="pill st-confirmed">${n} confirmada${n === 1 ? '' : 's'}</span></div>
+    <div class="tl">${rows}</div>`;
+}
+
+function psyReq() {
+  const by = st => S.appts.filter(a => a.status === st).sort(sortA);
+  const hist = S.appts.filter(a => ['confirmed', 'rejected', 'cancelled'].includes(a.status)).sort(sortA);
+  const block = (t, arr, empty) => `<section class="sec"><div class="sec-h"><h3>${t}</h3><span class="link">${arr.length}</span></div><div class="list">${arr.length ? arr.map(a => reqCard(a)).join('') : `<div class="empty">${empty}</div>`}</div></section>`;
+  return `<h2 class="title">Solicitudes y pagos</h2>
+    <div class="card srv"><span class="ic">${ic('check')}</span><div><b>Regla de apartado</b><small>Un horario queda en revisión al solicitarse. Se confirma solo cuando apruebas el pago.</small></div></div>
+    ${block('Pago reportado · por aprobar', by('review'), 'Nada por aprobar.')}
+    ${block('Esperando pago', by('unpaid'), 'Ninguna cita espera pago.')}
+    ${block('Historial', hist, 'Sin historial.')}`;
+}
+
+function psySurveys() {
+  return `<h2 class="title">Encuestas</h2>
+    <button class="btn pri big" style="max-width:320px" data-a="sheet" data-s="new">+ Nueva encuesta</button>
+    <div class="list" style="margin-top:14px">${S.surveys.map(s => {
+      const sent = S.sends.filter(e => e.survey === s.id), done = sent.filter(e => e.status === 'done').length;
+      return `<article class="card"><div class="srv"><span class="ic">${ic('form')}</span><div><b>${esc(s.title)}</b><small>${esc(s.desc)} · ${s.questions.length} preguntas</small></div></div>
+        <div class="bar"><i style="width:${sent.length ? done / sent.length * 100 : 0}%"></i></div>
+        <div class="meta" style="margin:8px 0 10px"><span>${sent.length} enviadas</span><span>${done} respondidas</span></div>
+        <div class="actions"><button class="btn neu" data-a="sheet" data-s="results" data-id="${s.id}">Resultados</button><button class="btn sec" data-a="sheet" data-s="send" data-id="${s.id}">Enviar a pacientes</button></div></article>`;
+    }).join('')}</div>`;
+}
+
+function psySheet() {
+  const s = P.sheet;
+  if (s === 'notes') return notesSheet('psy');
+  if (s === 'receipt') {
+    const a = S.appts.find(x => x.id === P.data), dv = a.drive || {};
+    return `<h3>Comprobante de pago</h3><p class="sub">Revisa monto, beneficiaria y referencia antes de apartar la cita.</p>
+      <img class="big-rcpt" src="${a.receipt.data}" alt="Comprobante de ${esc(a.patient)}">
+      <dl class="kv"><dt>Paciente</dt><dd>${esc(a.patient)}</dd><dt>Cita</dt><dd>${short(a.date)} · ${hl(a.hour)}</dd><dt>Monto esperado</dt><dd>${money(PRICE)}</dd><dt>Referencia</dt><dd>${esc(a.ref || '—')}</dd><dt>Archivo</dt><dd>${esc(a.receipt.name)}</dd>
+        <dt>Drive</dt><dd>${dv.status === 'ok' ? `<a href="${esc(dv.url)}" target="_blank" rel="noopener">Abrir en Drive</a>` : DRV[dv.status || 'off']}</dd></dl>
+      ${a.status === 'review' ? `<div class="actions"><button class="btn danger" data-a="reject" data-id="${a.id}">Rechazar</button><button class="btn pri" data-a="approve" data-id="${a.id}">Pago correcto · apartar</button></div>` : pill(a.status, 'psy')}`;
+  }
+  if (s === 'new') return `<h3>Nueva encuesta</h3><p class="sub">Escribe una pregunta por línea. Podrás enviarla en cuanto la guardes.</p>
+    <label class="field"><span>Título</span><input id="ns-title" placeholder="Ej. Calidad del sueño"></label>
+    <label class="field"><span>Descripción corta</span><input id="ns-desc" placeholder="Ej. Última semana"></label>
+    <label class="field"><span>Tipo de respuesta</span><select id="ns-type"><option value="freq">Frecuencia (Nunca … Casi todos los días)</option><option value="scale">Escala 1 a 5</option><option value="text">Respuesta abierta</option></select></label>
+    <label class="field"><span>Preguntas</span><textarea id="ns-qs" placeholder="¿Cuántas horas dormiste en promedio?&#10;¿Te despertaste durante la noche?"></textarea></label>
+    <label class="check"><input type="checkbox" id="ns-open" checked> Agregar pregunta abierta al final</label>
+    <p class="err" id="ns-err"></p>
+    <button class="btn pri big" data-a="createSurvey">Guardar encuesta</button>`;
+  if (s === 'send') {
+    const sv = surveyOf(P.data);
+    return `<h3>Enviar “${esc(sv.title)}”</h3><p class="sub">La encuesta aparece en la app de cada paciente seleccionado.</p>
+      ${PATIENTS.map((p, i) => { const pend = S.sends.some(e => e.survey === sv.id && e.patient === p && e.status === 'sent');
+        return `<label class="check"><input type="checkbox" id="snd-${i}" value="${esc(p)}" ${pend ? 'disabled' : ''}>${av(p, 'sm')}${esc(p)}${pend ? '<small>Ya pendiente</small>' : ''}</label>`; }).join('')}
+      <p class="err" id="snd-err"></p><button class="btn pri big" data-a="sendSurvey">Enviar encuesta</button>`;
+  }
+  if (s === 'results') {
+    const sv = surveyOf(P.data), sent = S.sends.filter(e => e.survey === sv.id);
+    const done = sent.filter(e => e.status === 'done'), pend = sent.filter(e => e.status === 'sent');
+    return `<h3>${esc(sv.title)}</h3><p class="sub">${done.length} de ${sent.length} respondidas.${sv.questions.some(q => q.type === 'freq') ? ' Puntaje orientativo, no diagnóstico.' : ''}</p>
+      ${done.map(e => { const sc = score(sv, e.answers);
+        return `<div class="q"><div class="srv">${av(e.patient)}<div><b>${esc(e.patient)}</b><small>Respondió ${ago(e.at)}</small></div>${sc.max ? `<span class="pill st-review">${sc.v}/${sc.max}</span>` : ''}</div>
+          <ul class="ans">${sv.questions.map((q, i) => `<li><span>${esc(q.q)}</span><b>${q.type === 'freq' ? FREQ[e.answers[i]] : esc(e.answers[i] === '' ? '—' : e.answers[i])}</b></li>`).join('')}</ul></div>`; }).join('') || '<div class="empty">Aún no hay respuestas.</div>'}
+      ${pend.length ? `<p class="sub" style="margin-top:12px">Sin responder: ${pend.map(e => esc(e.patient)).join(', ')}</p>` : ''}`;
+  }
+  return '';
+}
+
+/* ---------- Paciente ---------- */
+function cliHome() {
+  const mine = S.appts.filter(a => a.patient === CLIENT && ACTIVE.includes(a.status)).sort(sortA);
+  const next = mine[0];
+  const pend = S.sends.filter(e => e.patient === CLIENT && e.status === 'sent');
+  const all = S.sends.filter(e => e.patient === CLIENT), done = all.length - pend.length;
+  return `
+  <div class="hdr"><div class="hello">${av(CLIENT, 'lg')}<div><small>Hola de nuevo</small><b>${CLIENT}</b><span>Paciente de ${PSY.short}</span></div></div>
+    <button class="icon-btn" data-a="sheet" data-s="notes" aria-label="Avisos">${ic('bell')}${unread('cli') ? `<span class="badge">${unread('cli')}</span>` : ''}</button></div>
+  <div class="cols"><div>
+  <div class="chero"><small>Tu próxima cita</small><h2>${next ? 'Te esperamos el ' + short(next.date).toLowerCase() : 'Aún no tienes cita agendada'}</h2>
+    ${next ? `<div class="next">${ring(done, all.length || 1, `${done}/${all.length}`, 'encuestas')}<div><span class="big">${hl(next.hour)}</span><small class="muted">${long(next.date)}<br>${next.mode} · 50 min</small><div style="margin-top:6px">${pill(next.status, 'cli')}</div></div></div>`
+      : `<button class="btn pri big" data-a="ctab" data-t="book">Ver horarios disponibles</button>`}
+  </div>
+  ${next && next.status === 'unpaid' ? `<div class="sum"><div><small>Tu horario está en espera</small><b>Reporta tu pago para que tu psicóloga lo apruebe</b></div><button class="btn pri" style="flex:none" data-a="sheet" data-s="pay" data-id="${next.id}">Pagar</button></div>` : ''}
+  <section class="sec"><div class="sec-h"><h3>Encuestas por responder</h3><button class="link" data-a="ctab" data-t="surveys">Ver todas ›</button></div>
+    <div class="list">${pend.length ? pend.map(e => { const sv = surveyOf(e.survey); return `<div class="card srv"><span class="ic">${ic('form')}</span><div><b>${esc(sv.title)}</b><small>${sv.questions.length} preguntas · enviada ${ago(e.at)}</small></div><button class="btn pri" style="flex:none" data-a="sheet" data-s="answer" data-id="${e.id}">Responder</button></div>`; }).join('') : '<div class="empty">Estás al día con tus encuestas.</div>'}</div></section>
+  </div><div class="stick">
+  <section class="sec"><div class="sec-h"><h3>Tu psicóloga</h3></div>
+    <div class="card"><div class="psy-card">${av(PSY.name, 'lg')}<div><b>${PSY.short}</b><small class="muted" style="display:block">${PSY.title}</small></div><span class="price">${money(PRICE).replace(' MXN', '')}</span></div>
+    <div class="meta" style="margin:10px 0 12px"><span>${ic('clock', 14)}Sesión de 50 min</span><span>${ic('video', 14)}En línea o presencial</span></div>
+    <button class="btn sec big" data-a="ctab" data-t="book">Agendar una cita</button></div></section></div></div>`;
+}
+
+function cliBook() {
+  const keys = workdays(10);
+  if (!keys.includes(C.day)) C.day = keys[0];
+  const freeCount = k => HOURS.filter(h => !occupant(k, h) && !isBlocked(k, h)).length;
+  const slots = HOURS.filter(h => !isBlocked(C.day, h)).map(h => {
+    const o = occupant(C.day, h), mine = o && o.patient === CLIENT;
+    if (o) return `<button class="slot ${mine ? 'mine' : ''}" disabled>${hl(h)}<small>${mine ? 'Tu solicitud' : 'Ocupado'}</small></button>`;
+    return `<button class="slot ${C.slot === h ? 'on' : ''}" data-a="cslot" data-h="${h}" aria-pressed="${C.slot === h}">${hl(h)}<small>Disponible</small></button>`;
+  }).join('');
+  return `<h2 class="title">Agendar cita</h2>
+    <div class="cols"><div>
+    <section class="sec"><div class="sec-h"><h3>Elige un día</h3><span class="link">${freeCount(C.day)} horarios libres</span></div>
+      ${dayChips(C.day, keys, 'cday', k => freeCount(k) > 0)}</section>
+    <section class="sec"><div class="sec-h"><h3>${long(C.day)}</h3></div><div class="slots">${slots || '<div class="empty">Sin horarios este día.</div>'}</div></section>
+    </div><div class="stick">
+    <div class="card psy-card">${av(PSY.name)}<div><b>${PSY.short}</b><small class="muted" style="display:block">50 min · ${money(PRICE)}</small></div></div>
+    <section class="sec"><div class="sec-h"><h3>Modalidad</h3></div>
+      <div class="seg" role="group" aria-label="Modalidad"><button data-a="cmode" data-m="En línea" aria-pressed="${C.mode === 'En línea'}">En línea</button><button data-a="cmode" data-m="Presencial" aria-pressed="${C.mode === 'Presencial'}">Presencial</button></div></section>
+    <div class="sum"><div><small>${C.slot != null ? short(C.day) + ' · ' + C.mode : 'Selecciona un horario'}</small><b>${C.slot != null ? hr(C.slot) : '—'}</b></div>
+      <button class="btn pri" style="flex:none" data-a="toPay" ${C.slot == null ? 'disabled' : ''}>Continuar al pago</button></div>
+    <p class="muted" style="font-size:12px;text-align:center;margin-top:12px">Tu horario queda en revisión al solicitarlo y se confirma cuando tu psicóloga aprueba el pago.</p></div></div>`;
+}
+
+function cliAppts() {
+  const mine = S.appts.filter(a => a.patient === CLIENT).sort(sortA);
+  const card = a => `<article class="rq b-${a.status}"><div class="rq-top"><span class="av" style="--c:${avc(PSY.name)}">${ic('cal', 16)}</span><div><b>${long(a.date)}</b><small>${hr(a.hour)} · ${a.mode}</small></div>${pill(a.status, 'cli')}</div>
+    <div class="meta"><span>${ic('pay', 14)}${a.receipt ? 'Comprobante enviado' : 'Pago no reportado'}</span><span>${money(PRICE)}</span></div>
+    ${a.status === 'unpaid' ? `<div class="actions"><button class="btn neu" data-a="cancel" data-id="${a.id}">Cancelar</button><button class="btn pri" data-a="sheet" data-s="pay" data-id="${a.id}">Reportar pago</button></div>` : ''}
+    ${a.status === 'review' ? `<p class="muted" style="margin:0;font-size:12px">Tu psicóloga está verificando tu pago.</p>` : ''}
+    ${a.status === 'confirmed' ? `<div class="actions"><button class="btn neu" data-a="cancel" data-id="${a.id}">Cancelar cita</button></div>` : ''}</article>`;
+  return `<h2 class="title">Mis citas</h2><div class="list">${mine.length ? mine.map(card).join('') : '<div class="empty">Aún no tienes citas.</div>'}</div>
+    <button class="btn sec big" style="margin-top:16px;max-width:360px" data-a="ctab" data-t="book">Agendar otra cita</button>`;
+}
+
+function cliSurveys() {
+  const mine = S.sends.filter(e => e.patient === CLIENT);
+  const row = e => { const sv = surveyOf(e.survey); return `<div class="card srv"><span class="ic">${ic(e.status === 'done' ? 'check' : 'form')}</span><div><b>${esc(sv.title)}</b><small>${e.status === 'done' ? 'Respondida ' + ago(e.at) : sv.questions.length + ' preguntas · ' + esc(sv.desc)}</small></div>${e.status === 'sent' ? `<button class="btn pri" style="flex:none" data-a="sheet" data-s="answer" data-id="${e.id}">Responder</button>` : '<span class="pill st-confirmed">Enviada</span>'}</div>`; };
+  const pend = mine.filter(e => e.status === 'sent'), done = mine.filter(e => e.status === 'done');
+  return `<h2 class="title">Encuestas</h2>
+    <section class="sec"><div class="sec-h"><h3>Pendientes</h3><span class="link">${pend.length}</span></div><div class="list">${pend.length ? pend.map(row).join('') : '<div class="empty">No tienes encuestas pendientes.</div>'}</div></section>
+    <section class="sec"><div class="sec-h"><h3>Respondidas</h3><span class="link">${done.length}</span></div><div class="list">${done.length ? done.map(row).join('') : '<div class="empty">Aquí verás las que ya respondiste.</div>'}</div></section>`;
+}
+
+function cliSheet() {
+  const s = C.sheet;
+  if (s === 'notes') return notesSheet('cli');
+  if (s === 'pay') {
+    const a = C.data.id ? S.appts.find(x => x.id === C.data.id) : C.data;
+    return `<h3>${C.data.id ? 'Reportar pago' : 'Confirma y paga'}</h3><p class="sub">Transfiere el monto y sube la foto o captura de tu comprobante. Tu psicóloga lo revisa y aparta la cita.</p>
+      <dl class="kv"><dt>Fecha</dt><dd>${long(a.date)}</dd><dt>Hora</dt><dd>${hr(a.hour)}</dd><dt>Modalidad</dt><dd>${a.mode}</dd><dt>Total</dt><dd>${money(PRICE)}</dd></dl>
+      <dl class="kv"><dt>Titular</dt><dd>${PSY.name}</dd><dt>CLABE</dt><dd>0721 8000 4512 3398 76</dd><dt>Concepto</dt><dd>${ini(CLIENT)}-${a.date.slice(5).replace('-', '')}</dd></dl>
+      <label class="upload" for="pay-file"><input type="file" id="pay-file" accept="image/*">${ic('upload', 26)}<span id="pay-drop-t">Subir imagen del comprobante</span><img id="pay-prev" alt="Vista previa del comprobante" hidden></label>
+      <label class="field"><span>Referencia o folio (opcional)</span><input id="pay-ref" placeholder="Ej. SPEI 520318" autocomplete="off"></label>
+      <p class="err" id="pay-err"></p>
+      <button class="btn pri big" data-a="pay">Enviar comprobante</button>
+      ${C.data.id ? '' : '<button class="btn neu big" style="margin-top:8px" data-a="payLater">Solicitar y pagar después</button>'}`;
+  }
+  if (s === 'answer') {
+    const e = S.sends.find(x => x.id === C.data), sv = surveyOf(e.survey);
+    return `<h3>${esc(sv.title)}</h3><p class="sub">${esc(sv.desc)}. Solo tu psicóloga verá tus respuestas.</p>
+      ${sv.questions.map((q, i) => `<div class="q"><p>${i + 1}. ${esc(q.q)}</p>${
+        q.type === 'text' ? `<textarea id="ans-${i}" style="width:100%;min-height:70px;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--screen)" aria-label="${esc(q.q)}"></textarea>`
+        : `<div class="opts" role="radiogroup" aria-label="${esc(q.q)}">${(q.type === 'freq' ? FREQ.map((l, v) => [v, l]) : [1, 2, 3, 4, 5].map(v => [v, v === 1 ? '1 · Nada' : v === 5 ? '5 · Mucho' : String(v)])).map(([v, l]) => `<label><input type="radio" name="ans-${i}" id="ans-${i}-${v}" value="${v}"><span>${l}</span></label>`).join('')}</div>`}</div>`).join('')}
+      <p class="err" id="ans-err"></p><button class="btn pri big" data-a="submitAnswers">Enviar respuestas</button>`;
+  }
+  return '';
+}
+
+function notesSheet(who) {
+  const list = S.notes.filter(n => n.to === who);
+  return `<h3>Avisos</h3><p class="sub">${who === 'psy' ? 'Pagos reportados, solicitudes y respuestas.' : 'Confirmaciones de tus citas y encuestas nuevas.'}</p>
+    ${list.length ? list.map(n => `<div class="note ${n.read ? 'read' : ''}"><i></i><div>${esc(n.text)}<small>${ago(n.at)}</small></div></div>`).join('') : '<div class="empty">Sin avisos.</div>'}`;
+}
+
+/* ---------- render ---------- */
+function navHtml(items, cur, fab) {
+  const btn = ([t, label, icon, badge, act]) => `<button data-a="${act || fab.tabAction}" data-t="${t}" data-s="${t}" ${cur === t ? 'aria-current="page"' : ''}>${ic(icon, 22)}${label}${badge ? `<span class="badge">${badge}</span>` : ''}</button>`;
+  return btn(items[0]) + btn(items[1]) + `<button class="fab" data-a="${fab.action}" ${fab.attrs} aria-label="${fab.label}">${ic('plus', 24)}<span class="fab-l">${fab.label}</span></button>` + btn(items[2]) + btn(items[3]);
+}
+
+function renderPhone(id, st, views, sheetFn, nav) {
+  const root = document.getElementById(id);
+  const sc = root.querySelector('.scroll');
+  sc.innerHTML = `<div class="view">${views[st.tab]()}</div>`;
+  root.querySelector('.nav').innerHTML = nav;
+  const sw = root.querySelector('.sheet-wrap');
+  if (st.sheet) {
+    const reopen = sw.hidden || sw.dataset.s !== st.sheet + '|' + JSON.stringify(st.data);
+    if (reopen) { sw.innerHTML = `<button class="scrim" data-a="close" aria-label="Cerrar"></button><div class="sheet" role="dialog" aria-modal="true">${sheetFn()}</div>`; sw.dataset.s = st.sheet + '|' + JSON.stringify(st.data); }
+    sw.hidden = false;
+  } else { sw.hidden = true; sw.innerHTML = ''; sw.dataset.s = ''; }
+}
+
+function render() {
+  const rev = S.appts.filter(a => a.status === 'review').length;
+  const cpend = S.sends.filter(e => e.patient === CLIENT && e.status === 'sent').length;
+  renderPhone('psy', P, { home: psyHome, agenda: psyAgenda, req: psyReq, surveys: psySurveys }, psySheet,
+    navHtml([['home', 'Inicio', 'home'], ['agenda', 'Agenda', 'cal'], ['req', 'Pagos', 'pay', rev], ['surveys', 'Encuestas', 'form']], P.tab,
+      { tabAction: 'tab', action: 'sheet', attrs: 'data-s="new"', label: 'Nueva encuesta' }));
+  renderPhone('cli', C, { home: cliHome, book: cliBook, appts: cliAppts, surveys: cliSurveys }, cliSheet,
+    navHtml([['home', 'Inicio', 'home'], ['appts', 'Mis citas', 'list'], ['surveys', 'Encuestas', 'form', cpend], ['notes', 'Avisos', 'bell', unread('cli'), 'sheet']], C.tab,
+      { tabAction: 'ctab', action: 'ctab', attrs: 'data-t="book"', label: 'Agendar cita' }));
+  save();
+}
+
+const timers = {};
+function toast(id, msg) {
+  const t = document.querySelector(`#${id} .toast`);
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(timers[id]); timers[id] = setTimeout(() => t.classList.remove('show'), 3200);
+}
+const top0 = () => window.scrollTo(0, 0);
+
+function compress(file) {
+  return new Promise((res, rej) => {
+    const img = new Image(), url = URL.createObjectURL(file);
+    img.onload = () => {
+      const k = Math.min(1, 1400 / Math.max(img.width, img.height)), c = document.createElement('canvas');
+      c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+      const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url); res(c.toDataURL('image/jpeg', 0.82));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('img')); };
+    img.src = url;
+  });
+}
+
+// Envía el comprobante a la carpeta Pagos de Drive a través del Apps Script.
+async function toDrive(a) {
+  if (!DRIVE_UPLOAD_URL) { a.drive = { status: 'off' }; return; }
+  a.drive = { status: 'pending' };
+  try {
+    const r = await fetch(DRIVE_UPLOAD_URL, { method: 'POST', body: JSON.stringify({ filename: a.receipt.name, mimeType: 'image/jpeg', data: a.receipt.data.split(',')[1], patient: a.patient, date: a.date, hour: a.hour, ref: a.ref }) });
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.error);
+    a.drive = { status: 'ok', url: j.url };
+  } catch (e) { a.drive = { status: 'error' }; }
+  render();
+}
+
+document.addEventListener('change', async e => {
+  if (e.target.id !== 'pay-file' || !e.target.files[0]) return;
+  const f = e.target.files[0], err = document.getElementById('pay-err');
+  if (!f.type.startsWith('image/')) { err.textContent = 'El archivo debe ser una imagen (JPG, PNG o captura de pantalla).'; return; }
+  try {
+    C.receipt = await compress(f);
+    const pv = document.getElementById('pay-prev'); pv.src = C.receipt; pv.hidden = false;
+    document.getElementById('pay-drop-t').textContent = f.name + ' · toca para cambiar';
+    err.textContent = '';
+  } catch (x) { err.textContent = 'No se pudo leer la imagen. Prueba con otra.'; }
+});
+
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-a]');
+  if (!el || el.disabled) return;
+  const d = el.dataset, phone = el.closest('.app'), who = phone ? phone.id : null;
+  const st = who === 'cli' ? C : P;
+  switch (d.a) {
+    case 'view': {
+      document.getElementById('stage').dataset.view = d.v;
+      document.querySelectorAll('[data-a="view"]').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === d.v));
+      top0(); return;
+    }
+    case 'reset': S = seed(); Object.assign(P, { tab: 'home', sheet: null }); Object.assign(C, { tab: 'home', slot: null, sheet: null }); render(); toast('psy', 'Demo restablecida'); toast('cli', 'Demo restablecida'); return;
+    case 'tab': P.tab = d.t; P.sheet = null; top0(); break;
+    case 'ctab': C.tab = d.t; C.sheet = null; top0(); break;
+    case 'pday': P.day = d.k; P.tab = 'agenda'; top0(); break;
+    case 'cday': C.day = d.k; C.slot = null; break;
+    case 'cslot': C.slot = +d.h; break;
+    case 'cmode': C.mode = d.m; break;
+    case 'sheet':
+      st.sheet = d.s; st.data = d.id || null;
+      if (d.s === 'notes') { setTimeout(() => { S.notes.forEach(n => { if (n.to === who) n.read = true; }); save(); const b = phone.querySelector('.icon-btn .badge'); if (b) b.remove(); }, 0); }
+      if (d.s === 'pay') { st.data = { id: d.id }; C.receipt = null; }
+      break;
+    case 'close': st.sheet = null; break;
+    case 'block': {
+      const k = `${d.k}|${d.h}`, i = S.blocked.indexOf(k);
+      if (i >= 0) { S.blocked.splice(i, 1); toast('psy', `${hl(+d.h)} liberado para pacientes`); }
+      else { S.blocked.push(k); toast('psy', `${hl(+d.h)} bloqueado`); }
+      break;
+    }
+    case 'approve': {
+      const a = S.appts.find(x => x.id === d.id); a.status = 'confirmed'; P.sheet = null;
+      notify('cli', `${PSY.short} confirmó tu pago. Tu cita del ${short(a.date).toLowerCase()} a las ${hl(a.hour)} quedó apartada.`);
+      toast('psy', `Cita de ${a.patient} apartada`);
+      if (a.patient === CLIENT) toast('cli', '¡Tu cita fue confirmada!');
+      break;
+    }
+    case 'reject': {
+      const a = S.appts.find(x => x.id === d.id); a.status = 'rejected'; P.sheet = null;
+      notify('cli', `Tu solicitud del ${short(a.date).toLowerCase()} a las ${hl(a.hour)} no fue aprobada. El horario se liberó.`);
+      toast('psy', 'Solicitud rechazada, horario liberado');
+      if (a.patient === CLIENT) toast('cli', 'Tu solicitud no fue aprobada');
+      break;
+    }
+    case 'remind': {
+      const a = S.appts.find(x => x.id === d.id);
+      if (a.patient === CLIENT) { notify('cli', `Recordatorio: reporta tu pago de la cita del ${short(a.date).toLowerCase()} para apartarla.`); toast('cli', 'Tu psicóloga te recordó el pago'); }
+      toast('psy', `Recordatorio enviado a ${a.patient}`);
+      break;
+    }
+    case 'toPay': if (C.slot == null) return; C.sheet = 'pay'; C.receipt = null; C.data = { date: C.day, hour: C.slot, mode: C.mode }; break;
+    case 'pay': case 'payLater': {
+      const paying = d.a === 'pay';
+      if (paying && !C.receipt) { document.getElementById('pay-err').textContent = 'Sube la imagen de tu comprobante para continuar.'; return; }
+      const ref = paying ? (document.getElementById('pay-ref').value.trim() || 'Comprobante adjunto') : '';
+      let a;
+      if (C.data.id) { a = S.appts.find(x => x.id === C.data.id); a.ref = ref; a.status = 'review'; }
+      else {
+        if (occupant(C.data.date, C.data.hour) || isBlocked(C.data.date, C.data.hour)) { document.getElementById('pay-err').textContent = 'Ese horario se acaba de ocupar. Elige otro.'; return; }
+        a = { id: 'a' + (++uid), patient: CLIENT, date: C.data.date, hour: C.data.hour, mode: C.data.mode, status: ref ? 'review' : 'unpaid', ref };
+        S.appts.push(a); C.slot = null;
+      }
+      if (paying) { a.receipt = { name: fname(a), data: C.receipt }; C.receipt = null; toDrive(a); }
+      notify('psy', ref ? `${CLIENT} reportó su pago (${ref}) para el ${short(a.date).toLowerCase()} a las ${hl(a.hour)}.` : `${CLIENT} solicitó el ${short(a.date).toLowerCase()} a las ${hl(a.hour)}. Pago pendiente.`);
+      toast('psy', ref ? `Nuevo pago por aprobar · ${CLIENT}` : `Nueva solicitud · ${CLIENT}`);
+      toast('cli', ref ? 'Comprobante enviado. Tu horario está en revisión.' : 'Solicitud enviada. Reporta tu pago para apartarla.');
+      C.sheet = null; C.tab = 'appts'; top0();
+      break;
+    }
+    case 'cancel': {
+      const a = S.appts.find(x => x.id === d.id); a.status = 'cancelled';
+      notify('psy', `${CLIENT} canceló su cita del ${short(a.date).toLowerCase()} a las ${hl(a.hour)}. El horario quedó libre.`);
+      toast('cli', 'Cita cancelada'); toast('psy', `${CLIENT} canceló una cita`);
+      break;
+    }
+    case 'submitAnswers': {
+      const e2 = S.sends.find(x => x.id === C.data), sv = surveyOf(e2.survey), ans = [];
+      for (let i = 0; i < sv.questions.length; i++) {
+        if (sv.questions[i].type === 'text') ans.push(document.getElementById('ans-' + i).value.trim());
+        else { const c = phone.querySelector(`input[name="ans-${i}"]:checked`); if (!c) { document.getElementById('ans-err').textContent = `Falta responder la pregunta ${i + 1}.`; return; } ans.push(+c.value); }
+      }
+      Object.assign(e2, { status: 'done', answers: ans, at: Date.now() });
+      notify('psy', `${CLIENT} respondió “${sv.title}”.`);
+      toast('cli', '¡Gracias! Respuestas enviadas'); toast('psy', `${CLIENT} respondió “${sv.title}”`);
+      C.sheet = null;
+      break;
+    }
+    case 'createSurvey': {
+      const title = document.getElementById('ns-title').value.trim();
+      const qs = document.getElementById('ns-qs').value.split('\n').map(s => s.trim()).filter(Boolean);
+      if (!title || !qs.length) { document.getElementById('ns-err').textContent = 'Agrega un título y al menos una pregunta.'; return; }
+      const type = document.getElementById('ns-type').value;
+      const questions = qs.map(q => ({ q, type }));
+      if (document.getElementById('ns-open').checked && type !== 'text') questions.push({ q: '¿Algo más que quieras contarme?', type: 'text' });
+      const sv = { id: 's' + (++uid), title, desc: document.getElementById('ns-desc').value.trim() || 'Encuesta personalizada', questions };
+      S.surveys.unshift(sv);
+      P.tab = 'surveys'; P.sheet = 'send'; P.data = sv.id;
+      toast('psy', 'Encuesta guardada. Elige a quién enviarla.');
+      break;
+    }
+    case 'sendSurvey': {
+      const picked = [...phone.querySelectorAll('.sheet input[type=checkbox]:checked')].map(i => i.value);
+      if (!picked.length) { document.getElementById('snd-err').textContent = 'Selecciona al menos un paciente.'; return; }
+      const sv = surveyOf(P.data);
+      picked.forEach(p => S.sends.push({ id: 'e' + (++uid), survey: sv.id, patient: p, status: 'sent', at: Date.now() }));
+      if (picked.includes(CLIENT)) { notify('cli', `Tu psicóloga te envió la encuesta “${sv.title}”.`); toast('cli', `Nueva encuesta: ${sv.title}`); }
+      toast('psy', `Enviada a ${picked.length} paciente${picked.length > 1 ? 's' : ''}`);
+      P.sheet = null;
+      break;
+    }
+    default: return;
+  }
+  render();
+});
+
+render();
+})();
+</script>
