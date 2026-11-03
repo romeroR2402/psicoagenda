@@ -200,6 +200,52 @@ button:disabled{cursor:not-allowed;opacity:.45}
 .cols .list{grid-template-columns:minmax(0,1fr)}
 .tl{max-width:860px}
 
+/* pacientes y encuestas */
+.row-h{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+.row-h .title{margin:0}
+.row-h>.btn,.row-h>.actions,.row-h .actions .btn{flex:none}
+.sheet .row-h{padding-right:44px}
+.row-h h3{margin:0}
+.acct{margin:4px 0 16px;color:var(--muted);font-size:12.5px}
+.login{max-width:460px;display:flex;flex-direction:column;gap:12px}
+.login .field{margin:0}
+.ok-msg{color:var(--ok);font-size:12.5px;font-weight:600;margin:0}
+.ok-msg:empty,.err:empty{display:none}
+.srv small{display:block}
+.search{max-width:420px}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.tag{font-size:11px;font-weight:700;padding:3px 8px;border-radius:8px;background:var(--calm-soft);color:var(--calm)}
+.big-ic{width:64px!important;height:64px!important;border-radius:20px!important}
+.qb{background:var(--card);border-radius:18px;padding:14px;margin-bottom:12px;display:flex;flex-direction:column;gap:10px;border:1px solid var(--line)}
+.qb-h{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.qb-h b{font-size:13px;color:var(--muted)}
+.qb-tools{display:flex;gap:4px}
+.mini-btn{width:30px;height:30px;border-radius:9px;border:1px solid var(--line);background:var(--screen);font-size:13px;font-weight:700;display:grid;place-items:center;flex:none}
+.mini-btn.bad{color:var(--bad)}
+.in{width:100%;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--screen);font-size:13.5px;min-width:0}
+.qb-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.qb-row select{flex:1 1 200px;width:auto}
+.tog{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--muted)}
+.tog input{accent-color:var(--accent);width:16px;height:16px}
+.opts-ed{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.opt-row{display:flex;gap:8px;align-items:center;width:100%}
+.mark{width:16px;height:16px;border:2px solid var(--muted);flex:none}
+.mark.single{border-radius:50%} .mark.multi{border-radius:4px}
+.qb-note{margin:0;font-size:12px;color:var(--muted)}
+.qb-add{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 12px}
+.lnk{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--card);border-radius:14px;padding:10px 12px;margin-bottom:8px}
+.lnk-b{flex:1 1 180px;min-width:0}
+.lnk-b b{display:block;font-size:13.5px}
+.mono{display:block;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;color:var(--muted);overflow-wrap:anywhere;user-select:all}
+.lnk-act{display:flex;gap:6px;flex-wrap:wrap}
+.lnk-act .btn{flex:none;padding:8px 12px;text-decoration:none}
+.ck-b{display:flex;flex-direction:column;min-width:0}
+.ck-b small{margin:0;font-weight:500}
+.sub-h{margin:16px 0 8px;font-size:14px}
+
+.sheet .x{position:absolute;top:14px;right:14px;width:34px;height:34px;border-radius:50%;background:var(--card);border:1px solid var(--line);font-weight:700;color:var(--muted);z-index:2}
+.sheet h3{padding-right:40px}
+
 /* comprobantes */
 .rcpt{display:flex;align-items:center;gap:10px;padding:6px 10px 6px 6px;border-radius:14px;background:var(--screen);border:1px solid var(--line);text-align:left;width:100%}
 .rcpt:hover{border-color:var(--calm)}
@@ -251,6 +297,7 @@ small.drv-ok{color:var(--ok)} small.drv-error{color:var(--bad)} small.drv-pendin
 .toast.show{transform:none;opacity:1;visibility:visible}
 
 @media (max-width:900px){
+  .nav{grid-template-columns:repeat(var(--n,5),1fr)!important}
   .app{grid-template-columns:minmax(0,1fr)}
   .topbar{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
   .scroll{padding-block:18px 120px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
@@ -296,11 +343,13 @@ small.drv-ok{color:var(--ok)} small.drv-error{color:var(--bad)} small.drv-pendin
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
 <script>
 (() => {
 const KEY = 'psicoagenda-v2';
 // URL de la aplicación web de Google Apps Script (ver drive-pagos.gs). Vacío = no se sube a Drive.
-const DRIVE_UPLOAD_URL = '';
+const DRIVE_UPLOAD_URL = (window.PSICO_CONFIG || {}).drive || '';
 const PSY = { name: 'Laura Méndez', short: 'Dra. Laura Méndez', title: 'Psicóloga clínica · Céd. 10458213' };
 const CLIENT = 'Sofía Ramírez';
 const PATIENTS = ['Sofía Ramírez', 'Diego Torres', 'Mariana López', 'Andrés Gil', 'Valeria Cruz'];
@@ -341,6 +390,9 @@ const IC = {
   video: '<rect x="3" y="6" width="13" height="12" rx="2.5"/><path d="m16 10 5-3v10l-5-3"/>',
   pin: '<path d="M12 21s-7-6-7-11a7 7 0 0 1 14 0c0 5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/>',
   check: '<path d="M20 6 9 17l-5-5"/>',
+  lock: '<rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/>',
+  phone: '<path d="M5 3.5h3.5l1.5 4.5-2.2 1.4a11 11 0 0 0 5.8 5.8L15 13l4.5 1.5V18a2 2 0 0 1-2 2A15.5 15.5 0 0 1 3 5.5a2 2 0 0 1 2-2z"/>',
+  users: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.5a6.5 6.5 0 0 1 3.5 5.5"/>',
   upload: '<path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/>',
   list: '<path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/>',
 };
@@ -409,7 +461,7 @@ function seedBase() {
     ],
     notes: [
       { to: 'psy', text: 'Andrés Gil reportó su pago (SPEI 771054). Revisa y aprueba su cita.', at: t - 2 * 36e5, read: false },
-      { to: 'cli', text: 'Tu psicóloga te envió la encuesta “Estado de ánimo”.', at: t - 864e5, read: false },
+      { to: 'cli', text: 'Tu psicóloga te envió una encuesta por WhatsApp.', at: t - 864e5, read: false },
     ],
   };
 }
@@ -448,6 +500,283 @@ function dayChips(sel, keys, action, dotFn) {
   return `<div class="days" role="list">${keys.map(k => { const d = pkey(k); return `<button class="day ${k === sel ? 'on' : ''}" role="listitem" data-a="${action}" data-k="${k}" aria-pressed="${k === sel}" aria-label="${long(k)}"><small>${DOW[d.getDay()].toUpperCase()}</small><b>${pad(d.getDate())}</b>${dotFn && dotFn(k) ? '<span class="dot"></span>' : ''}</button>`; }).join('')}</div>`;
 }
 
+/* ---------- Pacientes y encuestas reales (Supabase) ---------- */
+const CFG = window.PSICO_CONFIG || {};
+const sb = window.supabase && CFG.url ? window.supabase.createClient(CFG.url, CFG.key) : null;
+const R = { authKnown: false, user: null, loaded: false, clients: [], surveys: [], links: [], err: '' };
+const QTYPES = { single: 'Una opción', multi: 'Varias opciones', scale: 'Escala del 1 al 5', freq: 'Frecuencia', text: 'Respuesta abierta' };
+const QNOTE = {
+  scale: 'El paciente elige un número del 1 (nada) al 5 (mucho).',
+  freq: 'Opciones fijas: Nunca, Varios días, Más de la mitad de los días, Casi todos los días.',
+  text: 'El paciente escribe su respuesta, hasta 2000 caracteres.',
+};
+const phoneKey = p => String(p || '').replace(/\D/g, '').slice(-10);
+const val = id => (document.getElementById(id)?.value || '').trim();
+const setErr = (id, msg) => { const e = document.getElementById(id); if (e) e.textContent = msg; return false; };
+const clientOf = id => R.clients.find(c => c.id === id);
+const linkUrl = t => new URL('responder.html?t=' + t, location.href).href;
+const waNum = p => { const d = String(p).replace(/\D/g, ''); return d.length === 10 ? '52' + d : d; };
+const fmtDT = s => new Date(s).toLocaleString('es-MX', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
+const newQ = (type = 'single') => ({ text: '', type, options: type === 'single' || type === 'multi' ? ['', ''] : [], required: true });
+
+async function loadRemote() {
+  if (!sb || !R.user) return;
+  const [c, s, l] = await Promise.all([
+    sb.from('clients').select('*').order('full_name'),
+    sb.from('surveys').select('*').order('created_at', { ascending: false }),
+    sb.from('survey_links').select('*').order('created_at', { ascending: false }),
+  ]);
+  if (c.error || s.error || l.error) R.err = 'No se pudieron cargar tus datos. Revisa tu conexión y toca Actualizar.';
+  else { R.err = ''; R.clients = c.data; R.surveys = s.data; R.links = l.data; }
+  R.loaded = true;
+  render();
+}
+
+if (sb) {
+  sb.auth.onAuthStateChange((_ev, session) => {
+    const prev = R.user && R.user.id;
+    R.authKnown = true;
+    R.user = session ? session.user : null;
+    if ((R.user && R.user.id) !== prev) {
+      R.loaded = false; R.clients = []; R.surveys = []; R.links = [];
+      if (R.user) setTimeout(loadRemote, 0);
+    }
+    render();
+  });
+}
+
+function authMsg(e) {
+  const m = (e && e.message) || '';
+  if (/invalid login/i.test(m)) return 'Correo o contraseña incorrectos.';
+  if (/not confirmed/i.test(m)) return 'Confirma tu correo antes de entrar. Revisa tu bandeja de entrada.';
+  if (/already registered/i.test(m)) return 'Ese correo ya tiene cuenta. Usa “Entrar”.';
+  return 'No se pudo completar: ' + m;
+}
+
+function authGate(title) {
+  if (!sb) return `<h2 class="title">${title}</h2><div class="empty">Falta la conexión a la base de datos (config.js).</div>`;
+  if (!R.authKnown) return `<h2 class="title">${title}</h2><div class="empty">Cargando…</div>`;
+  return `<h2 class="title">${title}</h2>
+    <div class="card login"><div class="srv"><span class="ic">${ic('lock')}</span><div><b>Entra a tu cuenta</b><small>Tus pacientes, encuestas y respuestas se guardan en tu cuenta. Solo tú puedes verlos.</small></div></div>
+      <label class="field"><span>Correo</span><input id="lg-email" type="email" autocomplete="email" placeholder="tu@correo.com"></label>
+      <label class="field"><span>Contraseña</span><input id="lg-pass" type="password" autocomplete="current-password" placeholder="Mínimo 6 caracteres"></label>
+      <p class="err" id="lg-err"></p><p class="ok-msg" id="lg-ok"></p>
+      <div class="actions"><button class="btn neu" data-a="signup">Crear cuenta</button><button class="btn pri" data-a="login">Entrar</button></div></div>`;
+}
+
+const acct = () => `<p class="acct">Conectada como <b>${esc(R.user.email)}</b> · <button class="link" data-a="logout">Cerrar sesión</button></p>`;
+
+async function doAuth(kind, btn) {
+  const email = val('lg-email'), pass = document.getElementById('lg-pass').value;
+  setErr('lg-ok', '');
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || pass.length < 6) return setErr('lg-err', 'Escribe tu correo y una contraseña de al menos 6 caracteres.');
+  btn.disabled = true;
+  const r = kind === 'login'
+    ? await sb.auth.signInWithPassword({ email, password: pass })
+    : await sb.auth.signUp({ email, password: pass, options: { emailRedirectTo: location.href.split('#')[0].split('?')[0] } });
+  btn.disabled = false;
+  if (r.error) return setErr('lg-err', authMsg(r.error));
+  setErr('lg-err', '');
+  if (kind === 'signup' && !r.data.session) setErr('lg-ok', 'Listo. Te enviamos un correo para confirmar tu cuenta; ábrelo y después toca “Entrar”.');
+}
+
+/* Pacientes */
+function psyClients() {
+  if (!R.user) return authGate('Pacientes');
+  const rows = R.clients.map(c => {
+    const ls = R.links.filter(l => l.client_id === c.id), done = ls.filter(l => l.status === 'done').length;
+    const key = (c.full_name + ' ' + c.phone + ' ' + (c.email || '')).toLowerCase();
+    return `<article class="card srv" data-k="${esc(key)}">${av(c.full_name)}<div><b>${esc(c.full_name)}</b><small>${ic('phone', 12)} ${esc(c.phone)}${c.email ? ` · ${esc(c.email)}` : ''}</small><small>${done} de ${ls.length} encuestas respondidas</small></div><button class="btn neu" style="flex:none" data-a="sheet" data-s="client" data-id="${c.id}">Editar</button></article>`;
+  }).join('');
+  return `<div class="row-h"><h2 class="title">Pacientes</h2><button class="btn pri" data-a="sheet" data-s="client">+ Nuevo paciente</button></div>
+    ${acct()}${R.err ? `<p class="err">${R.err}</p>` : ''}
+    ${R.clients.length ? `<label class="field search"><span>Buscar</span><input id="cl-q" type="search" placeholder="Nombre, teléfono o correo"></label>` : ''}
+    <div class="list" id="cl-list">${!R.loaded ? '<div class="empty">Cargando pacientes…</div>' : rows || '<div class="empty">Aún no tienes pacientes. Agrega el primero con “Nuevo paciente”.</div>'}</div>
+    <p class="empty" id="cl-none" hidden>Ningún paciente coincide con la búsqueda.</p>`;
+}
+
+function filterClients() {
+  const q = val('cl-q').toLowerCase(), cards = document.querySelectorAll('#cl-list [data-k]');
+  let shown = 0;
+  cards.forEach(c => { const ok = !q || c.dataset.k.includes(q); c.hidden = !ok; if (ok) shown++; });
+  const none = document.getElementById('cl-none'); if (none) none.hidden = shown > 0 || !cards.length;
+}
+
+function clientSheet() {
+  const c = clientOf(P.data) || {};
+  return `<h3>${c.id ? 'Editar paciente' : 'Nuevo paciente'}</h3><p class="sub">El teléfono identifica al paciente: se lo pedimos al abrir un link de encuesta para confirmar que es él o ella.</p>
+    <label class="field"><span>Nombre completo</span><input id="cl-name" value="${esc(c.full_name || '')}" autocomplete="off" placeholder="Ej. Sofía Ramírez López"></label>
+    <label class="field"><span>Correo electrónico</span><input id="cl-email" type="email" value="${esc(c.email || '')}" autocomplete="off" placeholder="Ej. sofia@correo.com"></label>
+    <label class="field"><span>Teléfono (10 dígitos o con lada)</span><input id="cl-phone" type="tel" value="${esc(c.phone || '')}" autocomplete="off" placeholder="Ej. 55 1234 5678"></label>
+    <p class="err" id="cl-err"></p>
+    <button class="btn pri big" data-a="saveClient" data-id="${c.id || ''}">${c.id ? 'Guardar cambios' : 'Agregar paciente'}</button>
+    ${c.id ? `<button class="btn danger big" style="margin-top:8px" data-a="delClient" data-id="${c.id}">Eliminar paciente</button>` : ''}`;
+}
+
+async function saveClient(id, btn) {
+  const name = val('cl-name').replace(/\s+/g, ' '), email = val('cl-email'), phone = val('cl-phone');
+  const digits = phone.replace(/\D/g, '');
+  if (name.length < 2) return setErr('cl-err', 'Escribe el nombre completo.');
+  if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return setErr('cl-err', 'El correo no es válido.');
+  if (digits.length < 8 || digits.length > 15) return setErr('cl-err', 'El teléfono debe tener entre 8 y 15 dígitos.');
+  if (R.clients.some(c => c.id !== id && phoneKey(c.phone) === phoneKey(phone))) return setErr('cl-err', 'Ya tienes un paciente con ese teléfono.');
+  btn.disabled = true;
+  const row = { full_name: name, email: email || null, phone };
+  const { data, error } = await (id ? sb.from('clients').update(row).eq('id', id) : sb.from('clients').insert(row)).select().single();
+  btn.disabled = false;
+  if (error) return setErr('cl-err', /duplicate|unique/i.test(error.message) ? 'Ya tienes un paciente con ese teléfono.' : 'No se pudo guardar. Intenta de nuevo.');
+  R.clients = (id ? R.clients.map(c => c.id === id ? data : c) : [...R.clients, data]).sort((a, b) => a.full_name.localeCompare(b.full_name));
+  P.sheet = null; render(); toast('psy', id ? 'Paciente actualizado' : `${name} agregado`);
+}
+
+async function delClient(id, btn) {
+  if (!btn.dataset.armed) { btn.dataset.armed = '1'; btn.textContent = 'Toca otra vez para eliminar (también se borran sus encuestas)'; return; }
+  btn.disabled = true;
+  const { error } = await sb.from('clients').delete().eq('id', id);
+  if (error) { btn.disabled = false; return setErr('cl-err', 'No se pudo eliminar. Intenta de nuevo.'); }
+  R.clients = R.clients.filter(c => c.id !== id); R.links = R.links.filter(l => l.client_id !== id);
+  P.sheet = null; render(); toast('psy', 'Paciente eliminado');
+}
+
+/* Encuestas */
+function psySurveys() {
+  if (!R.user) return authGate('Encuestas');
+  const cards = R.surveys.map(s => {
+    const ls = R.links.filter(l => l.survey_id === s.id), done = ls.filter(l => l.status === 'done').length;
+    const kinds = [...new Set(s.questions.map(q => QTYPES[q.type]))];
+    return `<article class="card"><div class="srv"><span class="ic">${ic('form')}</span><div><b>${esc(s.title)}</b><small>${s.questions.length} pregunta${s.questions.length === 1 ? '' : 's'}${s.description ? ' · ' + esc(s.description) : ''}</small></div></div>
+      <div class="tags">${kinds.map(k => `<span class="tag">${k}</span>`).join('')}</div>
+      <div class="bar"><i style="width:${ls.length ? done / ls.length * 100 : 0}%"></i></div>
+      <div class="meta" style="margin:8px 0 10px"><span>${ls.length} links enviados</span><span>${done} respondidas</span></div>
+      <div class="actions"><button class="btn neu" data-a="sheet" data-s="results" data-id="${s.id}">Respuestas</button><button class="btn sec" data-a="sheet" data-s="send" data-id="${s.id}">Enviar link</button></div></article>`;
+  }).join('');
+  return `<div class="row-h"><h2 class="title">Encuestas</h2><div class="actions" style="flex:none"><button class="btn neu" data-a="reload">Actualizar</button><button class="btn pri" data-a="sheet" data-s="new">+ Nueva encuesta</button></div></div>
+    ${acct()}${R.err ? `<p class="err">${R.err}</p>` : ''}
+    <div class="list">${!R.loaded ? '<div class="empty">Cargando encuestas…</div>' : cards || '<div class="empty">Aún no tienes encuestas. Crea la primera con “Nueva encuesta”.</div>'}</div>`;
+}
+
+function builderSheet() {
+  const B = P.builder, n = B.questions.length;
+  return `<h3>Nueva encuesta</h3><p class="sub">Agrega todas las preguntas que necesites. Cada una tiene su propio tipo de respuesta.</p>
+    <label class="field"><span>Título</span><input id="sv-title" data-b="title" value="${esc(B.title)}" placeholder="Ej. Evaluación inicial"></label>
+    <label class="field"><span>Descripción (opcional)</span><input id="sv-desc" data-b="description" value="${esc(B.description)}" placeholder="Ej. Te tomará unos 5 minutos"></label>
+    ${B.questions.map((q, i) => `<div class="qb" id="qb-${i}">
+      <div class="qb-h"><b>Pregunta ${i + 1}</b><span class="qb-tools">
+        <button class="mini-btn" data-a="qMove" data-i="${i}" data-d="-1" ${i === 0 ? 'disabled' : ''} aria-label="Subir pregunta ${i + 1}">↑</button>
+        <button class="mini-btn" data-a="qMove" data-i="${i}" data-d="1" ${i === n - 1 ? 'disabled' : ''} aria-label="Bajar pregunta ${i + 1}">↓</button>
+        <button class="mini-btn" data-a="qDup" data-i="${i}" aria-label="Duplicar pregunta ${i + 1}">⧉</button>
+        <button class="mini-btn bad" data-a="qDel" data-i="${i}" ${n === 1 ? 'disabled' : ''} aria-label="Eliminar pregunta ${i + 1}">✕</button></span></div>
+      <input class="in" id="q-${i}-text" data-b="text" data-i="${i}" value="${esc(q.text)}" placeholder="Escribe la pregunta" aria-label="Texto de la pregunta ${i + 1}">
+      <div class="qb-row"><select class="in" id="q-${i}-type" data-b="type" data-i="${i}" aria-label="Tipo de respuesta de la pregunta ${i + 1}">${Object.entries(QTYPES).map(([k, v]) => `<option value="${k}" ${q.type === k ? 'selected' : ''}>${v}</option>`).join('')}</select>
+        <label class="tog"><input type="checkbox" id="q-${i}-req" data-b="required" data-i="${i}" ${q.required ? 'checked' : ''}> Obligatoria</label></div>
+      ${q.type === 'single' || q.type === 'multi'
+        ? `<div class="opts-ed">${q.options.map((o, j) => `<div class="opt-row"><span class="mark ${q.type}" aria-hidden="true"></span><input class="in" id="q-${i}-o-${j}" data-b="opt" data-i="${i}" data-j="${j}" value="${esc(o)}" placeholder="Opción ${j + 1}" aria-label="Opción ${j + 1} de la pregunta ${i + 1}"><button class="mini-btn" data-a="optDel" data-i="${i}" data-j="${j}" ${q.options.length <= 2 ? 'disabled' : ''} aria-label="Quitar opción ${j + 1}">✕</button></div>`).join('')}
+           <button class="link" data-a="optAdd" data-i="${i}">+ Agregar opción</button></div>`
+        : `<p class="qb-note">${QNOTE[q.type]}</p>`}
+    </div>`).join('')}
+    <div class="qb-add">${Object.entries(QTYPES).map(([k, v]) => `<button class="chip" data-a="qAdd" data-t="${k}">+ ${v}</button>`).join('')}</div>
+    <p class="err" id="sv-err"></p>
+    <button class="btn pri big" data-a="saveSurvey">Guardar encuesta</button>`;
+}
+
+function syncBuilder(el) {
+  const B = P.builder, i = +el.dataset.i, f = el.dataset.b;
+  if (f === 'title' || f === 'description') B[f] = el.value;
+  else if (f === 'text') B.questions[i].text = el.value;
+  else if (f === 'required') B.questions[i].required = el.checked;
+  else if (f === 'opt') B.questions[i].options[+el.dataset.j] = el.value;
+  else if (f === 'type') {
+    const q = B.questions[i]; q.type = el.value;
+    if ((q.type === 'single' || q.type === 'multi') && q.options.length < 2) q.options = ['', ''];
+    redrawSheet();
+  }
+}
+
+function redrawSheet(focusId) {
+  P.rev = (P.rev || 0) + 1; render();
+  if (focusId) { const e = document.getElementById(focusId); if (e) { e.focus(); e.scrollIntoView({ block: 'center' }); } }
+}
+
+async function saveSurvey(btn) {
+  const B = P.builder, title = B.title.trim();
+  if (title.length < 2) return setErr('sv-err', 'Escribe el título de la encuesta.');
+  const questions = [];
+  for (let i = 0; i < B.questions.length; i++) {
+    const q = B.questions[i], text = q.text.trim();
+    if (!text) return setErr('sv-err', `Escribe el texto de la pregunta ${i + 1}.`);
+    const out = { text, type: q.type, required: q.required };
+    if (q.type === 'single' || q.type === 'multi') {
+      out.options = [...new Set(q.options.map(o => o.trim()).filter(Boolean))];
+      if (out.options.length < 2) return setErr('sv-err', `La pregunta ${i + 1} necesita al menos 2 opciones distintas.`);
+    }
+    questions.push(out);
+  }
+  btn.disabled = true;
+  const { data, error } = await sb.from('surveys').insert({ title, description: B.description.trim() || null, questions }).select().single();
+  btn.disabled = false;
+  if (error) return setErr('sv-err', 'No se pudo guardar la encuesta. Intenta de nuevo.');
+  R.surveys.unshift(data);
+  P.tab = 'surveys'; P.sheet = 'send'; P.data = data.id; P.sent = null; render();
+  toast('psy', 'Encuesta guardada. Elige a quién mandarle el link.');
+}
+
+function linkRow(l, sv) {
+  const c = clientOf(l.client_id); if (!c) return '';
+  const url = linkUrl(l.token), first = c.full_name.split(' ')[0];
+  const msg = `Hola ${first}, te comparto la encuesta "${sv.title}". Al abrirla te pediremos tu número de teléfono para confirmar que eres tú: ${url}`;
+  return `<div class="lnk">${av(c.full_name, 'sm')}<div class="lnk-b"><b>${esc(c.full_name)}</b><small class="mono" id="u-${l.id}">${esc(url)}</small></div>
+    <div class="lnk-act"><button class="btn neu" data-a="copy" data-u="${esc(url)}" data-id="${l.id}">Copiar</button>
+    <a class="btn sec" href="https://wa.me/${waNum(c.phone)}?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener">WhatsApp</a>
+    ${c.email ? `<a class="btn neu" href="mailto:${esc(c.email)}?subject=${encodeURIComponent(sv.title)}&body=${encodeURIComponent(msg)}">Correo</a>` : ''}</div></div>`;
+}
+
+function sendSheet() {
+  const sv = R.surveys.find(s => s.id === P.data);
+  if (!sv) return '<div class="empty">Esta encuesta ya no existe.</div>';
+  if (P.sent) return `<h3>Links listos</h3><p class="sub">Cada link es personal: solo funciona con el teléfono registrado de ese paciente y se puede responder una vez.</p>
+    ${R.links.filter(l => P.sent.includes(l.id)).map(l => linkRow(l, sv)).join('')}
+    <button class="btn neu big" style="margin-top:6px" data-a="close">Listo</button>`;
+  if (!R.clients.length) return `<h3>Enviar “${esc(sv.title)}”</h3><div class="empty">Primero agrega pacientes con su teléfono.</div>
+    <button class="btn pri big" style="margin-top:12px" data-a="tab" data-t="clients">Ir a Pacientes</button>`;
+  return `<h3>Enviar “${esc(sv.title)}”</h3><p class="sub">Crea un link personal para cada paciente. Después lo mandas por WhatsApp, correo o lo copias.</p>
+    ${R.clients.map(c => { const pend = R.links.some(l => l.survey_id === sv.id && l.client_id === c.id && l.status === 'sent');
+      return `<label class="check"><input type="checkbox" id="snd-${c.id}" value="${c.id}" ${pend ? 'disabled' : ''}>${av(c.full_name, 'sm')}<span class="ck-b">${esc(c.full_name)}<small>${esc(c.phone)}</small></span>${pend ? '<small>Ya tiene link pendiente</small>' : ''}</label>`; }).join('')}
+    <p class="err" id="snd-err"></p><button class="btn pri big" data-a="sendSurvey">Crear links</button>`;
+}
+
+async function sendSurvey(btn) {
+  const ids = [...document.querySelectorAll('#psy .sheet input[id^="snd-"]:checked')].map(i => i.value);
+  if (!ids.length) return setErr('snd-err', 'Selecciona al menos un paciente.');
+  btn.disabled = true;
+  const { data, error } = await sb.from('survey_links').insert(ids.map(client_id => ({ survey_id: P.data, client_id }))).select();
+  btn.disabled = false;
+  if (error) return setErr('snd-err', 'No se pudieron crear los links. Intenta de nuevo.');
+  R.links = [...data, ...R.links]; P.sent = data.map(l => l.id); redrawSheet();
+  toast('psy', `${data.length} link${data.length > 1 ? 's' : ''} creado${data.length > 1 ? 's' : ''}`);
+}
+
+function fmtAns(q, a) {
+  if (a == null || a === '' || (Array.isArray(a) && !a.length)) return '—';
+  if (q.type === 'multi') return a.map(esc).join(', ');
+  if (q.type === 'scale') return `${a} / 5`;
+  if (q.type === 'freq') return FREQ[a];
+  return esc(a);
+}
+
+function resultsSheet() {
+  const sv = R.surveys.find(s => s.id === P.data);
+  if (!sv) return '<div class="empty">Esta encuesta ya no existe.</div>';
+  const ls = R.links.filter(l => l.survey_id === sv.id), done = ls.filter(l => l.status === 'done'), pend = ls.filter(l => l.status === 'sent');
+  const scored = sv.questions.some(q => q.type === 'freq' || q.type === 'scale');
+  const score = ans => sv.questions.reduce((acc, q, i) => { const v = ans[i]; if (typeof v === 'number') { acc.v += v; acc.max += q.type === 'freq' ? 3 : 5; } return acc; }, { v: 0, max: 0 });
+  return `<div class="row-h"><h3>${esc(sv.title)}</h3><button class="btn neu" style="flex:none" data-a="reload">Actualizar</button></div>
+    <p class="sub">${done.length} de ${ls.length} respondidas.${scored ? ' El puntaje suma escalas y frecuencias; es orientativo, no un diagnóstico.' : ''}</p>
+    ${done.map(l => { const sc = score(l.answers);
+      return `<div class="q"><div class="srv">${av(l.respondent_name)}<div><b>${esc(l.respondent_name)}</b><small>${esc(l.respondent_phone)} · respondió el ${fmtDT(l.answered_at)}</small></div>${scored && sc.max ? `<span class="pill st-review">${sc.v}/${sc.max}</span>` : ''}</div>
+        <ul class="ans">${sv.questions.map((q, i) => `<li><span>${i + 1}. ${esc(q.text)}</span><b>${fmtAns(q, l.answers[i])}</b></li>`).join('')}</ul></div>`; }).join('') || '<div class="empty">Aún no hay respuestas.</div>'}
+    ${pend.length ? `<h4 class="sub-h">Sin responder (${pend.length})</h4>${pend.map(l => linkRow(l, sv)).join('')}` : ''}`;
+}
+
 /* ---------- Psicóloga ---------- */
 const DRV = { ok: 'Guardado en Drive › Pagos', pending: 'Subiendo a Drive…', error: 'No se pudo subir a Drive', off: 'Drive sin conectar' };
 const drvTxt = a => `<small class="drv-${(a.drive || {}).status || 'off'}">${DRV[(a.drive || {}).status || 'off']}</small>`;
@@ -472,7 +801,7 @@ function psyHome() {
   const cap = week.reduce((n, k) => n + HOURS.filter(x => !isBlocked(k, x)).length, 0);
   const conf = S.appts.filter(a => a.status === 'confirmed' && week.includes(a.date)).length;
   const unpaid = S.appts.filter(a => a.status === 'unpaid').length;
-  const done = S.sends.filter(s => s.status === 'done').length;
+  const done = R.user && R.loaded ? R.links.filter(l => l.status === 'done').length : '—';
   const todayK = workdays(1)[0];
   const todays = S.appts.filter(a => a.date === todayK && ACTIVE.includes(a.status)).sort(sortA);
   return `
@@ -481,6 +810,7 @@ function psyHome() {
   <div class="chips">
     <button class="chip on" data-a="tab" data-t="home">${ic('home', 15)}Inicio</button>
     <button class="chip" data-a="tab" data-t="agenda">${ic('cal', 15)}Agenda</button>
+    <button class="chip" data-a="tab" data-t="clients">${ic('users', 15)}Pacientes</button>
     <button class="chip" data-a="tab" data-t="req">${ic('pay', 15)}Solicitudes ${review.length ? `<b>${review.length}</b>` : ''}</button>
     <button class="chip" data-a="tab" data-t="surveys">${ic('form', 15)}Encuestas</button>
   </div>
@@ -532,18 +862,6 @@ function psyReq() {
     ${block('Historial', hist, 'Sin historial.')}`;
 }
 
-function psySurveys() {
-  return `<h2 class="title">Encuestas</h2>
-    <button class="btn pri big" style="max-width:320px" data-a="sheet" data-s="new">+ Nueva encuesta</button>
-    <div class="list" style="margin-top:14px">${S.surveys.map(s => {
-      const sent = S.sends.filter(e => e.survey === s.id), done = sent.filter(e => e.status === 'done').length;
-      return `<article class="card"><div class="srv"><span class="ic">${ic('form')}</span><div><b>${esc(s.title)}</b><small>${esc(s.desc)} · ${s.questions.length} preguntas</small></div></div>
-        <div class="bar"><i style="width:${sent.length ? done / sent.length * 100 : 0}%"></i></div>
-        <div class="meta" style="margin:8px 0 10px"><span>${sent.length} enviadas</span><span>${done} respondidas</span></div>
-        <div class="actions"><button class="btn neu" data-a="sheet" data-s="results" data-id="${s.id}">Resultados</button><button class="btn sec" data-a="sheet" data-s="send" data-id="${s.id}">Enviar a pacientes</button></div></article>`;
-    }).join('')}</div>`;
-}
-
 function psySheet() {
   const s = P.sheet;
   if (s === 'notes') return notesSheet('psy');
@@ -555,30 +873,10 @@ function psySheet() {
         <dt>Drive</dt><dd>${dv.status === 'ok' ? `<a href="${esc(dv.url)}" target="_blank" rel="noopener">Abrir en Drive</a>` : DRV[dv.status || 'off']}</dd></dl>
       ${a.status === 'review' ? `<div class="actions"><button class="btn danger" data-a="reject" data-id="${a.id}">Rechazar</button><button class="btn pri" data-a="approve" data-id="${a.id}">Pago correcto · apartar</button></div>` : pill(a.status, 'psy')}`;
   }
-  if (s === 'new') return `<h3>Nueva encuesta</h3><p class="sub">Escribe una pregunta por línea. Podrás enviarla en cuanto la guardes.</p>
-    <label class="field"><span>Título</span><input id="ns-title" placeholder="Ej. Calidad del sueño"></label>
-    <label class="field"><span>Descripción corta</span><input id="ns-desc" placeholder="Ej. Última semana"></label>
-    <label class="field"><span>Tipo de respuesta</span><select id="ns-type"><option value="freq">Frecuencia (Nunca … Casi todos los días)</option><option value="scale">Escala 1 a 5</option><option value="text">Respuesta abierta</option></select></label>
-    <label class="field"><span>Preguntas</span><textarea id="ns-qs" placeholder="¿Cuántas horas dormiste en promedio?&#10;¿Te despertaste durante la noche?"></textarea></label>
-    <label class="check"><input type="checkbox" id="ns-open" checked> Agregar pregunta abierta al final</label>
-    <p class="err" id="ns-err"></p>
-    <button class="btn pri big" data-a="createSurvey">Guardar encuesta</button>`;
-  if (s === 'send') {
-    const sv = surveyOf(P.data);
-    return `<h3>Enviar “${esc(sv.title)}”</h3><p class="sub">La encuesta aparece en la app de cada paciente seleccionado.</p>
-      ${PATIENTS.map((p, i) => { const pend = S.sends.some(e => e.survey === sv.id && e.patient === p && e.status === 'sent');
-        return `<label class="check"><input type="checkbox" id="snd-${i}" value="${esc(p)}" ${pend ? 'disabled' : ''}>${av(p, 'sm')}${esc(p)}${pend ? '<small>Ya pendiente</small>' : ''}</label>`; }).join('')}
-      <p class="err" id="snd-err"></p><button class="btn pri big" data-a="sendSurvey">Enviar encuesta</button>`;
-  }
-  if (s === 'results') {
-    const sv = surveyOf(P.data), sent = S.sends.filter(e => e.survey === sv.id);
-    const done = sent.filter(e => e.status === 'done'), pend = sent.filter(e => e.status === 'sent');
-    return `<h3>${esc(sv.title)}</h3><p class="sub">${done.length} de ${sent.length} respondidas.${sv.questions.some(q => q.type === 'freq') ? ' Puntaje orientativo, no diagnóstico.' : ''}</p>
-      ${done.map(e => { const sc = score(sv, e.answers);
-        return `<div class="q"><div class="srv">${av(e.patient)}<div><b>${esc(e.patient)}</b><small>Respondió ${ago(e.at)}</small></div>${sc.max ? `<span class="pill st-review">${sc.v}/${sc.max}</span>` : ''}</div>
-          <ul class="ans">${sv.questions.map((q, i) => `<li><span>${esc(q.q)}</span><b>${q.type === 'freq' ? FREQ[e.answers[i]] : esc(e.answers[i] === '' ? '—' : e.answers[i])}</b></li>`).join('')}</ul></div>`; }).join('') || '<div class="empty">Aún no hay respuestas.</div>'}
-      ${pend.length ? `<p class="sub" style="margin-top:12px">Sin responder: ${pend.map(e => esc(e.patient)).join(', ')}</p>` : ''}`;
-  }
+  if (s === 'new') return builderSheet();
+  if (s === 'send') return sendSheet();
+  if (s === 'results') return resultsSheet();
+  if (s === 'client') return clientSheet();
   return '';
 }
 
@@ -586,19 +884,15 @@ function psySheet() {
 function cliHome() {
   const mine = S.appts.filter(a => a.patient === CLIENT && ACTIVE.includes(a.status)).sort(sortA);
   const next = mine[0];
-  const pend = S.sends.filter(e => e.patient === CLIENT && e.status === 'sent');
-  const all = S.sends.filter(e => e.patient === CLIENT), done = all.length - pend.length;
   return `
   <div class="hdr"><div class="hello">${av(CLIENT, 'lg')}<div><small>Hola de nuevo</small><b>${CLIENT}</b><span>Paciente de ${PSY.short}</span></div></div>
     <button class="icon-btn" data-a="sheet" data-s="notes" aria-label="Avisos">${ic('bell')}${unread('cli') ? `<span class="badge">${unread('cli')}</span>` : ''}</button></div>
   <div class="cols"><div>
   <div class="chero"><small>Tu próxima cita</small><h2>${next ? 'Te esperamos el ' + short(next.date).toLowerCase() : 'Aún no tienes cita agendada'}</h2>
-    ${next ? `<div class="next">${ring(done, all.length || 1, `${done}/${all.length}`, 'encuestas')}<div><span class="big">${hl(next.hour)}</span><small class="muted">${long(next.date)}<br>${next.mode} · 50 min</small><div style="margin-top:6px">${pill(next.status, 'cli')}</div></div></div>`
+    ${next ? `<div class="next"><span class="ic big-ic">${ic('cal', 30)}</span><div><span class="big">${hl(next.hour)}</span><small class="muted">${long(next.date)}<br>${next.mode} · 50 min</small><div style="margin-top:6px">${pill(next.status, 'cli')}</div></div></div>`
       : `<button class="btn pri big" data-a="ctab" data-t="book">Ver horarios disponibles</button>`}
   </div>
   ${next && next.status === 'unpaid' ? `<div class="sum"><div><small>Tu horario está en espera</small><b>Reporta tu pago para que tu psicóloga lo apruebe</b></div><button class="btn pri" style="flex:none" data-a="sheet" data-s="pay" data-id="${next.id}">Pagar</button></div>` : ''}
-  <section class="sec"><div class="sec-h"><h3>Encuestas por responder</h3><button class="link" data-a="ctab" data-t="surveys">Ver todas ›</button></div>
-    <div class="list">${pend.length ? pend.map(e => { const sv = surveyOf(e.survey); return `<div class="card srv"><span class="ic">${ic('form')}</span><div><b>${esc(sv.title)}</b><small>${sv.questions.length} preguntas · enviada ${ago(e.at)}</small></div><button class="btn pri" style="flex:none" data-a="sheet" data-s="answer" data-id="${e.id}">Responder</button></div>`; }).join('') : '<div class="empty">Estás al día con tus encuestas.</div>'}</div></section>
   </div><div class="stick">
   <section class="sec"><div class="sec-h"><h3>Tu psicóloga</h3></div>
     <div class="card"><div class="psy-card">${av(PSY.name, 'lg')}<div><b>${PSY.short}</b><small class="muted" style="display:block">${PSY.title}</small></div><span class="price">${money(PRICE).replace(' MXN', '')}</span></div>
@@ -641,12 +935,8 @@ function cliAppts() {
 }
 
 function cliSurveys() {
-  const mine = S.sends.filter(e => e.patient === CLIENT);
-  const row = e => { const sv = surveyOf(e.survey); return `<div class="card srv"><span class="ic">${ic(e.status === 'done' ? 'check' : 'form')}</span><div><b>${esc(sv.title)}</b><small>${e.status === 'done' ? 'Respondida ' + ago(e.at) : sv.questions.length + ' preguntas · ' + esc(sv.desc)}</small></div>${e.status === 'sent' ? `<button class="btn pri" style="flex:none" data-a="sheet" data-s="answer" data-id="${e.id}">Responder</button>` : '<span class="pill st-confirmed">Enviada</span>'}</div>`; };
-  const pend = mine.filter(e => e.status === 'sent'), done = mine.filter(e => e.status === 'done');
   return `<h2 class="title">Encuestas</h2>
-    <section class="sec"><div class="sec-h"><h3>Pendientes</h3><span class="link">${pend.length}</span></div><div class="list">${pend.length ? pend.map(row).join('') : '<div class="empty">No tienes encuestas pendientes.</div>'}</div></section>
-    <section class="sec"><div class="sec-h"><h3>Respondidas</h3><span class="link">${done.length}</span></div><div class="list">${done.length ? done.map(row).join('') : '<div class="empty">Aquí verás las que ya respondiste.</div>'}</div></section>`;
+    <div class="card srv"><span class="ic">${ic('lock')}</span><div><b>Tus encuestas llegan por link</b><small>Tu psicóloga te manda un link personal por WhatsApp o correo. Al abrirlo te pedimos tu número de teléfono para confirmar que eres tú, y tus respuestas solo las ve ella.</small></div></div>`;
 }
 
 function cliSheet() {
@@ -663,14 +953,6 @@ function cliSheet() {
       <button class="btn pri big" data-a="pay">Enviar comprobante</button>
       ${C.data.id ? '' : '<button class="btn neu big" style="margin-top:8px" data-a="payLater">Solicitar y pagar después</button>'}`;
   }
-  if (s === 'answer') {
-    const e = S.sends.find(x => x.id === C.data), sv = surveyOf(e.survey);
-    return `<h3>${esc(sv.title)}</h3><p class="sub">${esc(sv.desc)}. Solo tu psicóloga verá tus respuestas.</p>
-      ${sv.questions.map((q, i) => `<div class="q"><p>${i + 1}. ${esc(q.q)}</p>${
-        q.type === 'text' ? `<textarea id="ans-${i}" style="width:100%;min-height:70px;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--screen)" aria-label="${esc(q.q)}"></textarea>`
-        : `<div class="opts" role="radiogroup" aria-label="${esc(q.q)}">${(q.type === 'freq' ? FREQ.map((l, v) => [v, l]) : [1, 2, 3, 4, 5].map(v => [v, v === 1 ? '1 · Nada' : v === 5 ? '5 · Mucho' : String(v)])).map(([v, l]) => `<label><input type="radio" name="ans-${i}" id="ans-${i}-${v}" value="${v}"><span>${l}</span></label>`).join('')}</div>`}</div>`).join('')}
-      <p class="err" id="ans-err"></p><button class="btn pri big" data-a="submitAnswers">Enviar respuestas</button>`;
-  }
   return '';
 }
 
@@ -683,30 +965,40 @@ function notesSheet(who) {
 /* ---------- render ---------- */
 function navHtml(items, cur, fab) {
   const btn = ([t, label, icon, badge, act]) => `<button data-a="${act || fab.tabAction}" data-t="${t}" data-s="${t}" ${cur === t ? 'aria-current="page"' : ''}>${ic(icon, 22)}${label}${badge ? `<span class="badge">${badge}</span>` : ''}</button>`;
-  return btn(items[0]) + btn(items[1]) + `<button class="fab" data-a="${fab.action}" ${fab.attrs} aria-label="${fab.label}">${ic('plus', 24)}<span class="fab-l">${fab.label}</span></button>` + btn(items[2]) + btn(items[3]);
+  const half = Math.ceil(items.length / 2);
+  return items.slice(0, half).map(btn).join('') + `<button class="fab" data-a="${fab.action}" ${fab.attrs} aria-label="${fab.label}">${ic('plus', 24)}<span class="fab-l">${fab.label}</span></button>` + items.slice(half).map(btn).join('');
 }
 
 function renderPhone(id, st, views, sheetFn, nav) {
   const root = document.getElementById(id);
   const sc = root.querySelector('.scroll');
+  // Conserva lo escrito en formularios de la vista cuando se vuelve a dibujar.
+  const keep = {}, focused = sc.contains(document.activeElement) ? document.activeElement.id : '';
+  sc.querySelectorAll('input[id],textarea[id]').forEach(e => { if (e.type !== 'file') keep[e.id] = e.type === 'checkbox' ? e.checked : e.value; });
   sc.innerHTML = `<div class="view">${views[st.tab]()}</div>`;
-  root.querySelector('.nav').innerHTML = nav;
+  Object.entries(keep).forEach(([k, v]) => { const e = document.getElementById(k); if (e && sc.contains(e)) { if (e.type === 'checkbox') e.checked = v; else e.value = v; } });
+  if (focused) { const e = document.getElementById(focused); if (e) e.focus(); }
+  if (document.getElementById('cl-q')) filterClients();
+  const navEl = root.querySelector('.nav'); navEl.innerHTML = nav; navEl.style.setProperty('--n', navEl.children.length);
   const sw = root.querySelector('.sheet-wrap');
   if (st.sheet) {
-    const reopen = sw.hidden || sw.dataset.s !== st.sheet + '|' + JSON.stringify(st.data);
-    if (reopen) { sw.innerHTML = `<button class="scrim" data-a="close" aria-label="Cerrar"></button><div class="sheet" role="dialog" aria-modal="true">${sheetFn()}</div>`; sw.dataset.s = st.sheet + '|' + JSON.stringify(st.data); }
+    const key = st.sheet + '|' + JSON.stringify(st.data) + '|' + (st.rev || 0) + '|' + JSON.stringify(st.sent || null);
+    if (sw.hidden || sw.dataset.s !== key) {
+      const old = sw.querySelector('.sheet'), same = sw.dataset.s && sw.dataset.s.split('|')[0] === st.sheet, top = old && same ? old.scrollTop : 0;
+      sw.innerHTML = `<button class="scrim" data-a="close" aria-label="Cerrar"></button><div class="sheet" role="dialog" aria-modal="true"><button class="x" data-a="close" aria-label="Cerrar">✕</button>${sheetFn()}</div>`;
+      sw.dataset.s = key; sw.querySelector('.sheet').scrollTop = top;
+    }
     sw.hidden = false;
   } else { sw.hidden = true; sw.innerHTML = ''; sw.dataset.s = ''; }
 }
 
 function render() {
   const rev = S.appts.filter(a => a.status === 'review').length;
-  const cpend = S.sends.filter(e => e.patient === CLIENT && e.status === 'sent').length;
-  renderPhone('psy', P, { home: psyHome, agenda: psyAgenda, req: psyReq, surveys: psySurveys }, psySheet,
-    navHtml([['home', 'Inicio', 'home'], ['agenda', 'Agenda', 'cal'], ['req', 'Pagos', 'pay', rev], ['surveys', 'Encuestas', 'form']], P.tab,
+  renderPhone('psy', P, { home: psyHome, agenda: psyAgenda, clients: psyClients, req: psyReq, surveys: psySurveys }, psySheet,
+    navHtml([['home', 'Inicio', 'home'], ['agenda', 'Agenda', 'cal'], ['clients', 'Pacientes', 'users'], ['req', 'Pagos', 'pay', rev], ['surveys', 'Encuestas', 'form']], P.tab,
       { tabAction: 'tab', action: 'sheet', attrs: 'data-s="new"', label: 'Nueva encuesta' }));
   renderPhone('cli', C, { home: cliHome, book: cliBook, appts: cliAppts, surveys: cliSurveys }, cliSheet,
-    navHtml([['home', 'Inicio', 'home'], ['appts', 'Mis citas', 'list'], ['surveys', 'Encuestas', 'form', cpend], ['notes', 'Avisos', 'bell', unread('cli'), 'sheet']], C.tab,
+    navHtml([['home', 'Inicio', 'home'], ['appts', 'Mis citas', 'list'], ['surveys', 'Encuestas', 'form'], ['notes', 'Avisos', 'bell', unread('cli'), 'sheet']], C.tab,
       { tabAction: 'ctab', action: 'ctab', attrs: 'data-t="book"', label: 'Agendar cita' }));
   save();
 }
@@ -758,6 +1050,14 @@ document.addEventListener('change', async e => {
   } catch (x) { err.textContent = 'No se pudo leer la imagen. Prueba con otra.'; }
 });
 
+document.addEventListener('input', e => {
+  if (e.target.dataset.b && P.builder) syncBuilder(e.target);
+  if (e.target.id === 'cl-q') filterClients();
+});
+document.addEventListener('change', e => { if (e.target.dataset.b && P.builder && e.target.type !== 'text') syncBuilder(e.target); });
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && (P.sheet || C.sheet)) { P.sheet = null; C.sheet = null; render(); } });
+
 document.addEventListener('click', e => {
   const el = e.target.closest('[data-a]');
   if (!el || el.disabled) return;
@@ -780,6 +1080,9 @@ document.addEventListener('click', e => {
       st.sheet = d.s; st.data = d.id || null;
       if (d.s === 'notes') { setTimeout(() => { S.notes.forEach(n => { if (n.to === who) n.read = true; }); save(); const b = phone.querySelector('.icon-btn .badge'); if (b) b.remove(); }, 0); }
       if (d.s === 'pay') { st.data = { id: d.id }; C.receipt = null; }
+      if (who === 'psy' && ['new', 'client', 'send', 'results'].includes(d.s) && !R.user) { P.sheet = null; P.tab = d.s === 'client' ? 'clients' : 'surveys'; top0(); toast('psy', 'Entra a tu cuenta para continuar'); break; }
+      if (d.s === 'new') { P.builder = { title: '', description: '', questions: [newQ('single')] }; P.rev = 0; }
+      if (d.s === 'send') P.sent = null;
       break;
     case 'close': st.sheet = null; break;
     case 'block': {
@@ -833,41 +1136,25 @@ document.addEventListener('click', e => {
       toast('cli', 'Cita cancelada'); toast('psy', `${CLIENT} canceló una cita`);
       break;
     }
-    case 'submitAnswers': {
-      const e2 = S.sends.find(x => x.id === C.data), sv = surveyOf(e2.survey), ans = [];
-      for (let i = 0; i < sv.questions.length; i++) {
-        if (sv.questions[i].type === 'text') ans.push(document.getElementById('ans-' + i).value.trim());
-        else { const c = phone.querySelector(`input[name="ans-${i}"]:checked`); if (!c) { document.getElementById('ans-err').textContent = `Falta responder la pregunta ${i + 1}.`; return; } ans.push(+c.value); }
-      }
-      Object.assign(e2, { status: 'done', answers: ans, at: Date.now() });
-      notify('psy', `${CLIENT} respondió “${sv.title}”.`);
-      toast('cli', '¡Gracias! Respuestas enviadas'); toast('psy', `${CLIENT} respondió “${sv.title}”`);
-      C.sheet = null;
-      break;
+    case 'login': case 'signup': doAuth(d.a, el); return;
+    case 'logout': sb.auth.signOut(); return;
+    case 'reload': loadRemote().then(() => toast('psy', 'Datos actualizados')); return;
+    case 'saveClient': saveClient(d.id, el); return;
+    case 'delClient': delClient(d.id, el); return;
+    case 'saveSurvey': saveSurvey(el); return;
+    case 'sendSurvey': sendSurvey(el); return;
+    case 'copy': {
+      const done = () => toast('psy', 'Link copiado');
+      const fallback = () => { const t = document.getElementById('u-' + d.id); const r = document.createRange(); r.selectNodeContents(t); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); toast('psy', 'Link seleccionado: cópialo con Ctrl+C o mantén presionado'); };
+      try { navigator.clipboard.writeText(d.u).then(done, fallback); } catch (x) { fallback(); }
+      return;
     }
-    case 'createSurvey': {
-      const title = document.getElementById('ns-title').value.trim();
-      const qs = document.getElementById('ns-qs').value.split('\n').map(s => s.trim()).filter(Boolean);
-      if (!title || !qs.length) { document.getElementById('ns-err').textContent = 'Agrega un título y al menos una pregunta.'; return; }
-      const type = document.getElementById('ns-type').value;
-      const questions = qs.map(q => ({ q, type }));
-      if (document.getElementById('ns-open').checked && type !== 'text') questions.push({ q: '¿Algo más que quieras contarme?', type: 'text' });
-      const sv = { id: 's' + (++uid), title, desc: document.getElementById('ns-desc').value.trim() || 'Encuesta personalizada', questions };
-      S.surveys.unshift(sv);
-      P.tab = 'surveys'; P.sheet = 'send'; P.data = sv.id;
-      toast('psy', 'Encuesta guardada. Elige a quién enviarla.');
-      break;
-    }
-    case 'sendSurvey': {
-      const picked = [...phone.querySelectorAll('.sheet input[type=checkbox]:checked')].map(i => i.value);
-      if (!picked.length) { document.getElementById('snd-err').textContent = 'Selecciona al menos un paciente.'; return; }
-      const sv = surveyOf(P.data);
-      picked.forEach(p => S.sends.push({ id: 'e' + (++uid), survey: sv.id, patient: p, status: 'sent', at: Date.now() }));
-      if (picked.includes(CLIENT)) { notify('cli', `Tu psicóloga te envió la encuesta “${sv.title}”.`); toast('cli', `Nueva encuesta: ${sv.title}`); }
-      toast('psy', `Enviada a ${picked.length} paciente${picked.length > 1 ? 's' : ''}`);
-      P.sheet = null;
-      break;
-    }
+    case 'qAdd': P.builder.questions.push(newQ(d.t)); redrawSheet(`q-${P.builder.questions.length - 1}-text`); return;
+    case 'qDel': P.builder.questions.splice(+d.i, 1); redrawSheet(); return;
+    case 'qDup': { const q = P.builder.questions[+d.i]; P.builder.questions.splice(+d.i + 1, 0, { ...q, options: [...q.options] }); redrawSheet(`q-${+d.i + 1}-text`); return; }
+    case 'qMove': { const qs = P.builder.questions, i = +d.i, j = i + +d.d; [qs[i], qs[j]] = [qs[j], qs[i]]; redrawSheet(`q-${j}-text`); return; }
+    case 'optAdd': { const o = P.builder.questions[+d.i].options; o.push(''); redrawSheet(`q-${d.i}-o-${o.length - 1}`); return; }
+    case 'optDel': P.builder.questions[+d.i].options.splice(+d.j, 1); redrawSheet(); return;
     default: return;
   }
   render();

@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Encuesta · PsicoAgenda</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: una sola columna centrada, tarjeta blanca sobre el degradado de la app */
+:root{
+  --bg:#f7f6fb; --card:#ffffff; --ink:#1e1c2f; --muted:#6f6d88; --line:#e7e5f0;
+  --accent:#f4621f; --accent-2:#ff9a52; --accent-soft:#ffe9dd; --on-accent:#ffffff;
+  --calm:#4f63e8; --calm-soft:#e8ebff; --wash-a:#e7dffd; --wash-c:#dde8ff;
+  --ok:#137a52; --ok-soft:#dcf4e8; --bad:#bf3434; --bad-soft:#fde5e5;
+  --shadow:0 12px 30px -14px rgba(48,34,110,.25);
+  --f-display:"Bricolage Grotesque","Plus Jakarta Sans",system-ui,sans-serif;
+  --f-body:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#16151f; --card:#22212e; --ink:#f1f0f8; --muted:#a6a4bc; --line:#343244;
+  --accent:#ff7a3a; --accent-2:#ffa766; --accent-soft:#3a2216; --on-accent:#1a0d05;
+  --calm:#8d9aff; --calm-soft:#252a4f; --wash-a:#271f47; --wash-c:#1a2445;
+  --ok:#55cf9b; --ok-soft:#13342a; --bad:#ff8585; --bad-soft:#3e1b1f;
+  --shadow:0 12px 30px -14px rgba(0,0,0,.6); color-scheme:dark;
+}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;min-height:100vh;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;
+  background-image:linear-gradient(170deg,var(--wash-c),var(--wash-a) 40%,transparent 70%);background-repeat:no-repeat;background-size:100% 520px}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none;padding:0}
+:focus-visible{outline:2px solid var(--calm);outline-offset:2px}
+.wrap{max-width:640px;margin:0 auto;padding-block:28px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--f-display);font-weight:800;font-size:18px;margin-bottom:22px}
+.brand i{width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent-2));display:grid;place-items:center;color:var(--on-accent);font-style:normal}
+.card{background:var(--card);border-radius:24px;padding:24px;box-shadow:var(--shadow)}
+h1{font-family:var(--f-display);font-size:clamp(24px,5vw,30px);line-height:1.15;letter-spacing:-.02em;margin:0 0 8px;text-wrap:balance}
+.lead{color:var(--muted);margin:0 0 20px}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.field span{font-size:13px;font-weight:700;color:var(--muted)}
+.field input{padding:13px 14px;border-radius:14px;border:1px solid var(--line);background:var(--bg);font-size:16px}
+.err{color:var(--bad);font-size:13px;font-weight:600;margin:0 0 10px}
+.err:empty{display:none}
+.btn{display:block;width:100%;padding:14px;border-radius:16px;font-weight:700;font-size:15px;background:var(--accent);color:var(--on-accent);text-align:center}
+.btn:disabled{opacity:.5;cursor:wait}
+.progress{position:sticky;top:0;z-index:5;padding-block:10px;background:var(--bg);margin:0 -4px 6px;padding-inline:4px}
+.progress small{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);font-weight:600;margin-bottom:6px}
+.bar{height:6px;border-radius:6px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent-2),var(--accent));transition:width .3s}
+fieldset.q{border:1px solid var(--line);border-radius:18px;padding:16px;margin:0 0 12px;background:var(--card);min-width:0}
+fieldset.q.miss{border-color:var(--bad);background:color-mix(in srgb,var(--bad-soft) 50%,var(--card))}
+legend{font-weight:700;font-size:15px;padding:0;float:left;width:100%;margin-bottom:10px}
+legend small{font-weight:500;color:var(--muted)}
+.hint{clear:both;display:block;font-size:12px;color:var(--muted);margin:-4px 0 10px}
+.opts{clear:both;display:flex;flex-direction:column;gap:8px}
+.opt{display:flex;align-items:center;gap:10px;padding:11px 13px;border-radius:14px;border:1px solid var(--line);background:var(--bg);cursor:pointer;font-weight:500}
+.opt input{width:19px;height:19px;accent-color:var(--accent);flex:none;margin:0}
+.opt:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+.scale{clear:both;display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.scale label{position:relative}
+.scale input{position:absolute;opacity:0;inset:0;margin:0}
+.scale span{display:grid;place-items:center;height:48px;border-radius:14px;border:1px solid var(--line);background:var(--bg);font-family:var(--f-display);font-size:20px;font-weight:700;cursor:pointer}
+.scale input:checked+span{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.scale input:focus-visible+span{outline:2px solid var(--calm);outline-offset:2px}
+.ends{display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);margin-top:6px}
+textarea{clear:both;display:block;width:100%;min-height:110px;padding:12px;border-radius:14px;border:1px solid var(--line);background:var(--bg);resize:vertical}
+.done{text-align:center}
+.done .mark{width:72px;height:72px;border-radius:50%;margin:0 auto 16px;display:grid;place-items:center;background:var(--ok-soft);color:var(--ok)}
+.foot{display:flex;gap:8px;align-items:flex-start;color:var(--muted);font-size:12.5px;margin:18px 4px 0}
+.foot svg{flex:none;margin-top:2px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <div class="brand"><i>Ψ</i>PsicoAgenda</div>
+  <section id="view" class="card" aria-live="polite"><p class="lead">Cargando…</p></section>
+  <p class="foot"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg>
+    Este link es personal. Tus respuestas se guardan con tu nombre y solo las ve tu psicóloga.</p>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script>
+(() => {
+const FREQ = ['Nunca', 'Varios días', 'Más de la mitad de los días', 'Casi todos los días'];
+const ERR = {
+  not_found: 'Este link no es válido o ya fue eliminado. Pide uno nuevo a tu psicóloga.',
+  already_answered: 'Ya respondiste esta encuesta. ¡Gracias!',
+  locked: 'Hubo demasiados intentos con un teléfono incorrecto. Pide un link nuevo a tu psicóloga.',
+  network: 'No pudimos conectarnos. Revisa tu internet e intenta de nuevo.',
+};
+const view = document.getElementById('view');
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const token = new URLSearchParams(location.search).get('t') || '';
+const cfg = window.PSICO_CONFIG || {};
+const sb = window.supabase && cfg.url ? window.supabase.createClient(cfg.url, cfg.key, { auth: { persistSession: false } }) : null;
+let phone = '', S = null;
+
+function stop(msg, title = 'No se puede abrir la encuesta') {
+  view.innerHTML = `<h1>${title}</h1><p class="lead">${msg}</p>`;
+}
+
+async function rpc(fn, args) {
+  try { const { data, error } = await sb.rpc(fn, args); if (error) throw error; return data; }
+  catch (e) { return { ok: false, error: 'network' }; }
+}
+
+function stepPhone() {
+  view.innerHTML = `<h1>Encuesta de tu psicóloga</h1>
+    <p class="lead">Para proteger tus respuestas, confirma que eres tú con el número de teléfono que registraste en consulta.</p>
+    <form id="f-phone" novalidate>
+      <label class="field"><span>Tu número de teléfono</span><input id="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="Ej. 55 1234 5678" required></label>
+      <p class="err" id="err"></p>
+      <button class="btn" id="go">Continuar</button>
+    </form>`;
+  document.getElementById('f-phone').addEventListener('submit', async e => {
+    e.preventDefault();
+    const btn = document.getElementById('go'), err = document.getElementById('err');
+    const p = document.getElementById('phone').value.trim();
+    if (p.replace(/\D/g, '').length < 8) { err.textContent = 'Escribe tu número completo, con al menos 8 dígitos.'; return; }
+    btn.disabled = true; btn.textContent = 'Verificando…';
+    const r = await rpc('open_survey', { p_token: token, p_phone: p });
+    btn.disabled = false; btn.textContent = 'Continuar';
+    if (r.ok) { phone = p; S = r; stepSurvey(); return; }
+    if (r.error === 'phone_mismatch') { err.textContent = r.left > 0 ? `Ese número no coincide con el registrado. Te quedan ${r.left} intento${r.left === 1 ? '' : 's'}.` : ERR.locked; return; }
+    if (r.error === 'network') { err.textContent = ERR.network; return; }
+    stop(ERR[r.error] || ERR.not_found, r.error === 'already_answered' ? 'Encuesta respondida' : undefined);
+  });
+}
+
+function questionHtml(q, i) {
+  const name = `q${i}`, req = q.required !== false;
+  const head = `<legend>${i + 1}. ${esc(q.text)} ${req ? '' : '<small>(opcional)</small>'}</legend>`;
+  if (q.type === 'single' || q.type === 'multi') {
+    const kind = q.type === 'single' ? 'radio' : 'checkbox';
+    return `${head}${q.type === 'multi' ? '<span class="hint">Puedes elegir varias.</span>' : ''}<div class="opts">${q.options.map((o, j) =>
+      `<label class="opt"><input type="${kind}" name="${name}" id="${name}-${j}" value="${esc(o)}">${esc(o)}</label>`).join('')}</div>`;
+  }
+  if (q.type === 'freq') return `${head}<div class="opts">${FREQ.map((o, v) => `<label class="opt"><input type="radio" name="${name}" id="${name}-${v}" value="${v}">${o}</label>`).join('')}</div>`;
+  if (q.type === 'scale') return `${head}<div class="scale" role="radiogroup">${[1, 2, 3, 4, 5].map(v => `<label><input type="radio" name="${name}" id="${name}-${v}" value="${v}" aria-label="${v} de 5"><span>${v}</span></label>`).join('')}</div><div class="ends"><span>1 · Nada</span><span>5 · Mucho</span></div>`;
+  return `${head}<textarea id="${name}" name="${name}" maxlength="2000" placeholder="Escribe tu respuesta"></textarea>`;
+}
+
+function readAnswer(q, i) {
+  const f = document.getElementById('f-survey'), name = `q${i}`;
+  if (q.type === 'text') return f.elements[name].value.trim();
+  if (q.type === 'multi') return [...f.querySelectorAll(`input[name="${name}"]:checked`)].map(e => e.value);
+  const c = f.querySelector(`input[name="${name}"]:checked`);
+  if (!c) return null;
+  return q.type === 'single' ? c.value : Number(c.value);
+}
+const empty = a => a == null || a === '' || (Array.isArray(a) && !a.length);
+
+function stepSurvey() {
+  const qs = S.questions;
+  view.innerHTML = `<h1>Hola, ${esc(S.name)}</h1>
+    <p class="lead"><b>${esc(S.title)}</b>${S.description ? ' · ' + esc(S.description) : ''}</p>
+    <div class="progress"><small><span id="pg-t">0 de ${qs.length} respondidas</span><span>${qs.length} preguntas</span></small><div class="bar"><i id="pg"></i></div></div>
+    <form id="f-survey" novalidate>
+      ${qs.map((q, i) => `<fieldset class="q" id="fs-${i}">${questionHtml(q, i)}</fieldset>`).join('')}
+      <p class="err" id="err"></p>
+      <button class="btn" id="send">Enviar respuestas</button>
+    </form>`;
+  const f = document.getElementById('f-survey');
+  const progress = () => {
+    const n = qs.filter((q, i) => !empty(readAnswer(q, i))).length;
+    document.getElementById('pg').style.width = (n / qs.length * 100) + '%';
+    document.getElementById('pg-t').textContent = `${n} de ${qs.length} respondidas`;
+  };
+  f.addEventListener('input', e => { progress(); const fs = e.target.closest('fieldset'); if (fs) fs.classList.remove('miss'); });
+  f.addEventListener('submit', async e => {
+    e.preventDefault();
+    const err = document.getElementById('err'), btn = document.getElementById('send');
+    const answers = qs.map((q, i) => readAnswer(q, i));
+    const miss = qs.findIndex((q, i) => q.required !== false && empty(answers[i]));
+    if (miss >= 0) { markMissing(miss); err.textContent = `Falta responder la pregunta ${miss + 1}.`; return; }
+    err.textContent = ''; btn.disabled = true; btn.textContent = 'Enviando…';
+    const r = await rpc('submit_survey', { p_token: token, p_phone: phone, p_answers: answers.map(a => a === null ? '' : a) });
+    btn.disabled = false; btn.textContent = 'Enviar respuestas';
+    if (r.ok) { done(r.name); return; }
+    if (r.error === 'missing' || r.error === 'invalid') { markMissing(r.q - 1); err.textContent = `Revisa la pregunta ${r.q}.`; return; }
+    if (r.error === 'network') { err.textContent = ERR.network; return; }
+    stop(ERR[r.error] || ERR.not_found, r.error === 'already_answered' ? 'Encuesta respondida' : undefined);
+  });
+}
+
+function markMissing(i) {
+  const fs = document.getElementById('fs-' + i); if (!fs) return;
+  fs.classList.add('miss'); fs.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function done(name) {
+  view.innerHTML = `<div class="done"><div class="mark"><svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></div>
+    <h1>¡Gracias, ${esc(name)}!</h1><p class="lead">Tus respuestas se enviaron a tu psicóloga. Ya puedes cerrar esta página.</p></div>`;
+  scrollTo(0, 0);
+}
+
+if (!sb) stop('No se pudo cargar la conexión. Intenta más tarde.');
+else if (!/^[a-f0-9]{20,}$/.test(token)) stop(ERR.not_found);
+else stepPhone();
+})();
+</script>
+</body>
+</html>

@@ -3,7 +3,9 @@
 App web para que una psicóloga gestione citas, pagos y encuestas, con una vista para pacientes.
 
 ## Archivos
-- `index.html` — la app completa (ábrela en el navegador).
+- `index.html` — la app de la psicóloga (agenda, pagos, pacientes y encuestas).
+- `responder.html` — página pública donde el paciente contesta una encuesta con su link.
+- `config.js` — conexión a la base de datos (Supabase) y URL opcional de Drive.
 - `drive-pagos.gs` — Google Apps Script que guarda los comprobantes en Drive › Pagos.
 
 ## Conectar los comprobantes a Google Drive
@@ -21,3 +23,18 @@ App web para que una psicóloga gestione citas, pagos y encuestas, con una vista
 
 Nota: la vista previa en claude.ai no puede conectarse a sitios externos, así que ahí
 los comprobantes se quedan en el navegador y aparecen como "Drive sin conectar".
+
+## Pacientes y encuestas (Supabase)
+Los pacientes, encuestas y respuestas se guardan en el proyecto de Supabase **psicoagenda**.
+Cada psicóloga entra con su correo y contraseña y solo ve sus propios datos.
+
+Configuración necesaria una sola vez, para que el correo de confirmación de cuenta funcione:
+1. Abre https://supabase.com/dashboard/project/welweahxizjuufjyzbkj/auth/url-configuration
+2. En **Site URL** escribe `https://romeror2402.github.io/psicoagenda/`
+3. En **Redirect URLs** agrega `https://romeror2402.github.io/psicoagenda/**` y guarda.
+
+Cómo funciona el link de encuesta:
+- Cada paciente recibe un link personal (`responder.html?t=...`) imposible de adivinar.
+- Al abrirlo se le pide su teléfono; si no coincide con el registrado, no ve nada.
+  Después de 5 intentos fallidos el link se bloquea.
+- Solo se puede responder una vez. La respuesta queda guardada con el nombre y teléfono del paciente.
