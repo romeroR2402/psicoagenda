@@ -37,12 +37,16 @@ async function search(q: string) {
 
 // Prueba de la búsqueda más precisa a la más general.
 async function locate(l: any) {
+  // "México" o "Mexico" como ciudad es el país: no ayuda a ubicar y confunde la búsqueda.
+  const plain = (t: string) => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
+  const city = ['mexico', 'mx', 'republica mexicana'].includes(plain(l.city)) ? null : l.city;
   const tries = [
-    [l.address, l.city],
+    [l.address, l.name, city],
+    [l.address, city],
     [l.address, l.name],
+    [l.name, city],
     [l.address],
-    [l.name, l.city],
-    [l.city],
+    [city],
   ].map((parts) => parts.filter(Boolean).join(', ')).filter((q, i, a) => q && a.indexOf(q) === i);
   for (const q of tries) {
     const hit = await search(q + ', México');
