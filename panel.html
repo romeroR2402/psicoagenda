@@ -89,7 +89,7 @@
 @media (max-width:700px){.cal{display:none}.cal-list{display:flex}}
 @media (max-width:900px){
   .app{grid-template-columns:minmax(0,1fr);align-content:start}
-  #top-user .muted{display:none}
+  #top-user .who b{display:none}
   .side{position:sticky;top:60px;height:auto;flex-direction:row;overflow-x:auto;padding:8px 16px;border-right:0;border-bottom:1px solid var(--line);background:var(--bg);z-index:10;scrollbar-width:none}
   .side a{flex:none;padding:8px 12px;font-size:13px}
   .side a svg{display:none}
@@ -175,7 +175,8 @@ window.addEventListener('hashchange', () => { const h = location.hash.slice(1); 
 
 function render() {
   const top = document.getElementById('top-user');
-  top.innerHTML = S.user ? `<span class="muted small" style="overflow:hidden;text-overflow:ellipsis;max-width:40vw">${esc(S.user.email)}</span><button class="btn neu sm" data-a="logout">${ic('out', 15)} Salir</button>` : `<a class="btn neu sm" href="index.html">Ir al buscador</a>`;
+  const name = S.profile ? S.profile.full_name.split(' ')[0] : 'Mi cuenta';
+  top.innerHTML = S.user ? `<span class="who small">${av(S.profile?.full_name || 'Mi cuenta', 'sm', S.profile?.photo_url)}<b>${esc(name)}</b></span><button class="btn neu sm" data-a="logout">${ic('out', 15)} Salir</button>` : `<a class="btn neu sm" href="index.html">Ir al buscador</a>`;
   if (!S.authKnown) return;
   if (S.recovery) return renderRecovery();
   if (!S.user) return renderAuth();
