@@ -91,17 +91,17 @@ footer{padding-block:24px 40px;color:var(--muted);font-size:12.5px;border-top:1p
 <body>
 <header class="topbar"><div class="wrap gutter">
   <a class="brand" href="index.html"><i>Ψ</i>PsicoAgenda</a>
-  <nav class="top-links"><a class="btn neu sm" href="panel.html">Soy psicólogo</a></nav>
+  <nav class="top-links"><a class="btn neu sm" href="panel.html">Soy especialista</a></nav>
 </div></header>
 
 <main>
   <section class="hero wash"><div class="wrap gutter">
-    <h1>Encuentra a tu psicólogo y <em>agenda tu cita</em></h1>
+    <h1>Encuentra a tu especialista y <em>agenda tu cita</em></h1>
     <p class="lead">Busca por lo que quieres trabajar, tu ciudad o consulta en línea. Mira los horarios libres y aparta el tuyo en minutos.</p>
     <div class="kinds" role="group" aria-label="Tipo de especialista">
-      <button class="chip on" aria-pressed="true">Psicólogos</button>
-      <button class="chip" disabled>Médicos <small>próximamente</small></button>
-      <button class="chip" disabled>Terapeutas <small>próximamente</small></button>
+      <button class="chip on" data-spec="psicologia" aria-pressed="true">Psicólogos</button>
+      <button class="chip" data-spec="medicina" aria-pressed="false">Médicos</button>
+      <button class="chip" data-spec="odontologia" aria-pressed="false">Dentistas</button>
     </div>
     <form class="searchbox" id="f-search" role="search">
       <label for="q"><span id="ic-q"></span><input id="q" name="q" placeholder="Ansiedad, pareja, duelo… o un nombre" autocomplete="off"></label>
@@ -126,7 +126,7 @@ footer{padding-block:24px 40px;color:var(--muted);font-size:12.5px;border-top:1p
 
   <section><div class="wrap gutter">
     <div class="pro">
-      <div><h2>¿Eres psicólogo?</h2>
+      <div><h2>¿Eres psicólogo, médico o dentista?</h2>
         <p>Crea tu perfil gratis, configura tus horarios, días de descanso y consultorios, y recibe citas con pago verificado.</p>
         <a class="btn" href="panel.html#registro">Registrarme</a></div>
       <ul><li>Agenda en línea con tus horarios reales</li><li>Apruebas cada cita al verificar el pago</li><li>Encuestas personalizadas para tus pacientes</li></ul>
@@ -153,6 +153,8 @@ const FILTERS = [
   ['Ubicación', [['near', 'Cerca de mí'], ['online', 'Solo en línea']]],
   ['Elección del psicólogo', [['women', 'Solo mujeres'], ['kids', 'Atiende a niños'], ['english', 'Habla inglés']]],
 ];
+const SPEC = { psicologia: ['psicólogo', 'psicólogos', 'Psicólogo'], medicina: ['médico', 'médicos', 'Médico general'], odontologia: ['dentista', 'dentistas', 'Cirujano dentista'] };
+let spec = 'psicologia';
 const F = {}; let all = [], slots = {}, byLoc = {}, view = {}, me = null;
 const MAX = 4, STEP = 3, WINDOW = 14;
 const tzOf = p => p.timezone || PA.TZ;
@@ -191,7 +193,7 @@ function card(p) {
   return `<article class="doc" id="doc-${p.id}"><div>
     <div class="doc-head"><a href="${url}">${av(p.full_name, 'doc-photo', p.photo_url)}</a>
       <div style="min-width:0"><h3><a href="${url}">${esc(p.full_name)}</a>${p.license ? `<span class="badge-ok" title="Cédula profesional registrada">${ic('shield', 16)}</span>` : ''}</h3>
-        <div class="sub">${esc(p.title || 'Psicólogo')}</div>
+        <div class="sub">${esc(p.title || SPEC[p.specialty || 'psicologia'][2])}</div>
         <div class="tags" style="margin-top:8px">${(p.topics || []).slice(0, 4).map(t => `<span class="tag">${esc(t)}</span>`).join('')}</div></div></div>
     <ul>
       ${main ? `<li>${ic('pin', 16)}<span>${esc([main.address, main.city].filter(Boolean).join(' · ') || main.name)}${d != null ? ` · <b>${d < 1 ? '<1' : Math.round(d)} km</b>` : ''}${main.lat != null ? `<button class="link" data-a="map" data-id="${p.id}">Mapa</button>` : ''}<a class="link" href="${esc(PA.gdir(main))}" target="_blank" rel="noopener">Cómo llegar</a></span></li>` : ''}
@@ -204,6 +206,7 @@ function card(p) {
 function filtered() {
   const q = norm(qEl.value.trim()), c = cEl.value, today = PA.todayKey();
   let res = all.filter(p => {
+    if ((p.specialty || 'psicologia') !== spec) return false;
     const locs = p.locations || [];
     const hay = norm([p.full_name, p.title, p.bio, ...(p.topics || [])].join(' '));
     if (q && !q.split(/\s+/).every(w => hay.includes(w))) return false;
@@ -225,9 +228,9 @@ function filtered() {
 function show() {
   const res = filtered(), n = Object.values(F).filter(Boolean).length;
   $('f-n').hidden = !n; $('f-n').textContent = n;
-  $('r-count').textContent = `${res.length} psicólogo${res.length === 1 ? '' : 's'}`;
+  $('r-count').textContent = `${res.length} ${res.length === 1 ? SPEC[spec][0] : SPEC[spec][1]}`;
   list.innerHTML = res.length ? res.map(card).join('')
-    : `<div class="empty" style="margin:18px">${all.length ? 'No encontramos psicólogos con esa búsqueda o filtros. Prueba quitando alguno.' : 'Todavía no hay psicólogos publicados. Si eres psicólogo, regístrate y sé el primero.'}</div>`;
+    : `<div class="empty" style="margin:18px">${all.length ? 'No encontramos psicólogos con esa búsqueda o filtros. Prueba quitando alguno.' : `Todavía no hay ${SPEC[spec][1]} publicados. Si eres ${SPEC[spec][0]}, regístrate y sé el primero.`}</div>`;
 }
 
 function filtersModal() {
@@ -262,7 +265,7 @@ function mapModal(focusId) {
 async function load() {
   if (!sb) { list.innerHTML = '<div class="empty" style="margin:18px">No se pudo cargar la conexión.</div>'; return; }
   const { data, error } = await sb.from('profiles')
-    .select('id,full_name,slug,title,license,bio,topics,price,session_minutes,photo_url,timezone,gender,languages,locations(id,kind,name,address,city,lat,lng,maps_url)')
+    .select('id,full_name,slug,specialty,title,license,bio,topics,price,session_minutes,photo_url,timezone,gender,languages,locations(id,kind,name,address,city,lat,lng,maps_url)')
     .eq('is_listed', true).eq('is_active', true).order('created_at');
   if (error) { list.innerHTML = '<div class="empty" style="margin:18px">No pudimos cargar los psicólogos. Revisa tu conexión y recarga la página.</div>'; return; }
   all = data;
@@ -301,6 +304,8 @@ function locate() {
 $('f-search').addEventListener('submit', e => { e.preventDefault(); sync(); show(); toResults(); });
 cEl.addEventListener('change', () => { sync(); show(); });
 document.addEventListener('click', async e => {
+  const sp = e.target.closest('[data-spec]');
+  if (sp) { spec = sp.dataset.spec; document.querySelectorAll('[data-spec]').forEach(b => { b.classList.toggle('on', b === sp); b.setAttribute('aria-pressed', b === sp); }); qEl.placeholder = spec === 'psicologia' ? 'Ansiedad, pareja, duelo… o un nombre' : spec === 'medicina' ? 'Chequeo general, diabetes… o un nombre' : 'Limpieza, ortodoncia, caries… o un nombre'; show(); return; }
   const pop = e.target.closest('.popular [data-q]');
   if (pop) { qEl.value = pop.dataset.q; sync(); show(); toResults(); return; }
   const el = e.target.closest('[data-a]'); if (!el || el.disabled) return;

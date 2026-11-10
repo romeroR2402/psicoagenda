@@ -70,3 +70,19 @@ También funciona con Resend: usa `RESEND_API_KEY` en lugar de `BREVO_API_KEY`.
 ## Comprobantes en Google Drive (opcional)
 `drive-pagos.gs` es un Apps Script que guarda imágenes en una carpeta "Pagos" de Drive.
 Hoy los comprobantes se guardan en Supabase (`receipts`); el script queda como opción futura.
+
+## Expediente del paciente
+En **Pacientes** cada paciente tiene su expediente con pestañas:
+- **Datos:** nombre, teléfono, correo, nacimiento, sexo, ocupación, dirección, contacto de emergencia,
+  origen (particular, empresa, referido, redes, buscador, encuesta) y detalle (por ejemplo, el nombre de la empresa).
+- **Expediente clínico:** campos según la especialidad del profesional (psicología, medicina u odontología).
+- **Notas de evolución** con fecha y tipo (sesión, consulta, llamada, nota).
+- **Encuestas** enviadas a ese paciente, con sus respuestas.
+- **Citas** del paciente.
+
+El expediente clínico y las notas solo los ve el profesional (`clinical_records`, `clinical_notes`); el administrador no tiene acceso.
+
+## Encuestas con link abierto
+Cada encuesta puede tener un **link abierto** (`responder.html?s=…`) para personas que aún no son pacientes:
+escriben su nombre y teléfono, contestan y quedan registradas como pacientes con origen "Encuesta".
+Si el teléfono ya es de un paciente, la respuesta se agrega a su expediente.

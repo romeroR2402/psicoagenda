@@ -79,7 +79,7 @@ textarea{clear:both;display:block;width:100%;min-height:110px;padding:12px;borde
   <div class="brand"><i>Ψ</i>PsicoAgenda</div>
   <section id="view" class="card" aria-live="polite"><p class="lead">Cargando…</p></section>
   <p class="foot"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg>
-    Este link es personal. Tus respuestas se guardan con tu nombre y solo las ve tu psicóloga.</p>
+    Este link es personal. Tus respuestas se guardan con tu nombre y solo las ve tu especialista.</p>
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -96,6 +96,8 @@ const ERR = {
 const view = document.getElementById('view');
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const token = new URLSearchParams(location.search).get('t') || '';
+// Link abierto (?s=): quien contesta se identifica con su nombre y teléfono.
+const openTok = new URLSearchParams(location.search).get('s') || '';
 const cfg = window.PSICO_CONFIG || {};
 const sb = window.supabase && cfg.url ? window.supabase.createClient(cfg.url, cfg.key, { auth: { persistSession: false } }) : null;
 let phone = '', S = null;
@@ -157,8 +159,12 @@ const empty = a => a == null || a === '' || (Array.isArray(a) && !a.length);
 
 function stepSurvey() {
   const qs = S.questions;
-  view.innerHTML = `<h1>Hola, ${esc(S.name)}</h1>
-    <p class="lead"><b>${esc(S.title)}</b>${S.description ? ' · ' + esc(S.description) : ''}</p>
+  view.innerHTML = `<h1>${openTok ? esc(S.title) : `Hola, ${esc(S.name)}`}</h1>
+    <p class="lead">${openTok ? `${S.professional ? 'Encuesta de ' + esc(S.professional) : ''}${S.description ? (S.professional ? ' · ' : '') + esc(S.description) : ''}` : `<b>${esc(S.title)}</b>${S.description ? ' · ' + esc(S.description) : ''}`}</p>
+    ${openTok ? `<fieldset class="q" id="fs-id"><legend>Tus datos</legend><span class="hint">Los necesitamos para que tu especialista sepa quién respondió.</span>
+      <label class="field"><span>Nombre completo</span><input id="id-name" autocomplete="name" required></label>
+      <label class="field"><span>Teléfono (WhatsApp)</span><input id="id-phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="Ej. 55 1234 5678" required></label>
+      <label class="field" style="margin-bottom:0"><span>Correo (opcional)</span><input id="id-email" type="email" autocomplete="email"></label></fieldset>` : ''}
     <div class="progress"><small><span id="pg-t">0 de ${qs.length} respondidas</span><span>${qs.length} preguntas</span></small><div class="bar"><i id="pg"></i></div></div>
     <form id="f-survey" novalidate>
       ${qs.map((q, i) => `<fieldset class="q" id="fs-${i}">${questionHtml(q, i)}</fieldset>`).join('')}
@@ -177,14 +183,24 @@ function stepSurvey() {
     const err = document.getElementById('err'), btn = document.getElementById('send');
     const answers = qs.map((q, i) => readAnswer(q, i));
     const miss = qs.findIndex((q, i) => q.required !== false && empty(answers[i]));
+    let who = null;
+    if (openTok) {
+      who = { n: document.getElementById('id-name').value.trim(), p: document.getElementById('id-phone').value.trim(), e: document.getElementById('id-email').value.trim() };
+      const bad = who.n.length < 3 ? 'Escribe tu nombre completo.' : who.p.replace(/\D/g, '').length < 8 ? 'Escribe tu teléfono con al menos 8 dígitos.' : who.e && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(who.e) ? 'Revisa tu correo.' : '';
+      if (bad) { document.getElementById('fs-id').classList.add('miss'); document.getElementById('fs-id').scrollIntoView({ behavior: 'smooth', block: 'center' }); err.textContent = bad; return; }
+    }
     if (miss >= 0) { markMissing(miss); err.textContent = `Falta responder la pregunta ${miss + 1}.`; return; }
     err.textContent = ''; btn.disabled = true; btn.textContent = 'Enviando…';
-    const r = await rpc('submit_survey', { p_token: token, p_phone: phone, p_answers: answers.map(a => a === null ? '' : a) });
+    const clean = answers.map(a => a === null ? '' : a);
+    const r = openTok
+      ? await rpc('submit_public_survey', { p_token: openTok, p_name: who.n, p_phone: who.p, p_email: who.e || null, p_answers: clean })
+      : await rpc('submit_survey', { p_token: token, p_phone: phone, p_answers: clean });
     btn.disabled = false; btn.textContent = 'Enviar respuestas';
     if (r.ok) { done(r.name); return; }
     if (r.error === 'missing' || r.error === 'invalid') { markMissing(r.q - 1); err.textContent = `Revisa la pregunta ${r.q}.`; return; }
     if (r.error === 'network') { err.textContent = ERR.network; return; }
-    stop(ERR[r.error] || ERR.not_found, r.error === 'already_answered' ? 'Encuesta respondida' : undefined);
+    if (['name', 'phone', 'email'].includes(r.error)) { err.textContent = 'Revisa tus datos.'; return; }
+    stop(r.error === 'already_answered' && openTok ? 'Ya habías respondido esta encuesta con ese teléfono. ¡Gracias!' : ERR[r.error] || ERR.not_found, r.error === 'already_answered' ? 'Encuesta respondida' : undefined);
   });
 }
 
@@ -195,11 +211,14 @@ function markMissing(i) {
 
 function done(name) {
   view.innerHTML = `<div class="done"><div class="mark"><svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></div>
-    <h1>¡Gracias, ${esc(name)}!</h1><p class="lead">Tus respuestas se enviaron a tu psicóloga. Ya puedes cerrar esta página.</p></div>`;
+    <h1>¡Gracias, ${esc(name)}!</h1><p class="lead">Tus respuestas se enviaron a tu especialista. Ya puedes cerrar esta página.</p></div>`;
   scrollTo(0, 0);
 }
 
 if (!sb) stop('No se pudo cargar la conexión. Intenta más tarde.');
+else if (/^[a-f0-9]{20,}$/.test(openTok)) {
+  rpc('open_public_survey', { p_token: openTok }).then(r => { if (r.ok) { S = r; stepSurvey(); } else stop(r.error === 'network' ? ERR.network : 'Este link de encuesta no existe o ya no está activo.'); });
+}
 else if (!/^[a-f0-9]{20,}$/.test(token)) stop(ERR.not_found);
 else stepPhone();
 })();
