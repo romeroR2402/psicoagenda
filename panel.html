@@ -415,7 +415,7 @@ function apptCard(a) {
   const link = pageUrl('cita.html?t=' + a.patient_token);
   const hi = `Hola ${a.patient_name.split(' ')[0]}, te escribe ${S.profile.full_name}.`, when = `${fmtDay(a.starts_at, tz())} a las ${fmtTime(a.starts_at, tz())}`;
   const wa = waLink(a.patient_phone, a.status === 'confirmed'
-    ? `${hi} Tu cita del ${when} está confirmada. Aquí tienes los detalles: ${link}`
+    ? `${hi} Tu cita del ${when} está confirmada. Aquí tienes los detalles: ${link}${loc ? ` Cómo llegar: ${PA.gdir(loc)}` : ''}`
     : `${hi} Para confirmar tu cita del ${when}, haz tu pago y sube tu comprobante aquí: ${link}`);
   let acts = '';
   if (a.status === 'review') acts = `<button class="btn pri sm" data-a="setStatus" data-id="${a.id}" data-s="confirmed">Aprobar y apartar</button><button class="btn danger sm" data-a="setStatus" data-id="${a.id}" data-s="rejected">Rechazar</button>`;
@@ -518,7 +518,7 @@ async function addOff(btn) {
 /* Ubicaciones */
 V.ubicaciones = () => `<div class="title-row"><h1>Ubicaciones</h1><button class="btn pri" data-a="locForm">+ Agregar ubicación</button></div>
   <p class="muted" style="margin-top:-8px">Agrega tus consultorios. Si das terapia por videollamada, agrega también una ubicación “En línea”.</p>
-  <div class="grid">${S.locations.map(l => `<article class="card"><div class="who"><span class="ic-box">${ic(l.kind === 'en_linea' ? 'video' : 'pin')}</span><div><b>${esc(l.name)}</b><small>${l.kind === 'en_linea' ? 'En línea' : esc([l.address, l.city].filter(Boolean).join(', '))}</small>${l.kind === 'presencial' ? `<small style="color:${l.lat != null ? 'var(--ok)' : 'var(--warn)'}">${l.lat != null ? 'Ubicada en el mapa' : 'No encontramos la dirección: edítala y toca el mapa para ubicarla'}</small>` : ''}</div></div>
+  <div class="grid">${S.locations.map(l => `<article class="card"><div class="who"><span class="ic-box">${ic(l.kind === 'en_linea' ? 'video' : 'pin')}</span><div><b>${esc(l.name)}</b><small>${l.kind === 'en_linea' ? 'En línea' : esc([l.address, l.city].filter(Boolean).join(', '))}</small>${l.kind === 'presencial' ? `<small><a href="${esc(PA.gmaps(l))}" target="_blank" rel="noopener">Ver en Google Maps</a></small><small style="color:${l.lat != null ? 'var(--ok)' : 'var(--warn)'}">${l.lat != null ? 'Ubicada en el mapa' : 'No encontramos la dirección: edítala y toca el mapa para ubicarla'}</small>` : ''}</div></div>
     <div class="acts" style="margin-top:12px"><button class="btn neu sm" data-a="locForm" data-id="${l.id}">Editar</button><button class="btn danger sm" data-a="delLoc" data-id="${l.id}" data-confirm="Toca otra vez para eliminar">Eliminar</button></div></article>`).join('') || '<div class="empty">Todavía no agregas ubicaciones.</div>'}</div>`;
 
 function locForm(id) {
@@ -529,6 +529,8 @@ function locForm(id) {
     <label class="field"><span>Dirección</span><input id="lc-addr" value="${esc(l.address || '')}" placeholder="Calle, número, colonia"></label>
     <label class="field"><span>Ciudad</span><input id="lc-city" value="${esc(l.city || '')}" placeholder="Ej. Ciudad de México"></label>
     <div class="stack" id="lc-mapwrap" style="gap:8px" ${l.kind === 'en_linea' ? 'hidden' : ''}>
+      <label class="field"><span>Enlace de Google Maps (recomendado, para la ubicación exacta)</span><input id="lc-gmaps" value="${esc(l.maps_url || '')}" placeholder="https://maps.app.goo.gl/…"></label>
+      <div class="acts"><button class="btn sec sm" data-a="useGmaps">Usar este enlace</button><small class="muted">En Google Maps busca tu consultorio, toca <b>Compartir</b> y copia el enlace.</small></div>
       <div class="field"><span>Ubicación en el mapa</span><div class="locmap" id="lc-map"></div></div>
       <div class="acts"><button class="btn sec sm" data-a="geo">Buscar la dirección en el mapa</button><small class="muted" id="lc-pin">${l.lat != null ? 'Ubicación guardada.' : 'Aún sin ubicar.'} Toca el mapa o arrastra el marcador para ajustarla.</small></div></div>
     <p class="err" id="lc-err"></p><button class="btn pri big" data-a="saveLoc" data-id="${l.id || ''}">Guardar ubicación</button></div>`);
@@ -544,13 +546,27 @@ function setPin(lat, lng, zoom, auto) {
   const t = document.getElementById('lc-pin'); if (t) t.textContent = 'Ubicación marcada. Puedes arrastrar el marcador para ajustarla.';
 }
 function initLocMap(l) {
-  Object.assign(LM, { map: null, marker: null, lat: l.lat ?? null, lng: l.lng ?? null, touched: false, orig: l });
+  Object.assign(LM, { map: null, marker: null, lat: l.lat ?? null, lng: l.lng ?? null, touched: false, orig: l, linkUrl: l.maps_url || null });
   if (!window.L) { document.getElementById('lc-map').innerHTML = '<div class="empty">No se pudo cargar el mapa.</div>'; return; }
   LM.map = L.map('lc-map').setView(l.lat != null ? [l.lat, l.lng] : [19.4326, -99.1332], l.lat != null ? 16 : 11);
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(LM.map);
   if (l.lat != null) setPin(l.lat, l.lng, 0, true);
   LM.map.on('click', e => setPin(e.latlng.lat, e.latlng.lng));
   setTimeout(() => LM.map && LM.map.invalidateSize(), 150);
+}
+async function resolveGmaps(url) {
+  const m = decodeURIComponent(url).match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/) || decodeURIComponent(url).match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+  if (m) return { lat: +m[1], lng: +m[2] };
+  const { data, error } = await sb.functions.invoke('maps-link', { body: { url } });
+  return !error && data && data.ok ? { lat: data.lat, lng: data.lng } : null;
+}
+async function useGmaps(btn) {
+  const url = val('lc-gmaps');
+  if (!PA.MAPS_RE.test(url)) return setErr('lc-err', 'Pega un enlace de Google Maps (empieza con https://maps.app.goo.gl o https://www.google.com/maps).');
+  busy(btn, true, 'Leyendo el enlace…');
+  const hit = await resolveGmaps(url); busy(btn, false);
+  if (!hit) return setErr('lc-err', 'No pudimos leer la ubicación de ese enlace. Revisa que sea el de Compartir del lugar, o ubícala tocando el mapa.');
+  setErr('lc-err', ''); LM.linkUrl = url; setPin(hit.lat, hit.lng, 17);
 }
 async function geocode(btn) {
   const q = [val('lc-addr'), val('lc-city'), 'México'].filter(Boolean).join(', ');
@@ -567,6 +583,10 @@ async function geocode(btn) {
 async function saveLoc(id, btn) {
   const kind = val('lc-kind'), row = { kind, name: val('lc-name'), address: kind === 'presencial' ? val('lc-addr') || null : null, city: kind === 'presencial' ? val('lc-city') || null : null,
     lat: kind === 'presencial' ? LM.lat : null, lng: kind === 'presencial' ? LM.lng : null };
+  const gm = kind === 'presencial' ? val('lc-gmaps') : '';
+  if (gm && !PA.MAPS_RE.test(gm)) return setErr('lc-err', 'El enlace de Google Maps no es válido.');
+  row.maps_url = gm || null;
+  if (gm && gm !== LM.linkUrl) { busy(btn, true, 'Leyendo el enlace…'); const hit = await resolveGmaps(gm); busy(btn, false); if (hit) { LM.linkUrl = gm; setPin(hit.lat, hit.lng); row.lat = hit.lat; row.lng = hit.lng; } }
   // Si cambió la dirección y no se movió el marcador, se borra la ubicación vieja para que se ubique sola.
   if (kind === 'presencial' && !LM.touched && LM.orig && (row.address !== (LM.orig.address || null) || row.city !== (LM.orig.city || null))) { row.lat = null; row.lng = null; }
   if (row.name.length < 2) return setErr('lc-err', 'Escribe un nombre para la ubicación.');
@@ -806,6 +826,7 @@ document.addEventListener('click', async e => {
     case 'locForm': locForm(d.id); break;
     case 'saveLoc': saveLoc(d.id, el); break;
     case 'geo': geocode(el); break;
+    case 'useGmaps': useGmaps(el); break;
     case 'delLoc': {
       if (!d.armed) { el.dataset.armed = 1; el.textContent = d.confirm; return; }
       busy(el, true); const r = await sb.from('locations').delete().eq('id', d.id);

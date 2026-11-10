@@ -50,7 +50,7 @@ function fail(msg) { root.innerHTML = `<a class="back" href="index.html">← Vol
 
 async function load() {
   if (!sb) return fail('No se pudo cargar la conexión.');
-  const { data, error } = await sb.from('profiles').select('id,full_name,slug,title,license,bio,topics,price,session_minutes,timezone,photo_url,whatsapp,languages,locations(id,kind,name,address,city,lat,lng)')
+  const { data, error } = await sb.from('profiles').select('id,full_name,slug,title,license,bio,topics,price,session_minutes,timezone,photo_url,whatsapp,languages,locations(id,kind,name,address,city,lat,lng,maps_url)')
     .eq('slug', slug).eq('is_listed', true).eq('is_active', true).maybeSingle();
   if (error || !data) return fail('Puede que el link esté mal escrito o que el psicólogo ya no esté disponible.');
   P = data; document.title = `${P.full_name} · PsicoAgenda`;
@@ -87,7 +87,8 @@ function render() {
         ${(P.languages || []).length ? `<div class="muted small" style="margin-top:10px">Idiomas: ${P.languages.map(esc).join(', ')}</div>` : ''}
       </section>
       ${P.bio ? `<section class="card"><h3>Sobre mí</h3><p class="pre" style="margin:8px 0 0">${esc(P.bio)}</p></section>` : ''}
-      <section class="card"><h3>Dónde atiende</h3><div style="margin-top:6px">${locs.length ? locs.map(l => `<div class="loc"><span class="ic-box">${ic(l.kind === 'en_linea' ? 'video' : 'pin')}</span><div><b>${esc(l.name)}</b><div class="muted small">${l.kind === 'en_linea' ? 'Consulta en línea por videollamada' : esc([l.address, l.city].filter(Boolean).join(', '))}</div></div></div>`).join('') : '<p class="muted">Aún no hay ubicaciones registradas.</p>'}</div>
+      <section class="card"><h3>Dónde atiende</h3><div style="margin-top:6px">${locs.length ? locs.map(l => `<div class="loc"><span class="ic-box">${ic(l.kind === 'en_linea' ? 'video' : 'pin')}</span><div><b>${esc(l.name)}</b><div class="muted small">${l.kind === 'en_linea' ? 'Consulta en línea por videollamada' : esc([l.address, l.city].filter(Boolean).join(', '))}</div>
+          ${l.kind === 'presencial' ? `<div class="chips" style="margin-top:8px"><a class="btn sec sm" href="${esc(PA.gdir(l))}" target="_blank" rel="noopener">${ic('pin', 14)} Cómo llegar</a><a class="btn neu sm" href="${esc(PA.gmaps(l))}" target="_blank" rel="noopener">Ver en Google Maps</a></div>` : ''}</div></div>`).join('') : '<p class="muted">Aún no hay ubicaciones registradas.</p>'}</div>
         ${locs.some(l => l.lat != null) ? '<div class="locmap" id="locmap"></div>' : ''}</section>
     </div>
     <div class="sticky" id="agendar"><section class="card" id="booking"></section></div>

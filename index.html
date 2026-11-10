@@ -192,7 +192,7 @@ function card(p) {
         <div class="sub">${esc(p.title || 'Psicólogo')}</div>
         <div class="tags" style="margin-top:8px">${(p.topics || []).slice(0, 4).map(t => `<span class="tag">${esc(t)}</span>`).join('')}</div></div></div>
     <ul>
-      ${main ? `<li>${ic('pin', 16)}<span>${esc([main.address, main.city].filter(Boolean).join(' · ') || main.name)}${d != null ? ` · <b>${d < 1 ? '<1' : Math.round(d)} km</b>` : ''}${main.lat != null ? `<button class="link" data-a="map" data-id="${p.id}">Mapa</button>` : ''}</span></li>` : ''}
+      ${main ? `<li>${ic('pin', 16)}<span>${esc([main.address, main.city].filter(Boolean).join(' · ') || main.name)}${d != null ? ` · <b>${d < 1 ? '<1' : Math.round(d)} km</b>` : ''}${main.lat != null ? `<button class="link" data-a="map" data-id="${p.id}">Mapa</button>` : ''}<a class="link" href="${esc(PA.gdir(main))}" target="_blank" rel="noopener">Cómo llegar</a></span></li>` : ''}
       ${online ? `<li>${ic('video', 16)}<span>También en línea por videollamada</span></li>` : ''}
       <li>${ic('pay', 16)}<span>Sesión de ${p.session_minutes} min · <b>${money(p.price)}</b></span></li>
       ${p.bio ? `<li>${ic('user', 16)}<span>${esc(p.bio.length > 150 ? p.bio.slice(0, 150).trim() + '…' : p.bio)}</span></li>` : ''}
@@ -247,7 +247,7 @@ function mapModal(focusId) {
     const ns = nextSlot(p), tz = tzOf(p);
     const label = `<b>${p.price != null ? '$' + p.price.toLocaleString('es-MX') : 'Consultar'}</b><span>${ns ? 'Próx. ' + kLabel(dayKey(ns, tz), { day: 'numeric', month: 'short' }) : 'Sin horario'}</span>`;
     const m = L.marker([l.lat, l.lng], { icon: L.divIcon({ className: '', html: `<div class="mk ${p.id === focusId ? 'on' : ''}">${label}</div>`, iconSize: [0, 0] }) }).addTo(map);
-    m.bindPopup(`<b>${esc(p.full_name)}</b><br><span style="color:#6f6d88">${esc([l.name, l.address].filter(Boolean).join(' · '))}</span><br>Consulta: <b>${money(p.price)}</b><br><a href="perfil.html?p=${encodeURIComponent(p.slug)}#agendar">Ver horarios y agendar</a>`, { offset: [0, -36] });
+    m.bindPopup(`<b>${esc(p.full_name)}</b><br><span style="color:#6f6d88">${esc([l.name, l.address].filter(Boolean).join(' · '))}</span><br>Consulta: <b>${money(p.price)}</b><br><a href="perfil.html?p=${encodeURIComponent(p.slug)}#agendar">Ver horarios y agendar</a> · <a href="${esc(PA.gdir(l))}" target="_blank" rel="noopener">Cómo llegar</a>`, { offset: [0, -36] });
     pts.push([l.lat, l.lng]);
     if (p.id === focusId) setTimeout(() => { map.setView([l.lat, l.lng], 15); m.openPopup(); }, 50);
   }));
@@ -260,7 +260,7 @@ function mapModal(focusId) {
 async function load() {
   if (!sb) { list.innerHTML = '<div class="empty" style="margin:18px">No se pudo cargar la conexión.</div>'; return; }
   const { data, error } = await sb.from('profiles')
-    .select('id,full_name,slug,title,license,bio,topics,price,session_minutes,photo_url,timezone,gender,languages,locations(kind,name,address,city,lat,lng)')
+    .select('id,full_name,slug,title,license,bio,topics,price,session_minutes,photo_url,timezone,gender,languages,locations(kind,name,address,city,lat,lng,maps_url)')
     .eq('is_listed', true).eq('is_active', true).order('created_at');
   if (error) { list.innerHTML = '<div class="empty" style="margin:18px">No pudimos cargar los psicólogos. Revisa tu conexión y recarga la página.</div>'; return; }
   all = data;

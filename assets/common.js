@@ -92,8 +92,13 @@ window.PA = (() => {
     });
   }
 
+  // Google Maps: abre el lugar exacto (enlace del psicólogo o coordenadas) y la ruta para llegar.
+  const placeText = l => [l.address, l.city, 'México'].filter(Boolean).join(', ');
+  const gmaps = l => l.maps_url || `https://www.google.com/maps/search/?api=1&query=${l.lat != null ? l.lat + ',' + l.lng : encodeURIComponent(placeText(l))}`;
+  const gdir = l => `https://www.google.com/maps/dir/?api=1&destination=${l.lat != null ? l.lat + ',' + l.lng : encodeURIComponent(placeText(l))}`;
+  const MAPS_RE = /^https:\/\/((www\.)?google\.[a-z.]+\/maps|maps\.google\.[a-z.]+|maps\.app\.goo\.gl|goo\.gl\/maps)/i;
   const waLink = (phone, text) => { const d = String(phone).replace(/\D/g, ''); return `https://wa.me/${d.length === 10 ? '52' + d : d}?text=${encodeURIComponent(text)}`; };
   const pageUrl = p => new URL(p, location.href).href;
 
-  return { sb, TZ, esc, av, avc, ini, cap, norm, slugify, fmtDay, fmtShort, fmtTime, fmtDT, dayKey, todayKey, money, STATUS, pill, MODE, DOW, ic, toast, openModal, closeModal, copy, compress, waLink, pageUrl };
+  return { sb, TZ, gmaps, gdir, MAPS_RE, esc, av, avc, ini, cap, norm, slugify, fmtDay, fmtShort, fmtTime, fmtDT, dayKey, todayKey, money, STATUS, pill, MODE, DOW, ic, toast, openModal, closeModal, copy, compress, waLink, pageUrl };
 })();

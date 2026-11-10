@@ -12,6 +12,10 @@ const json = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: 
 const esc = (s: unknown) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 const MODE: Record<string, string> = { presencial: 'Presencial', en_linea: 'En línea' };
 
+// Ruta en Google Maps hacia el consultorio (coordenadas exactas si las hay).
+const gdir = (l: any) => 'https://www.google.com/maps/dir/?api=1&destination=' +
+  (l.lat != null ? `${l.lat},${l.lng}` : encodeURIComponent([l.address, l.city, 'México'].filter(Boolean).join(', ')));
+
 function when(a: any, tz: string) {
   const d = new Date(a.starts_at);
   const day = d.toLocaleDateString('es-MX', { timeZone: tz, weekday: 'long', day: 'numeric', month: 'long' });
@@ -63,7 +67,8 @@ async function handle(event: string, appointmentId: string) {
   const first = String(a.patient_name).split(' ')[0];
   const rows: [string, string][] = [
     ['Cuándo', esc(when(a, tz))], ['Modalidad', MODE[a.mode] || a.mode],
-    ...(loc ? [['Lugar', esc([loc.name, loc.address, loc.city].filter(Boolean).join(', '))] as [string, string]] : []),
+    ...(loc ? [['Lugar', esc([loc.name, loc.address, loc.city].filter(Boolean).join(', '))] as [string, string],
+      ['Cómo llegar', `<a href="${esc(gdir(loc))}" style="color:#4f63e8">Abrir en Google Maps</a>`] as [string, string]] : []),
     ['Psicólogo', esc(p.full_name)],
   ];
   const psyRows: [string, string][] = [['Paciente', esc(a.patient_name)], ['Teléfono', esc(a.patient_phone)], ['Cuándo', esc(when(a, tz))], ['Modalidad', MODE[a.mode] || a.mode]];

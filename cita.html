@@ -69,7 +69,7 @@ function render() {
         <dt>Día</dt><dd>${fmtDay(A.starts_at, tz)}</dd>
         <dt>Hora</dt><dd>${fmtTime(A.starts_at, tz)} – ${fmtTime(A.ends_at, tz)}</dd>
         <dt>Modalidad</dt><dd>${MODE[A.mode]}</dd>
-        ${A.location ? `<dt>Lugar</dt><dd>${esc(A.location.name)}${A.location.address ? '<br><span class="muted small">' + esc([A.location.address, A.location.city].filter(Boolean).join(', ')) + '</span>' : ''}</dd>` : ''}
+        ${A.location ? `<dt>Lugar</dt><dd>${esc(A.location.name)}${A.location.address ? '<br><span class="muted small">' + esc([A.location.address, A.location.city].filter(Boolean).join(', ')) + '</span>' : ''}<br><a class="btn sec sm" style="margin-top:8px" href="${esc(PA.gdir(A.location))}" target="_blank" rel="noopener">Cómo llegar en Google Maps</a></dd>` : ''}
         <dt>Psicólogo</dt><dd><a href="perfil.html?p=${encodeURIComponent(A.psych_slug)}">${esc(A.psych_name)}</a></dd>
         <dt>Costo</dt><dd>${money(A.price)}</dd>
       </dl></section>
