@@ -51,7 +51,8 @@ span.doc-photo{display:grid;place-items:center}
 .mini-h{display:grid;grid-template-columns:34px repeat(3,minmax(0,1fr)) 34px;align-items:center;text-align:center;gap:4px}
 .mini-h b{display:block;font-size:14px;text-transform:lowercase}
 .mini-h small{color:var(--muted);font-size:12px}
-.mini-nav{width:32px;height:32px;border-radius:50%;background:var(--bg);font-size:17px;font-weight:700;display:grid;place-items:center}
+.mini-nav{width:34px;height:34px;border-radius:50%;background:var(--bg);color:var(--ink);display:flex;align-items:center;justify-content:center;padding:0;justify-self:center}
+.mini-nav:hover:not(:disabled){background:var(--accent);color:var(--on-accent)}
 .mini-nav:disabled{opacity:.3}
 .mini-g{display:grid;grid-template-columns:34px repeat(3,minmax(0,1fr)) 34px;gap:8px 4px;margin-top:12px}
 .mini-col{grid-column:span 1;display:flex;flex-direction:column;gap:8px;align-items:center}
@@ -171,9 +172,9 @@ function mini(p) {
   const rows = v.more ? 99 : MAX, needMore = days.some(k => daySlots(p, k).length > MAX);
   const href = s => `perfil.html?p=${encodeURIComponent(p.slug)}&slot=${encodeURIComponent(s)}#agendar`;
   return `<div class="mini">
-    <div class="mini-h"><button class="mini-nav" data-a="mini" data-id="${p.id}" data-d="-1" ${v.off <= 0 ? 'disabled' : ''} aria-label="Días anteriores">‹</button>
+    <div class="mini-h"><button class="mini-nav" data-a="mini" data-id="${p.id}" data-d="-1" ${v.off <= 0 ? 'disabled' : ''} aria-label="Días anteriores"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg></button>
       ${days.map(k => `<div><b>${kLabel(k, { weekday: 'short' })}</b><small>${kLabel(k, { day: 'numeric', month: 'short' })}</small></div>`).join('')}
-      <button class="mini-nav" data-a="mini" data-id="${p.id}" data-d="1" ${v.off + STEP >= WINDOW ? 'disabled' : ''} aria-label="Días siguientes">›</button></div>
+      <button class="mini-nav" data-a="mini" data-id="${p.id}" data-d="1" ${v.off + STEP >= WINDOW ? 'disabled' : ''} aria-label="Días siguientes"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button></div>
     <div class="mini-g">${any ? days.map(k => { const ss = daySlots(p, k);
         return `<div class="mini-col">${ss.length ? ss.slice(0, rows).map(s => `<a class="tslot" href="${href(s)}">${new Date(s).toLocaleTimeString('es-MX', { timeZone: tz, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })}</a>`).join('') : '<span class="dash">–</span>'}</div>`; }).join('')
       : `<div class="none-slots">${nextSlot(p) ? `Sin horarios estos días. <button class="link" data-a="jump" data-id="${p.id}">Próximo: ${kLabel(dayKey(nextSlot(p), tz), { weekday: 'short', day: 'numeric', month: 'short' })}</button>` : 'Sin horarios libres por ahora.'}</div>`}</div>
