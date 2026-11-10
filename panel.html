@@ -65,6 +65,12 @@
 .sugg{display:flex;flex-wrap:wrap;gap:6px}
 .sugg button{padding:5px 10px;border-radius:999px;border:1px solid var(--line);background:var(--card);font-size:12px;font-weight:600}
 .sugg button[aria-pressed="true"]{background:var(--calm-soft);color:var(--calm);border-color:transparent}
+.rng{border-left:4px solid var(--lc,var(--line));padding:4px 0 4px 10px;border-radius:4px}
+.rng .loc-sel{width:auto;min-width:170px;flex:1 1 170px}
+.rng.clash{background:var(--bad-soft);border-left-color:var(--bad);border-radius:10px}
+.ldot{display:none}
+.loc-legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;font-weight:600;margin:6px 0 4px}
+.loc-legend i{display:inline-block;width:12px;height:12px;border-radius:4px;margin-right:6px;vertical-align:-2px}
 .locmap{height:260px;border-radius:14px;overflow:hidden;border:1px solid var(--line);z-index:0}
 /* calendario */
 .cal-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px}
@@ -79,7 +85,8 @@
 .cal-times span{position:absolute;right:8px;font-size:11px;color:var(--muted);transform:translateY(-50%);font-variant-numeric:tabular-nums}
 .cal-col{position:relative;border-left:1px solid var(--line);background-image:repeating-linear-gradient(to bottom,var(--line) 0 1px,transparent 1px var(--hp))}
 .cal-col.off{background:repeating-linear-gradient(135deg,var(--bg) 0 8px,var(--line) 8px 9px)}
-.band{position:absolute;left:0;right:0;background:color-mix(in srgb,var(--ok-soft) 65%,transparent)}
+.band{position:absolute;left:0;right:0;background:color-mix(in srgb,var(--lc,var(--ok)) 13%,transparent);border-left:3px solid var(--lc,var(--ok))}
+.band span{position:absolute;bottom:3px;left:6px;right:4px;font-size:10px;font-weight:700;color:var(--lc);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .off-l{position:absolute;top:8px;left:6px;right:6px;font-size:11px;font-weight:700;color:var(--muted);text-align:center;background:var(--card);border-radius:8px;padding:3px}
 .ev{position:absolute;left:4px;right:4px;border-radius:9px;padding:3px 7px;font-size:11px;line-height:1.25;text-align:left;overflow:hidden;border-left:3px solid var(--bar);z-index:1}
 .ev b{display:block;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -373,24 +380,24 @@ V.calendario = () => {
   const HP = 54, px = m => (m - h0 * 60) / 60 * HP, H = (h1 - h0) * HP;
   const offOf = k => S.timeOff.find(t => k >= t.date_from && k <= t.date_to);
   const evHtml = (a, pos) => { const t0 = localMin(a.starts_at), t1 = localMin(a.ends_at) || 1440;
-    return `<button class="ev s-${a.status}" data-a="calAppt" data-id="${a.id}" ${pos ? `style="top:${px(t0)}px;height:${Math.max(px(t1) - px(t0) - 2, 22)}px"` : ''}><b>${esc(a.patient_name)}</b>${fmtTime(a.starts_at, tz())} · ${MODE[a.mode]}</button>`; };
+    return `<button class="ev s-${a.status}" data-a="calAppt" data-id="${a.id}" ${pos ? `style="top:${px(t0)}px;height:${Math.max(px(t1) - px(t0) - 2, 22)}px"` : ''}><b>${esc(a.patient_name)}</b>${fmtTime(a.starts_at, tz())} · ${a.location_id ? esc(locName(a.location_id)) : MODE[a.mode]}</button>`; };
   const nowMin = localMin(new Date().toISOString());
   const title = `${keyLabel(days[0], { day: 'numeric', month: 'short' })} – ${keyLabel(days[6], { day: 'numeric', month: 'short', year: 'numeric' })}`;
   return `<div class="title-row"><h1>Calendario</h1></div>
     <div class="cal-bar"><h2>${title}</h2><button class="btn neu sm" data-a="calMove" data-d="-7" aria-label="Semana anterior">‹ Anterior</button><button class="btn neu sm" data-a="calMove" data-d="0">Hoy</button><button class="btn neu sm" data-a="calMove" data-d="7" aria-label="Semana siguiente">Siguiente ›</button></div>
-    <div class="legend"><span><i style="background:var(--ok-soft)"></i>Horario disponible</span><span><i style="background:var(--ok);"></i>Confirmada</span><span><i style="background:var(--calm)"></i>Pago por revisar</span><span><i style="background:var(--warn)"></i>Sin pago</span><span><i style="background:repeating-linear-gradient(135deg,var(--bg) 0 3px,var(--line) 3px 4px)"></i>Descanso</span></div>
+    <div class="legend">${S.locations.map(l => `<span><i style="background:${locColor(l.id)};opacity:.5"></i>${esc(l.name)}</span>`).join('')}<span><i style="background:var(--ok);"></i>Confirmada</span><span><i style="background:var(--calm)"></i>Pago por revisar</span><span><i style="background:var(--warn)"></i>Sin pago</span><span><i style="background:repeating-linear-gradient(135deg,var(--bg) 0 3px,var(--line) 3px 4px)"></i>Descanso</span></div>
     <div class="cal"><div class="cal-grid" style="--hp:${HP}px">
       <div></div>${days.map(k => `<div class="cal-h ${k === today ? 'today' : ''}">${keyLabel(k, { weekday: 'short', day: 'numeric' })}</div>`).join('')}
       <div class="cal-times" style="height:${H}px">${[...Array(h1 - h0)].map((_, i) => `<span style="top:${i * HP + (i ? 0 : 8)}px">${String(h0 + i).padStart(2, '0')}:00</span>`).join('')}</div>
       ${days.map(k => { const off = offOf(k);
         return `<div class="cal-col ${off ? 'off' : ''}" style="height:${H}px">
-          ${off ? `<span class="off-l">Descanso${off.reason ? ' · ' + esc(off.reason) : ''}</span>` : S.schedules.filter(s => s.weekday === keyDow(k)).map(s => `<div class="band" style="top:${px(toMin(s.start_time))}px;height:${px(toMin(s.end_time)) - px(toMin(s.start_time))}px"></div>`).join('')}
+          ${off ? `<span class="off-l">Descanso${off.reason ? ' · ' + esc(off.reason) : ''}</span>` : S.schedules.filter(s => s.weekday === keyDow(k)).map(s => `<div class="band" title="${esc(locName(s.location_id))}" style="--lc:${locColor(s.location_id)};top:${px(toMin(s.start_time))}px;height:${px(toMin(s.end_time)) - px(toMin(s.start_time))}px"><span>${esc(locName(s.location_id))}</span></div>`).join('')}
           ${ev.filter(a => PA.dayKey(a.starts_at, tz()) === k).map(a => evHtml(a, true)).join('')}
           ${k === today && nowMin >= h0 * 60 && nowMin <= h1 * 60 ? `<div class="now" style="top:${px(nowMin)}px"></div>` : ''}</div>`; }).join('')}
     </div></div>
     <div class="cal-list">${days.map(k => { const off = offOf(k), sch = S.schedules.filter(s => s.weekday === keyDow(k)), list = ev.filter(a => PA.dayKey(a.starts_at, tz()) === k);
       return `<section class="card cal-day"><h4 style="${k === today ? 'color:var(--accent)' : ''}">${PA.cap(keyLabel(k, { weekday: 'long', day: 'numeric', month: 'long' }))}</h4>
-        <div class="muted small">${off ? 'Descanso' + (off.reason ? ' · ' + esc(off.reason) : '') : sch.length ? 'Atiendes ' + sch.map(s => s.start_time.slice(0, 5) + '–' + s.end_time.slice(0, 5)).join(', ') : 'Sin horario'}</div>
+        <div class="muted small">${off ? 'Descanso' + (off.reason ? ' · ' + esc(off.reason) : '') : sch.length ? 'Atiendes ' + sch.map(s => s.start_time.slice(0, 5) + '–' + s.end_time.slice(0, 5) + ' en ' + esc(locName(s.location_id))).join(', ') : 'Sin horario'}</div>
         ${list.map(a => evHtml(a, false)).join('')}</section>`; }).join('')}</div>`;
 };
 
@@ -452,8 +459,34 @@ async function showReceipt(id) {
 
 /* Horario */
 function weekState() {
-  if (!S.week) { S.week = {}; for (let d = 0; d < 7; d++) S.week[d] = S.schedules.filter(s => s.weekday === d).map(s => ({ start: s.start_time.slice(0, 5), end: s.end_time.slice(0, 5) })); }
+  if (!S.week) { S.week = {}; for (let d = 0; d < 7; d++) S.week[d] = S.schedules.filter(s => s.weekday === d).map(s => ({ start: s.start_time.slice(0, 5), end: s.end_time.slice(0, 5), loc: s.location_id })); }
   return S.week;
+}
+// Colores por ubicación para el horario y el calendario
+const LOC_COLORS = ['#1f9a70', '#5162e0', '#e8743b', '#c74f8e', '#b88a12', '#7a58ea'];
+const locColor = id => { const i = S.locations.findIndex(l => l.id === id); return i < 0 ? '#8a88a3' : LOC_COLORS[i % LOC_COLORS.length]; };
+const locName = id => { const l = S.locations.find(x => x.id === id); return l ? l.name : 'sin ubicación'; };
+// Rangos que se cruzan en el mismo día, aunque sean de ubicaciones distintas
+function clashes(W) {
+  const bad = new Set(), msgs = [];
+  for (const d of Object.keys(W)) {
+    const rs = W[d].map((r, i) => ({ ...r, i })).filter(r => r.start && r.end).sort((a, b) => a.start.localeCompare(b.start));
+    for (let j = 1; j < rs.length; j++) for (let k = 0; k < j; k++) {
+      const a = rs[k], b = rs[j];
+      if (b.start < a.end && a.start < b.end) {
+        bad.add(d + '-' + a.i); bad.add(d + '-' + b.i);
+        msgs.push(a.loc === b.loc
+          ? `El ${DOW[d].toLowerCase()}, ${a.start}–${a.end} y ${b.start}–${b.end} en ${locName(a.loc)} se enciman.`
+          : `El ${DOW[d].toLowerCase()}, ${a.start}–${a.end} en ${locName(a.loc)} se cruza con ${b.start}–${b.end} en ${locName(b.loc)}. No puedes estar en dos lugares a la vez.`);
+      }
+    }
+  }
+  return { bad, msgs };
+}
+function showClashes() {
+  const { bad, msgs } = clashes(weekState());
+  document.querySelectorAll('.rng[data-k]').forEach(r => r.classList.toggle('clash', bad.has(r.dataset.k)));
+  const e = document.getElementById('hr-clash'); if (e) e.textContent = msgs.join(' ');
 }
 V.horario = () => {
   const p = S.profile, W = weekState(), today = new Date().toLocaleDateString('en-CA', { timeZone: tz() });
@@ -465,11 +498,15 @@ V.horario = () => {
       <label class="field"><span>Una cita cada</span><select id="hr-step">${opt([30, 45, 60, 90, 120], p.slot_minutes, v => v + ' minutos')}</select></label>
       <label class="field"><span>Anticipación mínima para reservar</span><select id="hr-notice">${opt([0, 1, 2, 4, 12, 24, 48], p.min_notice_hours, v => v ? v + ' h' : 'Sin mínimo')}</select></label></div>
       <p class="err" id="hr-err1"></p><button class="btn pri" style="margin-top:12px" data-a="saveSession">Guardar</button></section>
-    <section class="card"><h3>Horario semanal</h3><p class="muted small" style="margin:4px 0 6px">Agrega uno o más rangos por día. Los pacientes solo verán horas libres dentro de estos rangos.</p>
+    <section class="card"><h3>Horario semanal por ubicación</h3><p class="muted small" style="margin:4px 0 6px">Agrega uno o más rangos por día y elige en qué ubicación atiendes en cada uno. Un rango no puede cruzarse con otro del mismo día, aunque sea en otra ubicación.</p>
+      ${S.locations.length ? `<div class="loc-legend">${S.locations.map(l => `<span><i style="background:${locColor(l.id)}"></i>${esc(l.name)}</span>`).join('')}</div>
       ${[1, 2, 3, 4, 5, 6, 0].map(d => `<div class="wk"><b>${DOW[d]}</b><div class="ranges">
-        ${W[d].map((r, i) => `<div class="rng"><input class="in" type="time" step="900" id="wk-${d}-${i}-s" data-w="${d}" data-i="${i}" data-f="start" value="${r.start}" aria-label="${DOW[d]} desde"> a <input class="in" type="time" step="900" id="wk-${d}-${i}-e" data-w="${d}" data-i="${i}" data-f="end" value="${r.end}" aria-label="${DOW[d]} hasta"><button class="mini-btn bad" data-a="wkDel" data-d="${d}" data-i="${i}" aria-label="Quitar horario">✕</button></div>`).join('') || '<span class="muted small">Descanso</span>'}
+        ${W[d].map((r, i) => `<div class="rng" data-k="${d}-${i}" style="--lc:${locColor(r.loc)}"><span class="ldot"></span>
+          <select class="in loc-sel" data-w="${d}" data-i="${i}" data-f="loc" aria-label="Ubicación del ${DOW[d].toLowerCase()}">${r.loc ? '' : '<option value="" selected>Elige ubicación…</option>'}${S.locations.map(l => `<option value="${l.id}" ${r.loc === l.id ? 'selected' : ''}>${esc(l.name)}</option>`).join('')}</select>
+          <input class="in" type="time" step="900" id="wk-${d}-${i}-s" data-w="${d}" data-i="${i}" data-f="start" value="${r.start}" aria-label="${DOW[d]} desde"> a <input class="in" type="time" step="900" id="wk-${d}-${i}-e" data-w="${d}" data-i="${i}" data-f="end" value="${r.end}" aria-label="${DOW[d]} hasta"><button class="mini-btn bad" data-a="wkDel" data-d="${d}" data-i="${i}" aria-label="Quitar horario">✕</button></div>`).join('') || '<span class="muted small">Descanso</span>'}
         <button class="link" style="align-self:flex-start" data-a="wkAdd" data-d="${d}">+ Agregar horario</button></div></div>`).join('')}
-      <p class="err" id="hr-err2"></p><button class="btn pri" style="margin-top:8px" data-a="saveWeek">Guardar horario semanal</button></section>
+      <p class="err" id="hr-clash" role="alert"></p><p class="err" id="hr-err2"></p><button class="btn pri" style="margin-top:8px" data-a="saveWeek">Guardar horario semanal</button>`
+      : `<div class="empty">Primero agrega al menos una ubicación (consultorio o en línea) para asignarle horarios.</div><a class="btn sec" style="margin-top:12px" href="#ubicaciones">Ir a Ubicaciones</a>`}</section>
     <section class="card"><h3>Días de descanso y vacaciones</h3><p class="muted small" style="margin:4px 0 12px">En estas fechas nadie podrá reservar contigo.</p>
       <div class="row2"><label class="field"><span>Desde</span><input id="to-from" type="date" min="${today}"></label><label class="field"><span>Hasta</span><input id="to-to" type="date" min="${today}"></label>
         <label class="field"><span>Motivo (solo lo ves tú)</span><input id="to-reason" maxlength="120" placeholder="Ej. Vacaciones"></label></div>
@@ -489,19 +526,19 @@ async function saveSession(btn) {
 async function saveWeek(btn) {
   const W = weekState(), rows = [];
   for (const d of Object.keys(W)) {
-    const rs = W[d].slice().sort((a, b) => a.start.localeCompare(b.start));
-    for (let i = 0; i < rs.length; i++) {
-      if (!rs[i].start || !rs[i].end || rs[i].end <= rs[i].start) return setErr('hr-err2', `Revisa el horario del ${DOW[d].toLowerCase()}: la hora final debe ser después de la inicial.`);
-      if (i && rs[i].start < rs[i - 1].end) return setErr('hr-err2', `Los horarios del ${DOW[d].toLowerCase()} se enciman.`);
-      rows.push({ owner_id: S.user.id, weekday: +d, start_time: rs[i].start, end_time: rs[i].end });
+    for (const r of W[d]) {
+      if (!r.start || !r.end || r.end <= r.start) return setErr('hr-err2', `Revisa el horario del ${DOW[d].toLowerCase()}: la hora final debe ser después de la inicial.`);
+      if (!r.loc) return setErr('hr-err2', `Elige la ubicación de cada horario del ${DOW[d].toLowerCase()}.`);
+      rows.push({ weekday: +d, start_time: r.start, end_time: r.end, location_id: r.loc });
     }
   }
+  const { msgs } = clashes(W);
+  if (msgs.length) { showClashes(); return setErr('hr-err2', 'No se guardó: corrige los horarios que se cruzan (marcados en rojo).'); }
   setErr('hr-err2', ''); busy(btn, true, 'Guardando…');
-  const del = await sb.from('schedules').delete().eq('owner_id', S.user.id);
-  const ins = del.error || !rows.length ? { data: [], error: del.error } : await sb.from('schedules').insert(rows).select();
+  const { data, error } = await sb.rpc('save_schedule', { p_rows: rows });
   busy(btn, false);
-  if (ins.error) return setErr('hr-err2', 'No se pudo guardar el horario. Intenta de nuevo.');
-  S.schedules = ins.data; S.week = null; render(); toast('Horario guardado');
+  if (error) return setErr('hr-err2', error.code === '23P01' ? 'No se guardó: hay horarios que se cruzan.' : 'No se pudo guardar el horario. Intenta de nuevo; tu horario anterior sigue igual.');
+  S.schedules = data; S.week = null; render(); toast('Horario guardado');
 }
 
 async function addOff(btn) {
@@ -519,8 +556,14 @@ async function addOff(btn) {
 V.ubicaciones = () => `<div class="title-row"><h1>Ubicaciones</h1><button class="btn pri" data-a="locForm">+ Agregar ubicación</button></div>
   <p class="muted" style="margin-top:-8px">Agrega tus consultorios. Si das terapia por videollamada, agrega también una ubicación “En línea”.</p>
   <div class="grid">${S.locations.map(l => `<article class="card"><div class="who"><span class="ic-box">${ic(l.kind === 'en_linea' ? 'video' : 'pin')}</span><div><b>${esc(l.name)}</b><small>${l.kind === 'en_linea' ? 'En línea' : esc([l.address, l.city].filter(Boolean).join(', '))}</small>${l.kind === 'presencial' ? `<small><a href="${esc(PA.gmaps(l))}" target="_blank" rel="noopener">Ver en Google Maps</a></small><small style="color:${l.lat != null ? 'var(--ok)' : 'var(--warn)'}">${l.lat != null ? 'Ubicada en el mapa' : 'No encontramos la dirección: edítala y toca el mapa para ubicarla'}</small>` : ''}</div></div>
-    <div class="acts" style="margin-top:12px"><button class="btn neu sm" data-a="locForm" data-id="${l.id}">Editar</button><button class="btn danger sm" data-a="delLoc" data-id="${l.id}" data-confirm="Toca otra vez para eliminar">Eliminar</button></div></article>`).join('') || '<div class="empty">Todavía no agregas ubicaciones.</div>'}</div>`;
+    <div class="small" style="margin-top:10px">${locHours(l.id) ? `${ic('clock', 13)} ${locHours(l.id)}` : '<span class="muted">Sin horario asignado. Asígnalo en <a href="#horario">Horario</a>.</span>'}</div>
+    <div class="acts" style="margin-top:12px"><button class="btn neu sm" data-a="locForm" data-id="${l.id}">Editar</button><button class="btn danger sm" data-a="delLoc" data-id="${l.id}" data-confirm="Toca otra vez: también se borran sus horarios">Eliminar</button></div></article>`).join('') || '<div class="empty">Todavía no agregas ubicaciones.</div>'}</div>`;
 
+function locHours(id) {
+  const D3 = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+  return S.schedules.filter(r => r.location_id === id).sort((a, b) => ((a.weekday + 6) % 7) - ((b.weekday + 6) % 7) || a.start_time.localeCompare(b.start_time))
+    .map(r => `${D3[r.weekday]} ${r.start_time.slice(0, 5)}–${r.end_time.slice(0, 5)}`).join(' · ');
+}
 function locForm(id) {
   const l = S.locations.find(x => x.id === id) || { kind: 'presencial' };
   openModal(`<h3>${l.id ? 'Editar ubicación' : 'Nueva ubicación'}</h3><p class="sub">Así la verán tus pacientes al agendar.</p><div class="form">
@@ -774,7 +817,7 @@ async function uploadPhoto(f) {
 document.addEventListener('input', e => {
   const t = e.target;
   if (t.dataset.b && S.builder) syncBuilder(t);
-  if (t.dataset.w) { weekState()[t.dataset.w][+t.dataset.i][t.dataset.f] = t.value; }
+  if (t.dataset.w) { weekState()[t.dataset.w][+t.dataset.i][t.dataset.f] = t.value || null; if (t.dataset.f === 'loc') t.closest('.rng').style.setProperty('--lc', locColor(t.value)); showClashes(); }
   if (t.id === 'cl-q') filterClients();
   if (t.id === 'pf-slug') updateSlugUrl();
 });
@@ -818,8 +861,9 @@ document.addEventListener('click', async e => {
     case 'setStatus': setStatus(d.id, d.s, el); break;
     case 'receipt': showReceipt(d.id); break;
     case 'saveSession': saveSession(el); break;
-    case 'wkAdd': { const W = weekState()[d.d], last = W[W.length - 1]; W.push(last ? { start: last.end, end: last.end < '20:00' ? String(+last.end.slice(0, 2) + 2).padStart(2, '0') + last.end.slice(2) : '21:00' } : { start: '09:00', end: '14:00' }); render(); break; }
-    case 'wkDel': weekState()[d.d].splice(+d.i, 1); render(); break;
+    case 'wkAdd': { const W = weekState()[d.d], last = W[W.length - 1], loc = last ? last.loc : S.locations[0]?.id || null;
+      W.push(last ? { start: last.end, end: last.end < '20:00' ? String(+last.end.slice(0, 2) + 2).padStart(2, '0') + last.end.slice(2) : '21:00', loc } : { start: '09:00', end: '14:00', loc }); render(); showClashes(); break; }
+    case 'wkDel': weekState()[d.d].splice(+d.i, 1); render(); showClashes(); break;
     case 'saveWeek': saveWeek(el); break;
     case 'addOff': addOff(el); break;
     case 'delOff': { busy(el, true); const r = await sb.from('time_off').delete().eq('id', d.id); if (r.error) { busy(el, false); return toast('No se pudo quitar.'); } S.timeOff = S.timeOff.filter(t => t.id !== d.id); render(); toast('Descanso quitado'); break; }
@@ -831,7 +875,7 @@ document.addEventListener('click', async e => {
       if (!d.armed) { el.dataset.armed = 1; el.textContent = d.confirm; return; }
       busy(el, true); const r = await sb.from('locations').delete().eq('id', d.id);
       if (r.error) { busy(el, false); return toast('No se pudo eliminar.'); }
-      S.locations = S.locations.filter(l => l.id !== d.id); render(); toast('Ubicación eliminada'); break;
+      S.locations = S.locations.filter(l => l.id !== d.id); S.schedules = S.schedules.filter(r => r.location_id !== d.id); S.week = null; render(); toast('Ubicación y sus horarios eliminados'); break;
     }
     case 'clientForm': clientForm(d.id); break;
     case 'saveClient': saveClient(d.id, el); break;

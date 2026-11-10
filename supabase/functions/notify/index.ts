@@ -67,7 +67,7 @@ async function handle(event: string, appointmentId: string) {
   const first = String(a.patient_name).split(' ')[0];
   const rows: [string, string][] = [
     ['Cuándo', esc(when(a, tz))], ['Modalidad', MODE[a.mode] || a.mode],
-    ...(loc ? [['Lugar', esc([loc.name, loc.address, loc.city].filter(Boolean).join(', '))] as [string, string],
+    ...(loc && loc.kind !== 'en_linea' ? [['Lugar', esc([loc.name, loc.address, loc.city].filter(Boolean).join(', '))] as [string, string],
       ['Cómo llegar', `<a href="${esc(gdir(loc))}" style="color:#4f63e8">Abrir en Google Maps</a>`] as [string, string]] : []),
     ['Psicólogo', esc(p.full_name)],
   ];

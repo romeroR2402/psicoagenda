@@ -20,6 +20,11 @@
 .loc:first-child{border-top:0}
 .step{display:flex;align-items:center;gap:10px;font-weight:700;font-size:14px;margin:18px 0 10px}
 .step b{width:24px;height:24px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-size:12px}
+.places{display:flex;flex-direction:column;gap:8px}
+.place{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:14px;border:1.5px solid var(--line);background:var(--card);text-align:left;color:var(--muted)}
+.place b{display:block;color:var(--ink);font-size:14px}
+.place small{display:block;font-size:12px}
+.place[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
 .locmap{height:240px;border-radius:16px;margin-top:12px;overflow:hidden;z-index:0}
 .back{display:inline-flex;align-items:center;gap:6px;color:var(--muted);text-decoration:none;font-weight:600;font-size:13px;margin-bottom:14px}
 .layout>*{min-width:0}
@@ -44,19 +49,18 @@
 const { sb, esc, av, ic, money, MODE, fmtDay, fmtTime, dayKey } = PA;
 const root = document.getElementById('root');
 const slug = new URLSearchParams(location.search).get('p') || '';
-let P = null, slots = [], byDay = {}, B = { mode: null, loc: null, day: null, slot: null };
+let P = null, slots = [], byDay = {}, B = { loc: null, day: null, slot: null };
+const DOW3 = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+const locOf = id => (P.locations || []).find(l => l.id === id);
 
 function fail(msg) { root.innerHTML = `<a class="back" href="index.html">← Volver al buscador</a><div class="card"><h2>No encontramos este perfil</h2><p class="muted">${msg}</p></div>`; }
 
 async function load() {
   if (!sb) return fail('No se pudo cargar la conexión.');
-  const { data, error } = await sb.from('profiles').select('id,full_name,slug,title,license,bio,topics,price,session_minutes,timezone,photo_url,whatsapp,languages,locations(id,kind,name,address,city,lat,lng,maps_url)')
+  const { data, error } = await sb.from('profiles').select('id,full_name,slug,title,license,bio,topics,price,session_minutes,timezone,photo_url,whatsapp,languages,locations(id,kind,name,address,city,lat,lng,maps_url),schedules(weekday,start_time,end_time,location_id)')
     .eq('slug', slug).eq('is_listed', true).eq('is_active', true).maybeSingle();
   if (error || !data) return fail('Puede que el link esté mal escrito o que el psicólogo ya no esté disponible.');
   P = data; document.title = `${P.full_name} · PsicoAgenda`;
-  const locs = P.locations || [];
-  if (locs.some(l => l.kind === 'en_linea')) B.mode = 'en_linea';
-  else if (locs.some(l => l.kind === 'presencial')) { B.mode = 'presencial'; B.loc = locs.find(l => l.kind === 'presencial').id; }
   render();
   await loadSlots();
 }
@@ -64,15 +68,32 @@ async function load() {
 async function loadSlots() {
   const from = new Date().toLocaleDateString('en-CA', { timeZone: P.timezone });
   const { data, error } = await sb.rpc('available_slots', { p_psych: P.id, p_from: from, p_days: 28 });
-  slots = error ? [] : data.map(r => r.starts_at);
-  byDay = {};
-  slots.forEach(s => { const k = dayKey(s, P.timezone); (byDay[k] = byDay[k] || []).push(s); });
-  const want = new URLSearchParams(location.search).get('slot');
-  if (want && !B.slot && slots.includes(want)) { B.slot = want; B.day = dayKey(want, P.timezone); history.replaceState(null, '', location.pathname + '?p=' + encodeURIComponent(slug) + '#agendar'); }
-  if (!B.day || !byDay[B.day]) B.day = Object.keys(byDay)[0] || null;
-  if (B.slot && !slots.includes(B.slot)) B.slot = null;
+  slots = error ? [] : data.map(r => ({ s: r.starts_at, loc: r.location_id }));
+  const want = new URLSearchParams(location.search).get('slot'), hit = slots.find(x => x.s === want);
+  if (hit && !B.slot) {
+    B.loc = hit.loc || placeOptions()[0]?.id || null; B.slot = hit.s; B.day = dayKey(hit.s, P.timezone);
+    history.replaceState(null, '', location.pathname + '?p=' + encodeURIComponent(slug) + '#agendar');
+  }
+  if (!B.loc || !placeOptions().some(l => l.id === B.loc)) B.loc = placeOptions()[0]?.id || null;
+  regroup();
   renderBooking(error ? 'No pudimos cargar los horarios. Recarga la página.' : '');
   if (location.hash === '#agendar') document.getElementById('agendar').scrollIntoView({ block: 'start' });
+}
+
+// Ubicaciones con horarios libres; los horarios sin ubicación asignada valen para todas.
+function placeOptions() {
+  const first = l => (slots.find(x => x.loc === l.id || x.loc === null) || {}).s || '9';
+  return (P.locations || []).filter(l => slots.some(x => x.loc === l.id || x.loc === null)).sort((a, b) => first(a).localeCompare(first(b)));
+}
+function regroup() {
+  byDay = {};
+  slots.filter(x => x.loc === B.loc || x.loc === null).forEach(x => { const k = dayKey(x.s, P.timezone); (byDay[k] = byDay[k] || []).push(x.s); });
+  if (!B.day || !byDay[B.day]) B.day = Object.keys(byDay)[0] || null;
+  if (B.slot && !(byDay[dayKey(B.slot, P.timezone)] || []).includes(B.slot)) B.slot = null;
+}
+function hoursOf(l) {
+  const rs = (P.schedules || []).filter(r => r.location_id === l.id || r.location_id === null).sort((a, b) => ((a.weekday + 6) % 7) - ((b.weekday + 6) % 7) || a.start_time.localeCompare(b.start_time));
+  return rs.map(r => `${DOW3[r.weekday]} ${r.start_time.slice(0, 5)}–${r.end_time.slice(0, 5)}`).join(' · ');
 }
 
 function render() {
@@ -88,6 +109,7 @@ function render() {
       </section>
       ${P.bio ? `<section class="card"><h3>Sobre mí</h3><p class="pre" style="margin:8px 0 0">${esc(P.bio)}</p></section>` : ''}
       <section class="card"><h3>Dónde atiende</h3><div style="margin-top:6px">${locs.length ? locs.map(l => `<div class="loc"><span class="ic-box">${ic(l.kind === 'en_linea' ? 'video' : 'pin')}</span><div><b>${esc(l.name)}</b><div class="muted small">${l.kind === 'en_linea' ? 'Consulta en línea por videollamada' : esc([l.address, l.city].filter(Boolean).join(', '))}</div>
+          ${hoursOf(l) ? `<div class="small" style="margin-top:4px">${ic('clock', 13)} ${hoursOf(l)}</div>` : ''}
           ${l.kind === 'presencial' ? `<div class="chips" style="margin-top:8px"><a class="btn sec sm" href="${esc(PA.gdir(l))}" target="_blank" rel="noopener">${ic('pin', 14)} Cómo llegar</a><a class="btn neu sm" href="${esc(PA.gmaps(l))}" target="_blank" rel="noopener">Ver en Google Maps</a></div>` : ''}</div></div>`).join('') : '<p class="muted">Aún no hay ubicaciones registradas.</p>'}</div>
         ${locs.some(l => l.lat != null) ? '<div class="locmap" id="locmap"></div>' : ''}</section>
     </div>
@@ -105,17 +127,16 @@ function render() {
 
 function renderBooking(err = '') {
   const el = document.getElementById('booking'); if (!el) return;
-  const locs = P.locations || [], pres = locs.filter(l => l.kind === 'presencial'), online = locs.some(l => l.kind === 'en_linea');
-  if (!B.mode) { el.innerHTML = `<h2>Agenda tu cita</h2><p class="muted">Este psicólogo todavía no configura dónde atiende. Vuelve pronto.</p>`; return; }
+  const opts = placeOptions(), cur = locOf(B.loc);
+  if (!(P.locations || []).length) { el.innerHTML = `<h2>Agenda tu cita</h2><p class="muted">Este psicólogo todavía no configura dónde atiende. Vuelve pronto.</p>`; return; }
+  const nextOf = l => { const x = slots.find(y => y.loc === l.id || y.loc === null); return x ? new Date(x.s).toLocaleDateString('es-MX', { timeZone: P.timezone, day: 'numeric', month: 'short' }).replace('.', '') : ''; };
   const days = Object.keys(byDay);
   const keep = { n: val('bk-name'), ph: val('bk-phone'), em: val('bk-email'), no: val('bk-note') };
   const prevScroll = document.getElementById('days')?.scrollLeft || 0;
   el.innerHTML = `<h2>Agenda tu cita</h2><p class="muted small" style="margin:0">El horario se aparta al solicitarlo y se confirma cuando ${esc(P.full_name.split(' ')[0])} verifica tu pago.</p>
-    <div class="step"><b>1</b>Modalidad</div>
-    <div class="seg" role="group" aria-label="Modalidad">
-      ${online ? `<button data-mode="en_linea" aria-pressed="${B.mode === 'en_linea'}">En línea</button>` : ''}
-      ${pres.length ? `<button data-mode="presencial" aria-pressed="${B.mode === 'presencial'}">Presencial</button>` : ''}</div>
-    ${B.mode === 'presencial' && pres.length > 1 ? `<label class="field" style="margin-top:10px"><span>Consultorio</span><select id="bk-loc">${pres.map(l => `<option value="${l.id}" ${B.loc === l.id ? 'selected' : ''}>${esc(l.name)}${l.city ? ' · ' + esc(l.city) : ''}</option>`).join('')}</select></label>` : ''}
+    <div class="step"><b>1</b>¿Dónde quieres tu cita?</div>
+    ${opts.length ? `<div class="places" role="group" aria-label="Ubicación">${opts.map(l => `<button class="place" data-place="${l.id}" aria-pressed="${B.loc === l.id}">${ic(l.kind === 'en_linea' ? 'video' : 'pin', 18)}<span><b>${esc(l.name)}</b><small>${l.kind === 'en_linea' ? 'En línea' : esc(l.city || l.address || 'Presencial')} · próx. ${nextOf(l)}</small></span></button>`).join('')}</div>
+      ${cur && cur.kind === 'presencial' ? `<div class="muted small" style="margin-top:8px">${esc([cur.address, cur.city].filter(Boolean).join(', '))} · <a href="${esc(PA.gdir(cur))}" target="_blank" rel="noopener">Cómo llegar</a></div>` : ''}` : ''}
     <div class="step"><b>2</b>Día y hora</div>
     ${days.length ? `<div class="days-wrap"><button class="days-nav" data-scroll="-1" aria-label="Días anteriores"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg></button><div class="days" id="days">${days.map(k => { const d = new Date(k + 'T12:00:00');
         return `<button class="day ${k === B.day ? 'on' : ''}" data-day="${k}" aria-pressed="${k === B.day}" aria-label="${fmtDay(d)}"><small>${d.toLocaleDateString('es-MX', { weekday: 'short' }).replace('.', '')}</small><b>${d.getDate()}</b><i>${d.toLocaleDateString('es-MX', { month: 'short' }).replace('.', '')}</i></button>`; }).join('')}</div><button class="days-nav" data-scroll="1" aria-label="Más días"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button></div>
@@ -151,11 +172,11 @@ const val = id => (document.getElementById(id)?.value || '').trim();
 document.addEventListener('click', e => {
   const m = e.target.closest('[data-mode]'), d = e.target.closest('[data-day]'), s = e.target.closest('[data-slot]'), sc = e.target.closest('[data-scroll]');
   if (sc) { const row = document.getElementById('days'); row.scrollBy({ left: +sc.dataset.scroll * row.clientWidth * 0.8 }); return; }
-  if (m) { B.mode = m.dataset.mode; if (B.mode === 'presencial' && !B.loc) B.loc = P.locations.find(l => l.kind === 'presencial').id; renderBooking(); }
+  const pl = e.target.closest('[data-place]');
+  if (pl) { B.loc = pl.dataset.place; B.slot = null; B.day = null; regroup(); renderBooking(); return; }
   if (d) { B.day = d.dataset.day; B.slot = null; renderBooking(); }
   if (s) { B.slot = s.dataset.slot; renderBooking(); document.getElementById('bk-name').focus({ preventScroll: true }); }
 });
-document.addEventListener('change', e => { if (e.target.id === 'bk-loc') B.loc = e.target.value; });
 document.addEventListener('submit', async e => {
   if (e.target.id !== 'f-book') return;
   e.preventDefault();
@@ -166,7 +187,7 @@ document.addEventListener('submit', async e => {
   if (phone.replace(/\D/g, '').length < 8) return err.textContent = 'Escribe tu teléfono con al menos 8 dígitos.';
   if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return err.textContent = 'El correo no es válido.';
   btn.disabled = true; btn.textContent = 'Apartando tu horario…';
-  const { data, error } = await sb.rpc('book_appointment', { p_psych: P.id, p_starts_at: B.slot, p_mode: B.mode, p_location: B.mode === 'presencial' ? B.loc : null,
+  const { data, error } = await sb.rpc('book_appointment', { p_psych: P.id, p_starts_at: B.slot, p_mode: locOf(B.loc)?.kind || 'en_linea', p_location: B.loc,
     p_name: name, p_phone: phone, p_email: email || null, p_note: val('bk-note') || null });
   if (!error && data.ok) { location.href = 'cita.html?t=' + data.token + '&nueva=1'; return; }
   const code = error ? 'network' : data.error;

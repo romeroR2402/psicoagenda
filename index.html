@@ -153,7 +153,7 @@ const FILTERS = [
   ['Ubicación', [['near', 'Cerca de mí'], ['online', 'Solo en línea']]],
   ['Elección del psicólogo', [['women', 'Solo mujeres'], ['kids', 'Atiende a niños'], ['english', 'Habla inglés']]],
 ];
-const F = {}; let all = [], slots = {}, view = {}, me = null;
+const F = {}; let all = [], slots = {}, byLoc = {}, view = {}, me = null;
 const MAX = 4, STEP = 3, WINDOW = 14;
 const tzOf = p => p.timezone || PA.TZ;
 const keyAdd = (k, n) => { const d = new Date(k + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
@@ -163,6 +163,8 @@ const pinned = p => (p.locations || []).filter(l => l.kind === 'presencial' && l
 const dist = p => me && pinned(p).length ? Math.min(...pinned(p).map(l => km(me, l))) : null;
 
 function daySlots(p, k) { return (slots[p.id] || {})[k] || []; }
+// Próximo horario libre en una ubicación (los horarios sin ubicación valen para todas).
+function nextAt(p, l) { const a = byLoc[p.id + '|' + l.id], b = byLoc[p.id + '|*']; return a && b ? (a < b ? a : b) : a || b || null; }
 function nextSlot(p) { const s = Object.values(slots[p.id] || {}).flat(); return s.length ? s.sort()[0] : null; }
 
 function mini(p) {
@@ -244,7 +246,7 @@ function mapModal(focusId) {
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(map);
   const pts = [];
   res.forEach(p => pinned(p).forEach(l => {
-    const ns = nextSlot(p), tz = tzOf(p);
+    const ns = nextAt(p, l), tz = tzOf(p);
     const label = `<b>${p.price != null ? '$' + p.price.toLocaleString('es-MX') : 'Consultar'}</b><span>${ns ? 'Próx. ' + kLabel(dayKey(ns, tz), { day: 'numeric', month: 'short' }) : 'Sin horario'}</span>`;
     const m = L.marker([l.lat, l.lng], { icon: L.divIcon({ className: '', html: `<div class="mk ${p.id === focusId ? 'on' : ''}">${label}</div>`, iconSize: [0, 0] }) }).addTo(map);
     m.bindPopup(`<b>${esc(p.full_name)}</b><br><span style="color:#6f6d88">${esc([l.name, l.address].filter(Boolean).join(' · '))}</span><br>Consulta: <b>${money(p.price)}</b><br><a href="perfil.html?p=${encodeURIComponent(p.slug)}#agendar">Ver horarios y agendar</a> · <a href="${esc(PA.gdir(l))}" target="_blank" rel="noopener">Cómo llegar</a>`, { offset: [0, -36] });
@@ -260,7 +262,7 @@ function mapModal(focusId) {
 async function load() {
   if (!sb) { list.innerHTML = '<div class="empty" style="margin:18px">No se pudo cargar la conexión.</div>'; return; }
   const { data, error } = await sb.from('profiles')
-    .select('id,full_name,slug,title,license,bio,topics,price,session_minutes,photo_url,timezone,gender,languages,locations(kind,name,address,city,lat,lng,maps_url)')
+    .select('id,full_name,slug,title,license,bio,topics,price,session_minutes,photo_url,timezone,gender,languages,locations(id,kind,name,address,city,lat,lng,maps_url)')
     .eq('is_listed', true).eq('is_active', true).order('created_at');
   if (error) { list.innerHTML = '<div class="empty" style="margin:18px">No pudimos cargar los psicólogos. Revisa tu conexión y recarga la página.</div>'; return; }
   all = data;
@@ -272,9 +274,10 @@ async function load() {
   show();
   if (all.length) {
     const r = await sb.rpc('search_availability', { p_ids: all.map(p => p.id), p_from: PA.todayKey(), p_days: WINDOW });
-    (r.data || []).forEach(({ psychologist_id: id, starts_at: s }) => {
+    (r.data || []).forEach(({ psychologist_id: id, starts_at: s, location_id: loc }) => {
       const p = all.find(x => x.id === id), k = dayKey(s, tzOf(p));
       ((slots[id] = slots[id] || {})[k] = slots[id][k] || []).push(s);
+      const key = id + '|' + (loc || '*'); if (!byLoc[key] || s < byLoc[key]) byLoc[key] = s;
     });
     show();
   }
