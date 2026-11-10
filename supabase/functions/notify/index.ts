@@ -1,4 +1,4 @@
-// Avisos por correo de PsicoAgenda. La llama la base de datos (trigger y recordatorios)
+// Avisos por correo de MiConsulta. La llama la base de datos (trigger y recordatorios)
 // con la clave compartida en el encabezado x-notify-secret.
 // Proveedor de correo: BREVO_API_KEY o RESEND_API_KEY, y EMAIL_FROM (remitente verificado).
 import { createClient } from 'npm:@supabase/supabase-js@2.45.4';
@@ -26,7 +26,7 @@ function when(a: any, tz: string) {
 function layout(title: string, intro: string, rows: [string, string][], button?: [string, string], foot = '') {
   return `<!doctype html><html><body style="margin:0;background:#f7f6fb;font-family:Arial,Helvetica,sans-serif;color:#1e1c2f">
   <div style="max-width:560px;margin:0 auto;padding:28px 18px">
-    <div style="font-size:20px;font-weight:800;margin-bottom:18px"><span style="display:inline-block;width:30px;height:30px;line-height:30px;text-align:center;border-radius:9px;background:#f4621f;color:#fff;margin-right:8px">Ψ</span>PsicoAgenda</div>
+    <div style="font-size:20px;font-weight:800;margin-bottom:18px"><span style="display:inline-block;width:30px;height:30px;line-height:30px;text-align:center;border-radius:9px;background:#f4621f;color:#fff;margin-right:8px">+</span>MiConsulta</div>
     <div style="background:#fff;border-radius:18px;padding:24px">
       <h1 style="font-size:22px;margin:0 0 8px">${esc(title)}</h1>
       <p style="color:#6f6d88;margin:0 0 18px;line-height:1.5">${intro}</p>
@@ -43,12 +43,12 @@ async function sendEmail(to: string, subject: string, html: string, replyTo?: st
   if (brevo) {
     r = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST', headers: { 'api-key': brevo, 'Content-Type': 'application/json', accept: 'application/json' },
-      body: JSON.stringify({ sender: { email: FROM, name: 'PsicoAgenda' }, to: [{ email: to }], subject, htmlContent: html, ...(replyTo ? { replyTo: { email: replyTo } } : {}) }),
+      body: JSON.stringify({ sender: { email: FROM, name: 'MiConsulta' }, to: [{ email: to }], subject, htmlContent: html, ...(replyTo ? { replyTo: { email: replyTo } } : {}) }),
     });
   } else if (resend) {
     r = await fetch('https://api.resend.com/emails', {
       method: 'POST', headers: { Authorization: `Bearer ${resend}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from: `PsicoAgenda <${FROM}>`, to: [to], subject, html, ...(replyTo ? { reply_to: replyTo } : {}) }),
+      body: JSON.stringify({ from: `MiConsulta <${FROM}>`, to: [to], subject, html, ...(replyTo ? { reply_to: replyTo } : {}) }),
     });
   } else return { status: 'skipped', detail: 'Falta conectar un servicio de correo' };
   if (r.ok) return { status: 'sent', detail: null };
@@ -69,7 +69,7 @@ async function handle(event: string, appointmentId: string) {
     ['Cuándo', esc(when(a, tz))], ['Modalidad', MODE[a.mode] || a.mode],
     ...(loc && loc.kind !== 'en_linea' ? [['Lugar', esc([loc.name, loc.address, loc.city].filter(Boolean).join(', '))] as [string, string],
       ['Cómo llegar', `<a href="${esc(gdir(loc))}" style="color:#4f63e8">Abrir en Google Maps</a>`] as [string, string]] : []),
-    ['Psicólogo', esc(p.full_name)],
+    ['Especialista', esc(p.full_name)],
   ];
   const psyRows: [string, string][] = [['Paciente', esc(a.patient_name)], ['Teléfono', esc(a.patient_phone)], ['Cuándo', esc(when(a, tz))], ['Modalidad', MODE[a.mode] || a.mode]];
   const out: { recipient: 'patient' | 'psychologist'; to: string | null; subject: string; html: string }[] = [];

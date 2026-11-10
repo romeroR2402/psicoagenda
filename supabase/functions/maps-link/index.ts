@@ -25,7 +25,7 @@ Deno.serve(async (req) => {
     for (let i = 0; i < 6; i++) {
       const hit = coords(url);
       if (hit) return json({ ok: true, ...hit, url });
-      const r = await fetch(url, { redirect: 'manual', headers: { 'User-Agent': 'Mozilla/5.0 PsicoAgenda' }, signal: AbortSignal.timeout(8000) });
+      const r = await fetch(url, { redirect: 'manual', headers: { 'User-Agent': 'Mozilla/5.0 MiConsulta' }, signal: AbortSignal.timeout(8000) });
       const next = r.headers.get('location');
       if (!next) {
         // Algunas páginas traen la ubicación dentro del HTML.

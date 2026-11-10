@@ -7,7 +7,7 @@ const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SE
   auth: { persistSession: false, autoRefreshToken: false },
 });
 const json = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { 'Content-Type': 'application/json' } });
-const UA = 'PsicoAgenda/1.0 (https://romeror2402.github.io/psicoagenda/)';
+const UA = 'MiConsulta/1.0 (https://romeror2402.github.io/psicoagenda/)';
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 async function nominatim(q: string) {

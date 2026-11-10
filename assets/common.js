@@ -1,4 +1,4 @@
-// PsicoAgenda · utilidades compartidas por todas las páginas
+// MiConsulta · utilidades compartidas por todas las páginas
 window.PA = (() => {
   const cfg = window.PSICO_CONFIG || {};
   const sb = window.supabase && cfg.url ? window.supabase.createClient(cfg.url, cfg.key) : null;

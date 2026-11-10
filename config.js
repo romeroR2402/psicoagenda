@@ -1,4 +1,4 @@
-// Conexión pública de PsicoAgenda. Esta clave es pública por diseño:
+// Conexión pública de MiConsulta. Esta clave es pública por diseño:
 // la seguridad la dan las reglas de acceso de la base de datos.
 window.PSICO_CONFIG = {
   url: 'https://welweahxizjuufjyzbkj.supabase.co',

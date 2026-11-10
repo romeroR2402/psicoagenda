@@ -1,4 +1,4 @@
-# PsicoAgenda
+# MiConsulta
 
 Plataforma tipo directorio para encontrar psicólogos y agendar citas con pago verificado.
 
