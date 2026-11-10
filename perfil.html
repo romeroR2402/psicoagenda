@@ -93,6 +93,7 @@ function renderBooking(err = '') {
   if (!B.mode) { el.innerHTML = `<h2>Agenda tu cita</h2><p class="muted">Este psicólogo todavía no configura dónde atiende. Vuelve pronto.</p>`; return; }
   const days = Object.keys(byDay);
   const keep = { n: val('bk-name'), ph: val('bk-phone'), em: val('bk-email'), no: val('bk-note') };
+  const prevScroll = document.getElementById('days')?.scrollLeft || 0;
   el.innerHTML = `<h2>Agenda tu cita</h2><p class="muted small" style="margin:0">El horario se aparta al solicitarlo y se confirma cuando ${esc(P.full_name.split(' ')[0])} verifica tu pago.</p>
     <div class="step"><b>1</b>Modalidad</div>
     <div class="seg" role="group" aria-label="Modalidad">
@@ -100,8 +101,8 @@ function renderBooking(err = '') {
       ${pres.length ? `<button data-mode="presencial" aria-pressed="${B.mode === 'presencial'}">Presencial</button>` : ''}</div>
     ${B.mode === 'presencial' && pres.length > 1 ? `<label class="field" style="margin-top:10px"><span>Consultorio</span><select id="bk-loc">${pres.map(l => `<option value="${l.id}" ${B.loc === l.id ? 'selected' : ''}>${esc(l.name)}${l.city ? ' · ' + esc(l.city) : ''}</option>`).join('')}</select></label>` : ''}
     <div class="step"><b>2</b>Día y hora</div>
-    ${days.length ? `<div class="days">${days.map(k => { const d = new Date(k + 'T12:00:00');
-        return `<button class="day ${k === B.day ? 'on' : ''}" data-day="${k}" aria-pressed="${k === B.day}" aria-label="${fmtDay(d)}"><small>${d.toLocaleDateString('es-MX', { weekday: 'short' }).replace('.', '')}</small><b>${d.getDate()}</b><i>${d.toLocaleDateString('es-MX', { month: 'short' }).replace('.', '')}</i></button>`; }).join('')}</div>
+    ${days.length ? `<div class="days-wrap"><button class="days-nav" data-scroll="-1" aria-label="Días anteriores">‹</button><div class="days" id="days">${days.map(k => { const d = new Date(k + 'T12:00:00');
+        return `<button class="day ${k === B.day ? 'on' : ''}" data-day="${k}" aria-pressed="${k === B.day}" aria-label="${fmtDay(d)}"><small>${d.toLocaleDateString('es-MX', { weekday: 'short' }).replace('.', '')}</small><b>${d.getDate()}</b><i>${d.toLocaleDateString('es-MX', { month: 'short' }).replace('.', '')}</i></button>`; }).join('')}</div><button class="days-nav" data-scroll="1" aria-label="Más días">›</button></div>
       <div class="muted small" style="margin:2px 0 8px">${fmtDay(new Date(B.day + 'T12:00:00'))}</div>
       <div class="slots">${byDay[B.day].map(s => `<button class="slot ${B.slot === s ? 'on' : ''}" data-slot="${s}" aria-pressed="${B.slot === s}">${fmtTime(s, P.timezone)}</button>`).join('')}</div>`
       : `<div class="empty">${err || 'No hay horarios libres en las próximas 4 semanas.'}</div>`}
@@ -115,11 +116,25 @@ function renderBooking(err = '') {
       <button class="btn pri big" id="bk-go" ${B.slot ? '' : 'disabled'}>${B.slot ? `Solicitar cita · ${fmtTime(B.slot, P.timezone)}` : 'Elige un horario'}</button>
     </form>`;
   [['bk-name', keep.n], ['bk-phone', keep.ph], ['bk-email', keep.em], ['bk-note', keep.no]].forEach(([id, v]) => { if (v) document.getElementById(id).value = v; });
+  const row = document.getElementById('days');
+  if (row) {
+    row.style.scrollBehavior = 'auto'; row.scrollLeft = prevScroll; row.style.scrollBehavior = '';
+    const on = row.querySelector('.day.on');
+    if (on && (on.offsetLeft < row.scrollLeft || on.offsetLeft + on.offsetWidth > row.scrollLeft + row.clientWidth)) row.scrollLeft = on.offsetLeft - 8;
+    navState(row);
+    row.addEventListener('scroll', () => navState(row), { passive: true });
+    row.addEventListener('wheel', e => { if (Math.abs(e.deltaY) > Math.abs(e.deltaX) && row.scrollWidth > row.clientWidth) { e.preventDefault(); row.scrollLeft += e.deltaY; } }, { passive: false });
+  }
+}
+function navState(row) {
+  const [prev, next] = row.parentElement.querySelectorAll('.days-nav');
+  prev.disabled = row.scrollLeft <= 2; next.disabled = row.scrollLeft + row.clientWidth >= row.scrollWidth - 2;
 }
 const val = id => (document.getElementById(id)?.value || '').trim();
 
 document.addEventListener('click', e => {
-  const m = e.target.closest('[data-mode]'), d = e.target.closest('[data-day]'), s = e.target.closest('[data-slot]');
+  const m = e.target.closest('[data-mode]'), d = e.target.closest('[data-day]'), s = e.target.closest('[data-slot]'), sc = e.target.closest('[data-scroll]');
+  if (sc) { const row = document.getElementById('days'); row.scrollBy({ left: +sc.dataset.scroll * row.clientWidth * 0.8 }); return; }
   if (m) { B.mode = m.dataset.mode; if (B.mode === 'presencial' && !B.loc) B.loc = P.locations.find(l => l.kind === 'presencial').id; renderBooking(); }
   if (d) { B.day = d.dataset.day; B.slot = null; renderBooking(); }
   if (s) { B.slot = s.dataset.slot; renderBooking(); document.getElementById('bk-name').focus({ preventScroll: true }); }
