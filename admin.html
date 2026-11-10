@@ -48,7 +48,7 @@ td.num{font-variant-numeric:tabular-nums;text-align:center}
 (() => {
 const { sb, esc, av, ic, money, MODE, DOW, fmtDT, fmtShort, pill, toast, openModal, closeModal, copy, norm } = PA;
 const root = document.getElementById('root');
-const S = { authKnown: false, user: null, isAdmin: null, users: [], q: '' };
+const S = { authKnown: false, user: null, isAdmin: null, users: [], q: '', tab: location.hash === '#pacientes' ? 'clients' : location.hash === '#ajustes' ? 'settings' : 'pros', settings: null, clients: [], cq: '' };
 const QTYPES = { single: 'Una opción', multi: 'Varias opciones', scale: 'Escala 1 a 5', freq: 'Frecuencia', text: 'Respuesta abierta' };
 const FREQ = ['Nunca', 'Varios días', 'Más de la mitad de los días', 'Casi todos los días'];
 const val = id => (document.getElementById(id)?.value || '').trim();
@@ -66,7 +66,11 @@ else sb.auth.onAuthStateChange((ev, session) => {
 async function load() {
   const { data } = await sb.rpc('is_admin');
   S.isAdmin = !!data;
-  if (S.isAdmin) { const r = await sb.rpc('admin_list_psychologists'); S.users = r.error ? [] : r.data; }
+  if (S.isAdmin) {
+    const [r, st, cl] = await Promise.all([sb.rpc('admin_list_psychologists'), sb.from('platform_settings').select('*').maybeSingle(),
+      sb.from('clients').select('id,full_name,email,phone,created_at,owner_id').order('created_at', { ascending: false }).limit(2000)]);
+    S.users = r.error ? [] : r.data; S.settings = st.data; S.clients = cl.data || [];
+  }
   render();
 }
 
@@ -82,28 +86,96 @@ function render() {
   }
   if (S.isAdmin === null) { root.innerHTML = '<div class="empty">Verificando permisos…</div>'; return; }
   if (!S.isAdmin) { root.innerHTML = '<div class="auth"><div class="card"><h2>Sin permisos</h2><p class="muted">Esta cuenta no es de administrador. Entra con la cuenta de super administrador.</p></div></div>'; return; }
+  const tabs = `<div class="seg" role="tablist" style="margin-bottom:18px">${[['pros', 'Psicólogos'], ['clients', 'Pacientes'], ['settings', 'Ajustes']].map(([k, t]) => `<button data-a="tab" data-t="${k}" aria-pressed="${S.tab === k}">${t}</button>`).join('')}</div>`;
+  if (S.tab === 'clients') { root.innerHTML = tabs + clientsView(); return; }
+  if (S.tab === 'settings') { root.innerHTML = tabs + settingsView(); return; }
   const U = S.users, pros = U.filter(u => u.profile);
   const q = norm(S.q);
+  const soon = U.filter(u => { const a = acc(u); return a.k === 'ok' && a.days <= 7; }).length;
+  const month = new Date().toISOString().slice(0, 7);
   const rows = U.filter(u => !q || norm([u.email, u.profile?.full_name, u.profile?.title].join(' ')).includes(q));
-  root.innerHTML = `<div class="title-row"><h1>Psicólogos registrados</h1><button class="btn neu sm" data-a="reload">Actualizar</button></div>
+  root.innerHTML = tabs + `<div class="title-row"><h1>Psicólogos registrados</h1><button class="btn neu sm" data-a="reload">Actualizar</button></div>
     <div class="stats">
       <div class="card stat"><b>${U.length}</b><small>Cuentas registradas</small></div>
-      <div class="card stat"><b>${pros.filter(u => u.profile.is_listed && u.profile.is_active).length}</b><small>Publicados en el buscador</small></div>
+      <div class="card stat"><b>${U.filter(u => ['ok', 'trial'].includes(acc(u).k)).length}</b><small>Con acceso activo</small></div>
+      <div class="card stat"><b>${soon + U.filter(u => acc(u).k === 'trial' && acc(u).days <= 7).length}</b><small>Vencen en 7 días o menos</small></div>
+      <div class="card stat"><b>${U.filter(u => acc(u).k === 'off').length}</b><small>Sin acceso o vencidos</small></div>
+      <div class="card stat"><b>${pros.filter(u => u.profile.is_listed && u.profile.is_active && acc(u).k !== 'off').length}</b><small>Visibles en el buscador</small></div>
       <div class="card stat"><b>${U.reduce((n, u) => n + u.appointments, 0)}</b><small>Citas totales</small></div>
-      <div class="card stat"><b>${U.reduce((n, u) => n + u.answers, 0)}</b><small>Encuestas respondidas</small></div>
     </div>
     <label class="field" style="max-width:420px;margin-bottom:14px"><span>Buscar</span><input id="q" type="search" placeholder="Nombre o correo" value="${esc(S.q)}"></label>
-    <div class="tbl-wrap"><table><thead><tr><th>Psicólogo</th><th>Usuario (correo)</th><th>Registro</th><th>Último acceso</th><th>Estado</th><th>Citas</th><th>Pacientes</th><th>Encuestas</th><th>Acciones</th></tr></thead><tbody>
+    <div class="tbl-wrap"><table><thead><tr><th>Psicólogo</th><th>Usuario (correo)</th><th>Acceso</th><th>Perfil</th><th>Último acceso</th><th>Citas</th><th>Pacientes</th><th>Encuestas</th><th>Acciones</th></tr></thead><tbody>
       ${rows.map(u => { const p = u.profile;
         const st = !u.confirmed ? '<span class="pill p-warn">Correo sin confirmar</span>' : !p ? '<span class="pill p-mute">Sin perfil</span>' : !p.is_active ? '<span class="pill p-bad">Desactivado</span>' : p.is_listed ? '<span class="pill p-ok">Publicado</span>' : '<span class="pill p-mute">No publicado</span>';
         return `<tr><td><div class="who">${av(p?.full_name || u.email, 'sm', p?.photo_url)}<div><b>${esc(p?.full_name || '—')}</b><small>${esc(p?.title || '')}${u.is_admin ? ' · Admin' : ''}</small></div></div></td>
-          <td>${esc(u.email)}</td><td>${date(u.created_at)}</td><td>${date(u.last_sign_in_at)}</td><td>${st}</td>
+          <td>${esc(u.email)}<small class="muted" style="display:block">Desde ${date(u.created_at)}</small></td><td>${accPill(u)}</td><td>${st}</td><td>${date(u.last_sign_in_at)}</td>
           <td class="num">${u.appointments}</td><td class="num">${u.clients}</td><td class="num">${u.surveys}</td>
-          <td><div class="acts"><button class="btn neu sm" data-a="detail" data-id="${u.id}">Ver</button><button class="btn sec sm" data-a="pass" data-id="${u.id}">Contraseña</button></div></td></tr>`; }).join('') || '<tr><td colspan="9"><div class="empty">Sin resultados.</div></td></tr>'}
+          <td><div class="acts">${u.is_admin ? '' : `<button class="btn pri sm" data-a="access" data-id="${u.id}">Acceso</button>`}<button class="btn neu sm" data-a="detail" data-id="${u.id}">Ver</button><button class="btn sec sm" data-a="pass" data-id="${u.id}">Contraseña</button></div></td></tr>`; }).join('') || '<tr><td colspan="9"><div class="empty">Sin resultados.</div></td></tr>'}
     </tbody></table></div>`;
 }
 
 const userOf = id => S.users.find(u => u.id === id);
+const PLAN = { prueba: 'Prueba', mensual: 'Mensual', trimestral: 'Trimestral', semestral: 'Semestral', anual: 'Anual', personalizado: 'Personalizado', sin_acceso: 'Sin acceso' };
+// Estado de acceso: admin, trial (prueba vigente), ok (pagado vigente) u off (vencido o sin acceso)
+function acc(u) {
+  if (u.is_admin) return { k: 'admin', days: Infinity };
+  const s = u.subscription, until = s && s.access_until ? new Date(s.access_until) : null;
+  const days = until ? Math.ceil((until - Date.now()) / 864e5) : -Infinity;
+  if (!until || days <= 0) return { k: 'off', days, until, plan: s ? s.plan : 'sin_acceso' };
+  return { k: s.plan === 'prueba' ? 'trial' : 'ok', days, until, plan: s.plan };
+}
+function accPill(u) {
+  const a = acc(u);
+  if (a.k === 'admin') return '<span class="pill p-calm">Administrador</span>';
+  if (a.k === 'off') return `<span class="pill p-bad">${a.until ? 'Venció el ' + date(a.until) : 'Sin acceso'}</span>`;
+  return `<span class="pill ${a.k === 'trial' ? 'p-warn' : 'p-ok'}">${PLAN[a.plan]} · ${a.days <= 7 ? `vence en ${a.days} día${a.days === 1 ? '' : 's'}` : 'hasta ' + date(a.until)}</span>`;
+}
+
+async function accessModal(id) {
+  const u = userOf(id), a = acc(u), def = S.settings?.auto_trial_days || 14;
+  const { data: pays } = await sb.from('subscription_payments').select('*').eq('user_id', id).order('created_at', { ascending: false });
+  openModal(`<h3>Acceso de ${esc(u.profile?.full_name || u.email)}</h3>
+    <p class="sub">${esc(u.email)} · ${accPill(u)}${u.paid_total > 0 ? ` · Total pagado: <b>$${Number(u.paid_total).toLocaleString('es-MX')} MXN</b>` : ''}</p>
+    <div class="card" style="box-shadow:none;border:1px solid var(--line)"><h4 style="margin:0 0 10px">Registrar un pago</h4><div class="form">
+      <div class="row2"><label class="field"><span>Monto (MXN)</span><input id="ac-amount" type="number" min="0" step="50" placeholder="Ej. 499"></label>
+        <label class="field"><span>Método</span><select id="ac-method"><option>Transferencia</option><option>Efectivo</option><option>Depósito</option><option>Tarjeta</option><option>Otro</option></select></label></div>
+      <div class="row2"><label class="field"><span>Periodo que cubre</span><select id="ac-period"><option value="mensual|30">1 mes</option><option value="trimestral|90">3 meses</option><option value="semestral|180">6 meses</option><option value="anual|365">1 año</option><option value="personalizado|0">Otro (días)</option></select></label>
+        <label class="field" id="ac-days-w" hidden><span>Días</span><input id="ac-days" type="number" min="1" max="3660" value="30"></label></div>
+      <label class="field"><span>Nota (opcional)</span><input id="ac-note" maxlength="300" placeholder="Ej. Pagó por transferencia, folio 1234"></label>
+      <p class="small muted" style="margin:0">Se suma a partir de ${a.k === 'off' ? 'hoy' : 'su fecha de vencimiento actual (' + date(a.until) + ')'}.</p>
+      <p class="err" id="ac-err"></p><button class="btn pri" data-a="pay" data-id="${id}">Registrar pago y dar acceso</button></div></div>
+    <div class="card" style="box-shadow:none;border:1px solid var(--line);margin-top:12px"><h4 style="margin:0 0 10px">Prueba gratis</h4>
+      <div class="row2" style="align-items:end"><label class="field"><span>Días de prueba a partir de hoy</span><input id="ac-trial" type="number" min="1" max="365" value="${def}"></label>
+      <button class="btn sec" data-a="trial" data-id="${id}">Dar prueba</button></div></div>
+    <div class="card" style="box-shadow:none;border:1px solid var(--line);margin-top:12px"><h4 style="margin:0 0 6px">Quitar acceso</h4>
+      <p class="small muted" style="margin:0 0 10px">Ya no podrá modificar nada en su panel y su perfil desaparece del buscador. Sus datos no se borran.</p>
+      <button class="btn danger" data-a="revoke" data-id="${id}" ${a.k === 'off' ? 'disabled' : ''}>Quitar acceso ahora</button></div>
+    <h4 style="margin:18px 0 8px">Historial de pagos</h4>
+    ${(pays || []).length ? `<div class="tbl-wrap" style="box-shadow:none;border:1px solid var(--line)"><table style="min-width:520px"><thead><tr><th>Fecha</th><th>Monto</th><th>Método</th><th>Cubre</th><th>Nota</th></tr></thead><tbody>
+      ${pays.map(x => `<tr><td>${date(x.created_at)}</td><td>$${Number(x.amount).toLocaleString('es-MX')}</td><td>${esc(x.method)}</td><td>${date(x.covers_from)} – ${date(x.covers_until)}</td><td>${esc(x.note || '')}</td></tr>`).join('')}</tbody></table></div>`
+      : '<div class="empty">Aún no hay pagos registrados.</div>'}`, true);
+}
+
+function clientsView() {
+  const owner = id => S.users.find(u => u.id === id);
+  const q = norm(S.cq);
+  const list = S.clients.filter(c => !q || norm([c.full_name, c.phone, c.email, owner(c.owner_id)?.profile?.full_name].join(' ')).includes(q));
+  return `<div class="title-row"><h1>Pacientes</h1><span class="muted">${S.clients.length} en total</span></div>
+    <label class="field" style="max-width:420px;margin-bottom:14px"><span>Buscar</span><input id="cq" type="search" placeholder="Nombre, teléfono, correo o psicólogo" value="${esc(S.cq)}"></label>
+    <div class="tbl-wrap"><table style="min-width:720px"><thead><tr><th>Paciente</th><th>Teléfono</th><th>Correo</th><th>Psicólogo</th><th>Registrado</th></tr></thead><tbody>
+      ${list.slice(0, 500).map(c => { const o = owner(c.owner_id); return `<tr><td><div class="who">${av(c.full_name, 'sm')}<b>${esc(c.full_name)}</b></div></td><td>${esc(c.phone)}</td><td>${esc(c.email || '—')}</td>
+        <td>${o ? `<button class="link" data-a="detail" data-id="${o.id}">${esc(o.profile?.full_name || o.email)}</button>` : '—'}</td><td>${date(c.created_at)}</td></tr>`; }).join('') || '<tr><td colspan="5"><div class="empty">Sin pacientes.</div></td></tr>'}
+    </tbody></table></div>${list.length > 500 ? '<p class="muted small">Mostrando los primeros 500. Usa el buscador para encontrar a alguien.</p>' : ''}`;
+}
+
+function settingsView() {
+  const st = S.settings || {};
+  return `<div class="title-row"><h1>Ajustes</h1></div>
+    <section class="card form" style="max-width:640px">
+      <label class="field"><span>Días de prueba gratis al registrarse</span><input id="st-trial" type="number" min="0" max="365" value="${st.auto_trial_days ?? 14}"><small class="muted">Pon 0 si prefieres activar a cada psicólogo a mano.</small></label>
+      <label class="field"><span>Tu contacto para renovar el acceso</span><textarea id="st-contact" maxlength="300" placeholder="Ej. WhatsApp 55 1234 5678 · correo@ejemplo.com">${esc(st.admin_contact || '')}</textarea><small class="muted">Lo ven los psicólogos cuando su prueba está por vencer o ya venció.</small></label>
+      <p class="err" id="st-err"></p><button class="btn pri" data-a="saveSettings">Guardar ajustes</button></section>`;
+}
 
 async function detail(id) {
   const u = userOf(id), p = u.profile;
@@ -162,7 +234,11 @@ async function callAdmin(body) {
   return data;
 }
 
-document.addEventListener('input', e => { if (e.target.id === 'q') { S.q = e.target.value; const pos = e.target.selectionStart; render(); const q = document.getElementById('q'); q.focus(); q.setSelectionRange(pos, pos); } });
+document.addEventListener('input', e => {
+  const id = e.target.id;
+  if (id === 'q' || id === 'cq') { S[id] = e.target.value; const pos = e.target.selectionStart; render(); const q = document.getElementById(id); q.focus(); q.setSelectionRange(pos, pos); }
+});
+document.addEventListener('change', e => { if (e.target.id === 'ac-period') document.getElementById('ac-days-w').hidden = !e.target.value.endsWith('|0'); });
 document.addEventListener('click', async e => {
   const el = e.target.closest('[data-a]'); if (!el || el.disabled) return;
   const d = el.dataset;
@@ -175,6 +251,40 @@ document.addEventListener('click', async e => {
     case 'logout': await sb.auth.signOut(); break;
     case 'reload': await load(); toast('Lista actualizada'); break;
     case 'detail': detail(d.id); break;
+    case 'tab': S.tab = d.t; history.replaceState(null, '', d.t === 'pros' ? location.pathname : '#' + { clients: 'pacientes', settings: 'ajustes' }[d.t]); render(); break;
+    case 'access': accessModal(d.id); break;
+    case 'pay': {
+      const amount = Number(val('ac-amount')), [plan, n] = val('ac-period').split('|'), days = +n || Math.round(Number(val('ac-days')));
+      if (!(amount >= 0) || val('ac-amount') === '') return setErr('ac-err', 'Escribe el monto que te pagó (puede ser 0).');
+      if (!(days >= 1 && days <= 3660)) return setErr('ac-err', 'Escribe cuántos días cubre el pago.');
+      el.disabled = true;
+      const { error } = await sb.rpc('admin_add_payment', { p_user: d.id, p_amount: amount, p_method: val('ac-method'), p_plan: plan, p_days: days, p_note: val('ac-note') || null });
+      if (error) { el.disabled = false; return setErr('ac-err', 'No se pudo registrar: ' + error.message); }
+      await load(); accessModal(d.id); toast('Pago registrado y acceso extendido'); break;
+    }
+    case 'trial': {
+      const days = Math.round(Number(val('ac-trial'))); if (!(days >= 1 && days <= 365)) return toast('Escribe de 1 a 365 días.');
+      el.disabled = true;
+      const { error } = await sb.rpc('admin_set_access', { p_user: d.id, p_plan: 'prueba', p_until: new Date(Date.now() + days * 864e5).toISOString(), p_note: null });
+      if (error) { el.disabled = false; return toast('No se pudo dar la prueba.'); }
+      await load(); accessModal(d.id); toast(`Prueba de ${days} días activada`); break;
+    }
+    case 'revoke': {
+      if (!el.dataset.armed) { el.dataset.armed = 1; el.textContent = 'Toca otra vez para quitar el acceso'; return; }
+      el.disabled = true;
+      const { error } = await sb.rpc('admin_set_access', { p_user: d.id, p_plan: 'sin_acceso', p_until: null, p_note: null });
+      if (error) { el.disabled = false; return toast('No se pudo quitar el acceso.'); }
+      await load(); accessModal(d.id); toast('Acceso quitado'); break;
+    }
+    case 'saveSettings': {
+      const days = Math.round(Number(val('st-trial')));
+      if (!(days >= 0 && days <= 365)) return setErr('st-err', 'Los días de prueba deben ser de 0 a 365.');
+      el.disabled = true;
+      const { data, error } = await sb.from('platform_settings').update({ auto_trial_days: days, admin_contact: val('st-contact') || null, updated_at: new Date().toISOString() }).eq('id', true).select().single();
+      el.disabled = false;
+      if (error) return setErr('st-err', 'No se pudo guardar.');
+      S.settings = data; setErr('st-err', ''); toast('Ajustes guardados'); break;
+    }
     case 'pass': passModal(d.id); break;
     case 'regen': document.getElementById('np').value = genPass(); break;
     case 'setPass': {
