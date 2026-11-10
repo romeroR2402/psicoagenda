@@ -1,40 +1,46 @@
 # PsicoAgenda
 
-App web para que una psicóloga gestione citas, pagos y encuestas, con una vista para pacientes.
+Plataforma tipo directorio para encontrar psicólogos y agendar citas con pago verificado.
 
-## Archivos
-- `index.html` — la app de la psicóloga (agenda, pagos, pacientes y encuestas).
-- `responder.html` — página pública donde el paciente contesta una encuesta con su link.
-- `config.js` — conexión a la base de datos (Supabase) y URL opcional de Drive.
-- `drive-pagos.gs` — Google Apps Script que guarda los comprobantes en Drive › Pagos.
+## Páginas
+| Página | Para quién | Qué hace |
+|---|---|---|
+| `index.html` | Pacientes | Buscador por tema, nombre, ciudad o en línea |
+| `perfil.html?p=…` | Pacientes | Perfil público del psicólogo, horarios libres y reserva |
+| `cita.html?t=…` | Pacientes | Link privado de su cita: ver estado, pagar (subir comprobante) o cancelar |
+| `responder.html?t=…` | Pacientes | Contestar una encuesta (se verifica con su teléfono) |
+| `panel.html` | Psicólogos | Registro, perfil, horario semanal, días de descanso, ubicaciones, citas, pacientes y encuestas |
+| `admin.html` | Super administrador | Lista de psicólogos registrados, detalle de solo lectura, restablecer contraseñas, activar o desactivar perfiles |
+| `demo.html` | — | Prototipo anterior de demostración |
 
-## Conectar los comprobantes a Google Drive
-1. Entra a https://script.google.com con la cuenta dueña de la carpeta y crea un **Nuevo proyecto**.
-2. Borra el contenido y pega todo `drive-pagos.gs`. Guarda.
-3. En el menú de funciones elige `crearCarpetaPagos` y pulsa **Ejecutar**. Acepta los permisos.
-   Se crea la carpeta **Pagos** dentro de tu carpeta.
-4. **Implementar → Nueva implementación → Aplicación web**.
-   - Ejecutar como: **Yo**
-   - Quién tiene acceso: **Cualquier persona**
-5. Copia la URL que termina en `/exec` y pégala en `index.html`:
-   `const DRIVE_UPLOAD_URL = 'https://script.google.com/macros/s/.../exec';`
-6. Publica `index.html` en tu propio hosting (por ejemplo GitHub Pages). Cada comprobante
-   que suba un paciente se guarda como `AAAA-MM-DD_HHMM_Nombre-Paciente.jpg` en Drive › Pagos.
+Archivos compartidos: `assets/app.css`, `assets/common.js` y `config.js` (conexión pública a Supabase).
 
-Nota: la vista previa en claude.ai no puede conectarse a sitios externos, así que ahí
-los comprobantes se quedan en el navegador y aparecen como "Drive sin conectar".
+## Cómo funciona una cita
+1. El paciente elige día y hora libres. El horario queda **apartado** (pago pendiente).
+2. El paciente sube la foto de su comprobante en su link de cita, y la cita pasa a **pago por revisar**.
+3. El psicólogo revisa el comprobante en su panel y la **aprueba** (o la rechaza, y el horario se libera).
+4. Quien agenda se agrega automáticamente a la lista de pacientes del psicólogo.
 
-## Pacientes y encuestas (Supabase)
-Los pacientes, encuestas y respuestas se guardan en el proyecto de Supabase **psicoagenda**.
-Cada psicóloga entra con su correo y contraseña y solo ve sus propios datos.
+Los horarios libres salen del horario semanal, menos los días de descanso y las citas ya apartadas.
 
-Configuración necesaria una sola vez, para que el correo de confirmación de cuenta funcione:
-1. Abre https://supabase.com/dashboard/project/welweahxizjuufjyzbkj/auth/url-configuration
-2. En **Site URL** escribe `https://romeror2402.github.io/psicoagenda/`
-3. En **Redirect URLs** agrega `https://romeror2402.github.io/psicoagenda/**` y guarda.
+## Base de datos (Supabase, proyecto `psicoagenda`)
+- `profiles`, `locations`, `schedules`, `time_off`, `appointments`: plataforma de citas.
+- `clients`, `surveys`, `survey_links`: pacientes y encuestas de cada psicólogo.
+- `admins`: cuentas de super administrador.
+- Bucket privado `receipts`: comprobantes de pago.
+- Función `admin-users` (`supabase/functions/admin-users`): asignar contraseña o confirmar correo, solo para administradores.
 
-Cómo funciona el link de encuesta:
-- Cada paciente recibe un link personal (`responder.html?t=...`) imposible de adivinar.
-- Al abrirlo se le pide su teléfono; si no coincide con el registrado, no ve nada.
-  Después de 5 intentos fallidos el link se bloquea.
-- Solo se puede responder una vez. La respuesta queda guardada con el nombre y teléfono del paciente.
+Cada psicólogo solo ve sus datos. El administrador puede ver los de todos, pero las contraseñas
+están cifradas y nadie puede verlas: el administrador puede asignar una nueva o enviar un correo de restablecimiento.
+
+## Configuración de Supabase (una sola vez)
+En https://supabase.com/dashboard/project/welweahxizjuufjyzbkj/auth/url-configuration:
+- **Site URL**: `https://romeror2402.github.io/psicoagenda/`
+- **Redirect URLs**: `https://romeror2402.github.io/psicoagenda/**`
+
+El correo integrado de Supabase envía pocos correos por hora. Para recibir muchos registros,
+configura un SMTP propio en Authentication → Emails. Mientras tanto, el administrador puede confirmar cuentas a mano.
+
+## Comprobantes en Google Drive (opcional)
+`drive-pagos.gs` es un Apps Script que guarda imágenes en una carpeta "Pagos" de Drive.
+Hoy los comprobantes se guardan en Supabase (`receipts`); el script queda como opción futura.

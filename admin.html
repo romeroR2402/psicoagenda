@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Administración · PsicoAgenda</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="assets/app.css">
+<style>
+.page{padding-block:28px 64px}
+.auth{max-width:440px;margin:48px auto}
+.title-row{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+.title-row h1{font-size:clamp(24px,3vw,30px)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
+.stat b{display:block;font-family:var(--f-display);font-size:28px;font-variant-numeric:tabular-nums}
+.stat small{color:var(--muted);font-weight:600}
+.tbl-wrap{overflow-x:auto;background:var(--card);border-radius:20px;box-shadow:var(--shadow)}
+table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:860px}
+th{text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:12px 14px;border-bottom:1px solid var(--line);font-weight:700}
+td{padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+td.num{font-variant-numeric:tabular-nums;text-align:center}
+.acts{display:flex;gap:6px;flex-wrap:wrap}
+.sec{margin-top:18px}
+.sec h4{margin:0 0 8px;font-size:15px}
+.ans{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:6px;font-size:13px}
+.ans li{display:flex;justify-content:space-between;gap:12px}
+.ans li span{color:var(--muted)}
+.qlist{margin:8px 0 0;padding-left:20px;font-size:13.5px;display:flex;flex-direction:column;gap:4px}
+.qlist small{color:var(--muted)}
+.note{background:var(--calm-soft);color:var(--calm);border-radius:14px;padding:12px 14px;font-size:13px;font-weight:600}
+</style>
+</head>
+<body class="wash">
+<header class="topbar"><div class="wrap gutter">
+  <a class="brand" href="index.html"><i>Ψ</i>PsicoAgenda <span class="pill p-calm" style="font-family:var(--f-body)">Admin</span></a>
+  <nav class="top-links" id="top-user"></nav>
+</div></header>
+<main class="page"><div class="wrap gutter" id="root"><div class="empty">Cargando…</div></div></main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script src="assets/common.js"></script>
+<script>
+(() => {
+const { sb, esc, av, ic, money, MODE, DOW, fmtDT, fmtShort, pill, toast, openModal, closeModal, copy, norm } = PA;
+const root = document.getElementById('root');
+const S = { authKnown: false, user: null, isAdmin: null, users: [], q: '' };
+const QTYPES = { single: 'Una opción', multi: 'Varias opciones', scale: 'Escala 1 a 5', freq: 'Frecuencia', text: 'Respuesta abierta' };
+const FREQ = ['Nunca', 'Varios días', 'Más de la mitad de los días', 'Casi todos los días'];
+const val = id => (document.getElementById(id)?.value || '').trim();
+const setErr = (id, m) => { const e = document.getElementById(id); if (e) e.textContent = m; return false; };
+const date = d => d ? new Date(d).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+
+if (!sb) root.innerHTML = '<div class="empty">No se pudo cargar la conexión.</div>';
+else sb.auth.onAuthStateChange((ev, session) => {
+  const prev = S.user && S.user.id;
+  S.authKnown = true; S.user = session ? session.user : null;
+  if ((S.user && S.user.id) !== prev) { S.isAdmin = null; if (S.user) setTimeout(load, 0); }
+  render();
+});
+
+async function load() {
+  const { data } = await sb.rpc('is_admin');
+  S.isAdmin = !!data;
+  if (S.isAdmin) { const r = await sb.rpc('admin_list_psychologists'); S.users = r.error ? [] : r.data; }
+  render();
+}
+
+function render() {
+  document.getElementById('top-user').innerHTML = S.user ? `<a class="btn neu sm" href="panel.html">Mi panel</a><button class="btn neu sm" data-a="logout">${ic('out', 15)} Salir</button>` : '';
+  if (!S.authKnown) return;
+  if (!S.user) {
+    root.innerHTML = `<div class="auth"><div class="card form"><div><h1 style="font-size:26px">Administración</h1><p class="muted" style="margin:0">Entra con tu cuenta de super administrador.</p></div>
+      <label class="field"><span>Correo</span><input id="lg-email" type="email" autocomplete="email"></label>
+      <label class="field"><span>Contraseña</span><input id="lg-pass" type="password" autocomplete="current-password"></label>
+      <p class="err" id="lg-err"></p><button class="btn pri big" data-a="login">Entrar</button></div></div>`;
+    return;
+  }
+  if (S.isAdmin === null) { root.innerHTML = '<div class="empty">Verificando permisos…</div>'; return; }
+  if (!S.isAdmin) { root.innerHTML = '<div class="auth"><div class="card"><h2>Sin permisos</h2><p class="muted">Esta cuenta no es de administrador. Entra con la cuenta de super administrador.</p></div></div>'; return; }
+  const U = S.users, pros = U.filter(u => u.profile);
+  const q = norm(S.q);
+  const rows = U.filter(u => !q || norm([u.email, u.profile?.full_name, u.profile?.title].join(' ')).includes(q));
+  root.innerHTML = `<div class="title-row"><h1>Psicólogos registrados</h1><button class="btn neu sm" data-a="reload">Actualizar</button></div>
+    <div class="stats">
+      <div class="card stat"><b>${U.length}</b><small>Cuentas registradas</small></div>
+      <div class="card stat"><b>${pros.filter(u => u.profile.is_listed && u.profile.is_active).length}</b><small>Publicados en el buscador</small></div>
+      <div class="card stat"><b>${U.reduce((n, u) => n + u.appointments, 0)}</b><small>Citas totales</small></div>
+      <div class="card stat"><b>${U.reduce((n, u) => n + u.answers, 0)}</b><small>Encuestas respondidas</small></div>
+    </div>
+    <label class="field" style="max-width:420px;margin-bottom:14px"><span>Buscar</span><input id="q" type="search" placeholder="Nombre o correo" value="${esc(S.q)}"></label>
+    <div class="tbl-wrap"><table><thead><tr><th>Psicólogo</th><th>Usuario (correo)</th><th>Registro</th><th>Último acceso</th><th>Estado</th><th>Citas</th><th>Pacientes</th><th>Encuestas</th><th>Acciones</th></tr></thead><tbody>
+      ${rows.map(u => { const p = u.profile;
+        const st = !u.confirmed ? '<span class="pill p-warn">Correo sin confirmar</span>' : !p ? '<span class="pill p-mute">Sin perfil</span>' : !p.is_active ? '<span class="pill p-bad">Desactivado</span>' : p.is_listed ? '<span class="pill p-ok">Publicado</span>' : '<span class="pill p-mute">No publicado</span>';
+        return `<tr><td><div class="who">${av(p?.full_name || u.email, 'sm')}<div><b>${esc(p?.full_name || '—')}</b><small>${esc(p?.title || '')}${u.is_admin ? ' · Admin' : ''}</small></div></div></td>
+          <td>${esc(u.email)}</td><td>${date(u.created_at)}</td><td>${date(u.last_sign_in_at)}</td><td>${st}</td>
+          <td class="num">${u.appointments}</td><td class="num">${u.clients}</td><td class="num">${u.surveys}</td>
+          <td><div class="acts"><button class="btn neu sm" data-a="detail" data-id="${u.id}">Ver</button><button class="btn sec sm" data-a="pass" data-id="${u.id}">Contraseña</button></div></td></tr>`; }).join('') || '<tr><td colspan="9"><div class="empty">Sin resultados.</div></td></tr>'}
+    </tbody></table></div>`;
+}
+
+const userOf = id => S.users.find(u => u.id === id);
+
+async function detail(id) {
+  const u = userOf(id), p = u.profile;
+  openModal(`<h3>${esc(p?.full_name || u.email)}</h3><p class="sub">Cargando información…</p>`, true);
+  const [loc, sch, off, ap, cl, sv, lk] = await Promise.all([
+    sb.from('locations').select('*').eq('owner_id', id), sb.from('schedules').select('*').eq('owner_id', id).order('weekday').order('start_time'),
+    sb.from('time_off').select('*').eq('owner_id', id).order('date_from'), sb.from('appointments').select('*').eq('psychologist_id', id).order('starts_at', { ascending: false }).limit(30),
+    sb.from('clients').select('*').eq('owner_id', id).order('full_name'), sb.from('surveys').select('*').eq('owner_id', id).order('created_at', { ascending: false }),
+    sb.from('survey_links').select('*').eq('owner_id', id)]);
+  const tz = p?.timezone || PA.TZ, links = lk.data || [];
+  const sched = [1, 2, 3, 4, 5, 6, 0].map(d => { const r = (sch.data || []).filter(s => s.weekday === d); return r.length ? `<li><b>${DOW[d]}:</b> ${r.map(s => s.start_time.slice(0, 5) + '–' + s.end_time.slice(0, 5)).join(', ')}</li>` : ''; }).join('');
+  openModal(`<h3>${esc(p?.full_name || u.email)}</h3><p class="sub">${esc(u.email)} · registrado el ${date(u.created_at)}</p>
+    <div class="note">Vista de solo lectura. Ves lo mismo que este psicólogo, pero no puedes modificar sus datos.</div>
+    ${p ? `<div class="sec"><h4>Perfil</h4><dl class="kv"><dt>Título</dt><dd>${esc(p.title || '—')}</dd><dt>Cédula</dt><dd>${esc(p.license || '—')}</dd><dt>Precio</dt><dd>${money(p.price)}</dd><dt>Sesión</dt><dd>${p.session_minutes} min</dd>
+      <dt>Perfil público</dt><dd><a href="perfil.html?p=${encodeURIComponent(p.slug)}" target="_blank" rel="noopener">${esc(p.slug)}</a></dd><dt>En buscador</dt><dd>${p.is_listed ? 'Sí' : 'No'}</dd></dl>
+      <div class="acts" style="margin-top:10px"><button class="btn ${p.is_active ? 'danger' : 'pri'} sm" data-a="toggleActive" data-id="${id}">${p.is_active ? 'Desactivar perfil' : 'Reactivar perfil'}</button></div></div>` : '<div class="sec"><p class="muted">Aún no crea su perfil.</p></div>'}
+    <div class="sec"><h4>Ubicaciones</h4>${(loc.data || []).map(l => `<div class="small">• ${esc(l.name)} — ${l.kind === 'en_linea' ? 'En línea' : esc([l.address, l.city].filter(Boolean).join(', '))}</div>`).join('') || '<p class="muted small">Sin ubicaciones.</p>'}</div>
+    <div class="sec"><h4>Horario</h4>${sched ? `<ul class="qlist">${sched}</ul>` : '<p class="muted small">Sin horario.</p>'}
+      ${(off.data || []).length ? `<p class="small muted" style="margin-top:6px">Descansos: ${off.data.map(t => fmtShort(t.date_from + 'T12:00:00') + (t.date_to !== t.date_from ? ' – ' + fmtShort(t.date_to + 'T12:00:00') : '')).join(', ')}</p>` : ''}</div>
+    <div class="sec"><h4>Últimas citas (${(ap.data || []).length})</h4>${(ap.data || []).map(a => `<div class="who" style="padding:6px 0">${av(a.patient_name, 'sm')}<div style="flex:1"><b>${esc(a.patient_name)}</b><small>${fmtDT(a.starts_at, tz)} · ${MODE[a.mode]} · ${esc(a.patient_phone)}</small></div>${pill(a.status)}</div>`).join('') || '<p class="muted small">Sin citas.</p>'}</div>
+    <div class="sec"><h4>Pacientes (${(cl.data || []).length})</h4>${(cl.data || []).map(c => `<div class="small">• ${esc(c.full_name)} · ${esc(c.phone)}${c.email ? ' · ' + esc(c.email) : ''}</div>`).join('') || '<p class="muted small">Sin pacientes.</p>'}</div>
+    <div class="sec"><h4>Encuestas (${(sv.data || []).length})</h4>${(sv.data || []).map(s => { const ls = links.filter(l => l.survey_id === s.id), done = ls.filter(l => l.status === 'done');
+      return `<div class="card" style="box-shadow:none;margin-bottom:10px"><b>${esc(s.title)}</b><div class="muted small">${s.questions.length} preguntas · ${done.length} de ${ls.length} respondidas</div>
+        <ol class="qlist">${s.questions.map(q => `<li>${esc(q.text)} <small>(${QTYPES[q.type]}${q.options ? ': ' + q.options.map(esc).join(', ') : ''})</small></li>`).join('')}</ol>
+        ${done.map(l => `<details style="margin-top:8px"><summary class="small"><b>${esc(l.respondent_name)}</b> · ${fmtDT(l.answered_at, tz)}</summary><ul class="ans">${s.questions.map((q, i) => `<li><span>${esc(q.text)}</span><b>${fmtAns(q, l.answers[i])}</b></li>`).join('')}</ul></details>`).join('')}</div>`; }).join('') || '<p class="muted small">Sin encuestas.</p>'}</div>`, true);
+}
+function fmtAns(q, a) {
+  if (a == null || a === '' || (Array.isArray(a) && !a.length)) return '—';
+  if (q.type === 'multi') return a.map(esc).join(', ');
+  if (q.type === 'scale') return a + ' / 5';
+  if (q.type === 'freq') return FREQ[a];
+  return esc(a);
+}
+
+function genPass() {
+  const abc = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789', a = new Uint32Array(12);
+  crypto.getRandomValues(a); return [...a].map(n => abc[n % abc.length]).join('');
+}
+function passModal(id) {
+  const u = userOf(id);
+  openModal(`<h3>Contraseña de ${esc(u.profile?.full_name || u.email)}</h3>
+    <p class="sub">Las contraseñas se guardan cifradas: nadie puede verlas, ni siquiera el administrador. Lo que sí puedes hacer es asignar una nueva o enviarle un correo para que la cambie.</p>
+    <div class="form">
+      <label class="field"><span>Usuario</span><input value="${esc(u.email)}" readonly></label>
+      <label class="field"><span>Nueva contraseña temporal</span><input id="np" value="${genPass()}" autocomplete="off"></label>
+      <p class="err" id="np-err"></p><p class="ok-msg" id="np-ok"></p>
+      <div class="acts"><button class="btn pri" data-a="setPass" data-id="${id}">Asignar esta contraseña</button><button class="btn neu" data-a="regen">Generar otra</button></div>
+      <hr style="border:0;border-top:1px solid var(--line);width:100%">
+      <button class="btn sec" data-a="sendReset" data-id="${id}">Enviarle correo para que cree su contraseña</button>
+      ${u.confirmed ? '' : `<button class="btn neu" data-a="confirm" data-id="${id}">Confirmar su correo manualmente</button>`}
+    </div>`);
+}
+async function callAdmin(body) {
+  const { data, error } = await sb.functions.invoke('admin-users', { body });
+  if (error) { let m = error.message; try { const j = await error.context.json(); m = j.error || m; } catch (e) {} return { ok: false, error: m }; }
+  return data;
+}
+
+document.addEventListener('input', e => { if (e.target.id === 'q') { S.q = e.target.value; const pos = e.target.selectionStart; render(); const q = document.getElementById('q'); q.focus(); q.setSelectionRange(pos, pos); } });
+document.addEventListener('click', async e => {
+  const el = e.target.closest('[data-a]'); if (!el || el.disabled) return;
+  const d = el.dataset;
+  switch (d.a) {
+    case 'login': {
+      el.disabled = true;
+      const r = await sb.auth.signInWithPassword({ email: val('lg-email'), password: document.getElementById('lg-pass').value });
+      el.disabled = false; if (r.error) setErr('lg-err', 'Correo o contraseña incorrectos.'); break;
+    }
+    case 'logout': await sb.auth.signOut(); break;
+    case 'reload': await load(); toast('Lista actualizada'); break;
+    case 'detail': detail(d.id); break;
+    case 'pass': passModal(d.id); break;
+    case 'regen': document.getElementById('np').value = genPass(); break;
+    case 'setPass': {
+      const pw = val('np'); if (pw.length < 8) return setErr('np-err', 'Debe tener al menos 8 caracteres.');
+      el.disabled = true; const r = await callAdmin({ action: 'set_password', user_id: d.id, password: pw }); el.disabled = false;
+      if (!r.ok) return setErr('np-err', 'No se pudo cambiar: ' + r.error);
+      setErr('np-err', ''); setErr('np-ok', `Listo. Compártele al psicólogo su usuario y esta contraseña: ${pw}. Puede cambiarla después desde “Olvidé mi contraseña”.`); break;
+    }
+    case 'sendReset': {
+      el.disabled = true; const u = userOf(d.id);
+      const r = await sb.auth.resetPasswordForEmail(u.email, { redirectTo: PA.pageUrl('panel.html') }); el.disabled = false;
+      r.error ? setErr('np-err', 'No se pudo enviar el correo. Intenta más tarde.') : setErr('np-ok', `Correo enviado a ${u.email}.`); break;
+    }
+    case 'confirm': {
+      el.disabled = true; const r = await callAdmin({ action: 'confirm_email', user_id: d.id });
+      if (!r.ok) { el.disabled = false; return setErr('np-err', 'No se pudo confirmar: ' + r.error); }
+      setErr('np-ok', 'Correo confirmado. Ya puede entrar.'); el.remove(); load(); break;
+    }
+    case 'toggleActive': {
+      const u = userOf(d.id); el.disabled = true;
+      const { error } = await sb.from('profiles').update({ is_active: !u.profile.is_active }).eq('id', d.id);
+      if (error) { el.disabled = false; return toast('No se pudo actualizar.'); }
+      await load(); detail(d.id); toast(u.profile.is_active ? 'Perfil desactivado: ya no aparece en el buscador' : 'Perfil reactivado'); break;
+    }
+  }
+});
+})();
+</script>
+</body>
+</html>

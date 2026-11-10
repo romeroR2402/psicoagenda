@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Agendar cita · PsicoAgenda</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="assets/app.css">
+<style>
+.page{padding-block:28px 56px}
+.layout{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:24px;align-items:start}
+.sticky{position:sticky;top:84px}
+.head{display:flex;gap:18px;align-items:center}
+.head h1{font-size:clamp(24px,3.4vw,32px)}
+.price{font-family:var(--f-display);font-size:22px;font-weight:700}
+.loc{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-top:1px solid var(--line)}
+.loc:first-child{border-top:0}
+.step{display:flex;align-items:center;gap:10px;font-weight:700;font-size:14px;margin:18px 0 10px}
+.step b{width:24px;height:24px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-size:12px}
+.back{display:inline-flex;align-items:center;gap:6px;color:var(--muted);text-decoration:none;font-weight:600;font-size:13px;margin-bottom:14px}
+.layout>*{min-width:0}
+.head{flex-wrap:wrap}
+.head>div{min-width:0}
+@media (max-width:860px){.layout{grid-template-columns:minmax(0,1fr)}.sticky{position:static}}
+</style>
+</head>
+<body class="wash">
+<header class="topbar"><div class="wrap gutter">
+  <a class="brand" href="index.html"><i>Ψ</i>PsicoAgenda</a>
+  <nav class="top-links"><a class="btn neu sm" href="index.html">Buscar psicólogos</a></nav>
+</div></header>
+<main class="page"><div class="wrap gutter" id="root"><div class="empty">Cargando perfil…</div></div></main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script src="assets/common.js"></script>
+<script>
+(() => {
+const { sb, esc, av, ic, money, MODE, fmtDay, fmtTime, dayKey } = PA;
+const root = document.getElementById('root');
+const slug = new URLSearchParams(location.search).get('p') || '';
+let P = null, slots = [], byDay = {}, B = { mode: null, loc: null, day: null, slot: null };
+
+function fail(msg) { root.innerHTML = `<a class="back" href="index.html">← Volver al buscador</a><div class="card"><h2>No encontramos este perfil</h2><p class="muted">${msg}</p></div>`; }
+
+async function load() {
+  if (!sb) return fail('No se pudo cargar la conexión.');
+  const { data, error } = await sb.from('profiles').select('id,full_name,slug,title,license,bio,topics,price,session_minutes,timezone,locations(id,kind,name,address,city)')
+    .eq('slug', slug).eq('is_listed', true).eq('is_active', true).maybeSingle();
+  if (error || !data) return fail('Puede que el link esté mal escrito o que el psicólogo ya no esté disponible.');
+  P = data; document.title = `${P.full_name} · PsicoAgenda`;
+  const locs = P.locations || [];
+  if (locs.some(l => l.kind === 'en_linea')) B.mode = 'en_linea';
+  else if (locs.some(l => l.kind === 'presencial')) { B.mode = 'presencial'; B.loc = locs.find(l => l.kind === 'presencial').id; }
+  render();
+  await loadSlots();
+}
+
+async function loadSlots() {
+  const from = new Date().toLocaleDateString('en-CA', { timeZone: P.timezone });
+  const { data, error } = await sb.rpc('available_slots', { p_psych: P.id, p_from: from, p_days: 28 });
+  slots = error ? [] : data.map(r => r.starts_at);
+  byDay = {};
+  slots.forEach(s => { const k = dayKey(s, P.timezone); (byDay[k] = byDay[k] || []).push(s); });
+  if (!B.day || !byDay[B.day]) B.day = Object.keys(byDay)[0] || null;
+  if (B.slot && !slots.includes(B.slot)) B.slot = null;
+  renderBooking(error ? 'No pudimos cargar los horarios. Recarga la página.' : '');
+}
+
+function render() {
+  const locs = P.locations || [];
+  root.innerHTML = `<a class="back" href="index.html">← Volver al buscador</a>
+  <div class="layout">
+    <div class="stack">
+      <section class="card"><div class="head">${av(P.full_name, 'xl')}<div>
+        <h1>${esc(P.full_name)}</h1><div class="muted">${esc(P.title || 'Psicólogo')}${P.license ? ' · Cédula profesional ' + esc(P.license) : ''}</div>
+        <div class="meta" style="margin-top:8px"><span class="price">${money(P.price)}</span><span>${ic('clock', 14)}Sesión de ${P.session_minutes} min</span></div></div></div>
+        ${(P.topics || []).length ? `<div class="tags" style="margin-top:16px">${P.topics.map(t => `<span class="tag">${esc(t)}</span>`).join('')}</div>` : ''}
+      </section>
+      ${P.bio ? `<section class="card"><h3>Sobre mí</h3><p class="pre" style="margin:8px 0 0">${esc(P.bio)}</p></section>` : ''}
+      <section class="card"><h3>Dónde atiende</h3><div style="margin-top:6px">${locs.length ? locs.map(l => `<div class="loc"><span class="ic-box">${ic(l.kind === 'en_linea' ? 'video' : 'pin')}</span><div><b>${esc(l.name)}</b><div class="muted small">${l.kind === 'en_linea' ? 'Consulta en línea por videollamada' : esc([l.address, l.city].filter(Boolean).join(', '))}</div></div></div>`).join('') : '<p class="muted">Aún no hay ubicaciones registradas.</p>'}</div></section>
+    </div>
+    <div class="sticky"><section class="card" id="booking"></section></div>
+  </div>`;
+  renderBooking();
+}
+
+function renderBooking(err = '') {
+  const el = document.getElementById('booking'); if (!el) return;
+  const locs = P.locations || [], pres = locs.filter(l => l.kind === 'presencial'), online = locs.some(l => l.kind === 'en_linea');
+  if (!B.mode) { el.innerHTML = `<h2>Agenda tu cita</h2><p class="muted">Este psicólogo todavía no configura dónde atiende. Vuelve pronto.</p>`; return; }
+  const days = Object.keys(byDay);
+  const keep = { n: val('bk-name'), ph: val('bk-phone'), em: val('bk-email'), no: val('bk-note') };
+  el.innerHTML = `<h2>Agenda tu cita</h2><p class="muted small" style="margin:0">El horario se aparta al solicitarlo y se confirma cuando ${esc(P.full_name.split(' ')[0])} verifica tu pago.</p>
+    <div class="step"><b>1</b>Modalidad</div>
+    <div class="seg" role="group" aria-label="Modalidad">
+      ${online ? `<button data-mode="en_linea" aria-pressed="${B.mode === 'en_linea'}">En línea</button>` : ''}
+      ${pres.length ? `<button data-mode="presencial" aria-pressed="${B.mode === 'presencial'}">Presencial</button>` : ''}</div>
+    ${B.mode === 'presencial' && pres.length > 1 ? `<label class="field" style="margin-top:10px"><span>Consultorio</span><select id="bk-loc">${pres.map(l => `<option value="${l.id}" ${B.loc === l.id ? 'selected' : ''}>${esc(l.name)}${l.city ? ' · ' + esc(l.city) : ''}</option>`).join('')}</select></label>` : ''}
+    <div class="step"><b>2</b>Día y hora</div>
+    ${days.length ? `<div class="days">${days.map(k => { const d = new Date(k + 'T12:00:00');
+        return `<button class="day ${k === B.day ? 'on' : ''}" data-day="${k}" aria-pressed="${k === B.day}" aria-label="${fmtDay(d)}"><small>${d.toLocaleDateString('es-MX', { weekday: 'short' }).replace('.', '')}</small><b>${d.getDate()}</b><i>${d.toLocaleDateString('es-MX', { month: 'short' }).replace('.', '')}</i></button>`; }).join('')}</div>
+      <div class="muted small" style="margin:2px 0 8px">${fmtDay(new Date(B.day + 'T12:00:00'))}</div>
+      <div class="slots">${byDay[B.day].map(s => `<button class="slot ${B.slot === s ? 'on' : ''}" data-slot="${s}" aria-pressed="${B.slot === s}">${fmtTime(s, P.timezone)}</button>`).join('')}</div>`
+      : `<div class="empty">${err || 'No hay horarios libres en las próximas 4 semanas.'}</div>`}
+    <div class="step"><b>3</b>Tus datos</div>
+    <form class="form" id="f-book" novalidate>
+      <label class="field"><span>Nombre completo</span><input id="bk-name" autocomplete="name" required></label>
+      <label class="field"><span>Teléfono (WhatsApp)</span><input id="bk-phone" type="tel" autocomplete="tel" inputmode="tel" placeholder="Ej. 55 1234 5678" required></label>
+      <label class="field"><span>Correo (opcional)</span><input id="bk-email" type="email" autocomplete="email"></label>
+      <label class="field"><span>Motivo de consulta (opcional)</span><textarea id="bk-note" maxlength="500" placeholder="Cuéntale brevemente qué te gustaría trabajar"></textarea></label>
+      <p class="err" id="bk-err">${err && days.length ? esc(err) : ''}</p>
+      <button class="btn pri big" id="bk-go" ${B.slot ? '' : 'disabled'}>${B.slot ? `Solicitar cita · ${fmtTime(B.slot, P.timezone)}` : 'Elige un horario'}</button>
+    </form>`;
+  [['bk-name', keep.n], ['bk-phone', keep.ph], ['bk-email', keep.em], ['bk-note', keep.no]].forEach(([id, v]) => { if (v) document.getElementById(id).value = v; });
+}
+const val = id => (document.getElementById(id)?.value || '').trim();
+
+document.addEventListener('click', e => {
+  const m = e.target.closest('[data-mode]'), d = e.target.closest('[data-day]'), s = e.target.closest('[data-slot]');
+  if (m) { B.mode = m.dataset.mode; if (B.mode === 'presencial' && !B.loc) B.loc = P.locations.find(l => l.kind === 'presencial').id; renderBooking(); }
+  if (d) { B.day = d.dataset.day; B.slot = null; renderBooking(); }
+  if (s) { B.slot = s.dataset.slot; renderBooking(); document.getElementById('bk-name').focus({ preventScroll: true }); }
+});
+document.addEventListener('change', e => { if (e.target.id === 'bk-loc') B.loc = e.target.value; });
+document.addEventListener('submit', async e => {
+  if (e.target.id !== 'f-book') return;
+  e.preventDefault();
+  const err = document.getElementById('bk-err'), btn = document.getElementById('bk-go');
+  const name = val('bk-name'), phone = val('bk-phone'), email = val('bk-email');
+  if (!B.slot) return err.textContent = 'Elige un día y una hora.';
+  if (name.length < 3) return err.textContent = 'Escribe tu nombre completo.';
+  if (phone.replace(/\D/g, '').length < 8) return err.textContent = 'Escribe tu teléfono con al menos 8 dígitos.';
+  if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return err.textContent = 'El correo no es válido.';
+  btn.disabled = true; btn.textContent = 'Apartando tu horario…';
+  const { data, error } = await sb.rpc('book_appointment', { p_psych: P.id, p_starts_at: B.slot, p_mode: B.mode, p_location: B.mode === 'presencial' ? B.loc : null,
+    p_name: name, p_phone: phone, p_email: email || null, p_note: val('bk-note') || null });
+  if (!error && data.ok) { location.href = 'cita.html?t=' + data.token + '&nueva=1'; return; }
+  const code = error ? 'network' : data.error;
+  const MSG = { slot_taken: 'Alguien acaba de apartar ese horario. Elige otro.', too_many: 'Ya tienes 3 citas pendientes con este psicólogo.', location: 'Elige un consultorio.',
+    name: 'Escribe tu nombre completo.', phone: 'Revisa tu teléfono.', email: 'Revisa tu correo.', network: 'No pudimos conectarnos. Intenta de nuevo.' };
+  if (code === 'slot_taken') { B.slot = null; await loadSlots(); }
+  else renderBooking();
+  document.getElementById('bk-err').textContent = MSG[code] || 'No se pudo apartar la cita. Intenta de nuevo.';
+});
+
+load();
+})();
+</script>
+</body>
+</html>

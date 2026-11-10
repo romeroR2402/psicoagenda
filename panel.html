@@ -1,0 +1,653 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Panel del psicólogo · PsicoAgenda</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="assets/app.css">
+<style>
+.auth{max-width:440px;margin:48px auto;padding-bottom:48px}
+.auth h1{font-size:28px;margin-bottom:6px}
+.app{display:grid;grid-template-columns:232px minmax(0,1fr);min-height:calc(100vh - 60px)}
+.side{position:sticky;top:60px;align-self:start;height:calc(100vh - 60px);overflow-y:auto;padding:22px 14px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:4px}
+.side a{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:13px;color:var(--muted);font-weight:600;text-decoration:none;font-size:14px;position:relative}
+.side a:hover{background:var(--card)}
+.side a[aria-current="page"]{background:var(--card);color:var(--accent);box-shadow:var(--shadow)}
+.side .badge{margin-left:auto;min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:var(--accent);color:var(--on-accent);font-size:11px;font-weight:800;display:grid;place-items:center}
+.side hr{border:0;border-top:1px solid var(--line);margin:10px 4px;width:calc(100% - 8px)}
+.content{padding-block:28px 64px;min-width:0}
+.content>.wrap{max-width:1040px}
+.title-row{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+.title-row h1{font-size:clamp(24px,3vw,30px)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.stat b{display:block;font-family:var(--f-display);font-size:28px;font-variant-numeric:tabular-nums}
+.stat small{color:var(--muted);font-weight:600}
+.steps{display:flex;flex-direction:column;gap:8px}
+.stepi{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;background:var(--bg)}
+.stepi .dot{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;flex:none;border:2px solid var(--line);color:var(--muted);font-size:12px;font-weight:800}
+.stepi.done .dot{background:var(--ok);border-color:var(--ok);color:#fff}
+.stepi>div{flex:1;min-width:0}
+.stepi small{display:block;color:var(--muted);font-size:12px}
+.ap{display:flex;flex-direction:column;gap:12px;border-left:4px solid var(--bar,var(--line))}
+.ap.s-review{--bar:var(--calm)} .ap.s-unpaid{--bar:var(--warn)} .ap.s-confirmed{--bar:var(--ok)} .ap.s-rejected,.ap.s-cancelled{--bar:var(--bad)}
+.ap-top{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
+.acts{display:flex;gap:8px;flex-wrap:wrap}
+.rcpt-img{display:block;width:100%;max-height:65vh;object-fit:contain;border-radius:14px;background:var(--card)}
+.wk{display:grid;grid-template-columns:120px minmax(0,1fr);gap:12px;align-items:start;padding:12px 0;border-top:1px solid var(--line)}
+.wk:first-of-type{border-top:0}
+.wk .ranges{display:flex;flex-direction:column;gap:8px}
+.rng{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.rng input{width:auto;padding:8px 10px}
+.mini-btn{width:32px;height:32px;border-radius:10px;border:1px solid var(--line);background:var(--card);font-weight:700;display:grid;place-items:center;flex:none}
+.mini-btn.bad{color:var(--bad)}
+.toff{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+.toff:first-child{border-top:0}
+.qb{background:var(--card);border-radius:18px;padding:14px;margin-bottom:12px;display:flex;flex-direction:column;gap:10px;border:1px solid var(--line)}
+.qb-h{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.qb-h b{font-size:13px;color:var(--muted)}
+.qb-tools{display:flex;gap:4px}
+.qb-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.qb-row select{flex:1 1 200px;width:auto}
+.opt-row{display:flex;gap:8px;align-items:center}
+.mark{width:16px;height:16px;border:2px solid var(--muted);flex:none}
+.mark.single{border-radius:50%} .mark.multi{border-radius:4px}
+.lnk{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--card);border-radius:14px;padding:10px 12px;margin-bottom:8px}
+.lnk>div{flex:1 1 200px;min-width:0}
+.ans{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:6px;font-size:13px}
+.ans li{display:flex;justify-content:space-between;gap:12px}
+.ans li span{color:var(--muted)}
+.ans li b{text-align:right}
+.sugg{display:flex;flex-wrap:wrap;gap:6px}
+.sugg button{padding:5px 10px;border-radius:999px;border:1px solid var(--line);background:var(--card);font-size:12px;font-weight:600}
+.sugg button[aria-pressed="true"]{background:var(--calm-soft);color:var(--calm);border-color:transparent}
+@media (max-width:900px){
+  .app{grid-template-columns:minmax(0,1fr);align-content:start}
+  #top-user .muted{display:none}
+  .side{position:sticky;top:60px;height:auto;flex-direction:row;overflow-x:auto;padding:8px 16px;border-right:0;border-bottom:1px solid var(--line);background:var(--bg);z-index:10;scrollbar-width:none}
+  .side a{flex:none;padding:8px 12px;font-size:13px}
+  .side a svg{display:none}
+  .side hr{display:none}
+  .content{padding-block:18px 48px}
+  .wk{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<header class="topbar"><div class="wrap gutter" style="max-width:none">
+  <a class="brand" href="index.html"><i>Ψ</i>PsicoAgenda</a>
+  <nav class="top-links" id="top-user"></nav>
+</div></header>
+<div id="root"><div class="auth gutter"><div class="empty">Cargando…</div></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script src="assets/common.js"></script>
+<script>
+(() => {
+const { sb, esc, av, ic, money, MODE, DOW, fmtDay, fmtShort, fmtTime, fmtDT, pill, toast, openModal, closeModal, copy, waLink, pageUrl, slugify, norm } = PA;
+const root = document.getElementById('root');
+const S = { authKnown: false, user: null, recovery: false, authMode: location.hash === '#registro' ? 'signup' : 'login',
+  loaded: false, isAdmin: false, profile: null, view: 'inicio', locations: [], schedules: [], timeOff: [], appts: [], clients: [], surveys: [], links: [],
+  apptTab: 'review', week: null, builder: null, sentIds: null };
+const VIEWS = { inicio: ['Inicio', 'home'], citas: ['Citas', 'cal'], horario: ['Horario', 'week'], ubicaciones: ['Ubicaciones', 'pin'], perfil: ['Mi perfil', 'user'], pacientes: ['Pacientes', 'users'], encuestas: ['Encuestas', 'form'] };
+const TOPICS = ['Ansiedad', 'Depresión', 'Pareja', 'Duelo', 'Autoestima', 'Estrés', 'Adolescentes', 'Niños', 'Familia', 'Adicciones', 'Trauma', 'Sexualidad', 'Orientación vocacional', 'TDAH'];
+const QTYPES = { single: 'Una opción', multi: 'Varias opciones', scale: 'Escala del 1 al 5', freq: 'Frecuencia', text: 'Respuesta abierta' };
+const QNOTE = { scale: 'El paciente elige un número del 1 (nada) al 5 (mucho).', freq: 'Opciones fijas: Nunca, Varios días, Más de la mitad de los días, Casi todos los días.', text: 'El paciente escribe su respuesta, hasta 2000 caracteres.' };
+const FREQ = ['Nunca', 'Varios días', 'Más de la mitad de los días', 'Casi todos los días'];
+const val = id => (document.getElementById(id)?.value || '').trim();
+const setErr = (id, m) => { const e = document.getElementById(id); if (e) e.textContent = m; return false; };
+const tz = () => S.profile?.timezone || PA.TZ;
+const phoneKey = p => String(p || '').replace(/\D/g, '').slice(-10);
+const busy = (b, on, txt) => { if (!b) return; if (on) { b.dataset.t = b.textContent; b.disabled = true; if (txt) b.textContent = txt; } else { b.disabled = false; if (b.dataset.t) b.textContent = b.dataset.t; } };
+
+/* ---------- sesión ---------- */
+if (!sb) root.innerHTML = '<div class="auth gutter"><div class="empty">No se pudo cargar la conexión.</div></div>';
+else sb.auth.onAuthStateChange((ev, session) => {
+  const prev = S.user && S.user.id;
+  S.authKnown = true; S.user = session ? session.user : null;
+  if (ev === 'PASSWORD_RECOVERY') S.recovery = true;
+  if ((S.user && S.user.id) !== prev) { S.loaded = false; if (S.user) setTimeout(loadAll, 0); }
+  render();
+});
+
+async function loadAll() {
+  const uid = S.user.id;
+  const [pr, adm] = await Promise.all([sb.from('profiles').select('*').eq('id', uid).maybeSingle(), sb.rpc('is_admin')]);
+  S.profile = pr.data || null; S.isAdmin = !!adm.data;
+  if (S.profile) {
+    const [l, s, t, a, c, sv, lk] = await Promise.all([
+      sb.from('locations').select('*').eq('owner_id', uid).order('created_at'),
+      sb.from('schedules').select('*').eq('owner_id', uid).order('weekday').order('start_time'),
+      sb.from('time_off').select('*').eq('owner_id', uid).order('date_from'),
+      sb.from('appointments').select('*').eq('psychologist_id', uid).order('starts_at'),
+      sb.from('clients').select('*').eq('owner_id', uid).order('full_name'),
+      sb.from('surveys').select('*').eq('owner_id', uid).order('created_at', { ascending: false }),
+      sb.from('survey_links').select('*').eq('owner_id', uid).order('created_at', { ascending: false }),
+    ]);
+    S.locations = l.data || []; S.schedules = s.data || []; S.timeOff = t.data || []; S.appts = a.data || [];
+    S.clients = c.data || []; S.surveys = sv.data || []; S.links = lk.data || [];
+    S.week = null;
+  }
+  S.loaded = true;
+  const h = location.hash.slice(1); if (VIEWS[h]) S.view = h;
+  render();
+}
+window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (VIEWS[h] && S.profile) { S.view = h; render(); scrollTo(0, 0); } });
+
+function render() {
+  const top = document.getElementById('top-user');
+  top.innerHTML = S.user ? `<span class="muted small" style="overflow:hidden;text-overflow:ellipsis;max-width:40vw">${esc(S.user.email)}</span><button class="btn neu sm" data-a="logout">${ic('out', 15)} Salir</button>` : `<a class="btn neu sm" href="index.html">Ir al buscador</a>`;
+  if (!S.authKnown) return;
+  if (S.recovery) return renderRecovery();
+  if (!S.user) return renderAuth();
+  if (!S.loaded) { root.innerHTML = '<div class="auth gutter"><div class="empty">Cargando tu panel…</div></div>'; return; }
+  if (!S.profile) return renderOnboarding();
+  const badge = S.appts.filter(a => a.status === 'review').length;
+  root.innerHTML = `<div class="app"><nav class="side" aria-label="Secciones">
+      ${Object.entries(VIEWS).map(([k, [t, i]]) => `<a href="#${k}" ${S.view === k ? 'aria-current="page"' : ''}>${ic(i, 18)}${t}${k === 'citas' && badge ? `<span class="badge">${badge}</span>` : ''}</a>`).join('')}
+      <hr><a href="perfil.html?p=${encodeURIComponent(S.profile.slug)}" target="_blank" rel="noopener">${ic('eye', 18)}Ver perfil público</a>
+      ${S.isAdmin ? `<a href="admin.html">${ic('shield', 18)}Administración</a>` : ''}
+    </nav><main class="content gutter"><div class="wrap">${V[S.view]()}</div></main></div>`;
+  if (S.view === 'pacientes') filterClients();
+}
+
+/* ---------- acceso ---------- */
+function renderAuth() {
+  const m = S.authMode;
+  const T = { login: ['Entra a tu panel', 'Administra tus citas, horarios y encuestas.'], signup: ['Crea tu cuenta de psicólogo', 'Es gratis. Después configuras tu perfil, horarios y ubicaciones.'], forgot: ['Recupera tu contraseña', 'Te enviamos un correo con un enlace para crear una nueva.'] }[m];
+  root.innerHTML = `<div class="auth gutter"><div class="card form">
+    <div><h1>${T[0]}</h1><p class="muted" style="margin:0">${T[1]}</p></div>
+    ${m === 'signup' ? `<label class="field"><span>Nombre completo</span><input id="au-name" autocomplete="name" placeholder="Ej. Laura Méndez Ruiz"></label>` : ''}
+    <label class="field"><span>Correo</span><input id="au-email" type="email" autocomplete="email" placeholder="tu@correo.com"></label>
+    ${m !== 'forgot' ? `<label class="field"><span>Contraseña</span><input id="au-pass" type="password" autocomplete="${m === 'signup' ? 'new-password' : 'current-password'}" placeholder="${m === 'signup' ? 'Mínimo 8 caracteres' : ''}"></label>` : ''}
+    <p class="err" id="au-err"></p><p class="ok-msg" id="au-ok"></p>
+    <button class="btn pri big" data-a="auth">${{ login: 'Entrar', signup: 'Crear cuenta', forgot: 'Enviar correo' }[m]}</button>
+    <div class="chips" style="justify-content:space-between">
+      ${m !== 'login' ? '<button class="link" data-a="authMode" data-m="login">Ya tengo cuenta</button>' : '<button class="link" data-a="authMode" data-m="signup">Crear una cuenta</button>'}
+      ${m === 'login' ? '<button class="link" data-a="authMode" data-m="forgot">Olvidé mi contraseña</button>' : ''}</div>
+  </div></div>`;
+}
+
+async function doAuth(btn) {
+  const m = S.authMode, email = val('au-email'), pass = document.getElementById('au-pass')?.value || '';
+  setErr('au-err', ''); setErr('au-ok', '');
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return setErr('au-err', 'Escribe un correo válido.');
+  const back = pageUrl('panel.html');
+  busy(btn, true);
+  let r;
+  if (m === 'forgot') {
+    r = await sb.auth.resetPasswordForEmail(email, { redirectTo: back });
+    busy(btn, false);
+    return r.error ? setErr('au-err', 'No se pudo enviar el correo. Intenta más tarde.') : setErr('au-ok', 'Listo. Si el correo está registrado, te llegará un enlace para crear tu nueva contraseña.');
+  }
+  if (m === 'signup') {
+    const name = val('au-name');
+    if (name.length < 3) { busy(btn, false); return setErr('au-err', 'Escribe tu nombre completo.'); }
+    if (pass.length < 8) { busy(btn, false); return setErr('au-err', 'La contraseña debe tener al menos 8 caracteres.'); }
+    r = await sb.auth.signUp({ email, password: pass, options: { data: { full_name: name }, emailRedirectTo: back } });
+    busy(btn, false);
+    if (r.error) return setErr('au-err', /already/i.test(r.error.message) ? 'Ese correo ya tiene cuenta. Entra con tu contraseña.' : 'No se pudo crear la cuenta: ' + r.error.message);
+    if (!r.data.session) return setErr('au-ok', 'Cuenta creada. Te enviamos un correo para confirmarla; ábrelo y después entra aquí.');
+    return;
+  }
+  r = await sb.auth.signInWithPassword({ email, password: pass });
+  busy(btn, false);
+  if (r.error) setErr('au-err', /invalid/i.test(r.error.message) ? 'Correo o contraseña incorrectos.' : /confirm/i.test(r.error.message) ? 'Confirma tu correo antes de entrar. Revisa tu bandeja de entrada.' : 'No se pudo entrar: ' + r.error.message);
+}
+
+function renderRecovery() {
+  root.innerHTML = `<div class="auth gutter"><div class="card form"><div><h1>Crea tu nueva contraseña</h1><p class="muted" style="margin:0">Escríbela dos veces para confirmarla.</p></div>
+    <label class="field"><span>Nueva contraseña</span><input id="rc-1" type="password" autocomplete="new-password"></label>
+    <label class="field"><span>Repite la contraseña</span><input id="rc-2" type="password" autocomplete="new-password"></label>
+    <p class="err" id="rc-err"></p><button class="btn pri big" data-a="setPass">Guardar contraseña</button></div></div>`;
+}
+
+/* ---------- alta de perfil ---------- */
+function profileForm(p, creating) {
+  const topics = new Set(p.topics || []);
+  return `<div class="form">
+    <div class="row2"><label class="field"><span>Nombre completo</span><input id="pf-name" value="${esc(p.full_name || '')}"></label>
+      <label class="field"><span>Título</span><input id="pf-title" value="${esc(p.title || '')}" placeholder="Ej. Psicóloga clínica"></label></div>
+    <div class="row2"><label class="field"><span>Cédula profesional</span><input id="pf-license" value="${esc(p.license || '')}" maxlength="40"></label>
+      <label class="field"><span>Precio por sesión (MXN)</span><input id="pf-price" type="number" min="0" step="50" value="${p.price ?? ''}"></label></div>
+    <label class="field"><span>Sobre ti</span><textarea id="pf-bio" maxlength="1500" placeholder="Tu enfoque, experiencia y con quién trabajas">${esc(p.bio || '')}</textarea></label>
+    <div class="field"><span>Temas que atiendes (aparecen en el buscador)</span>
+      <div class="sugg" id="pf-topics">${[...new Set([...TOPICS, ...topics])].map(t => `<button type="button" data-a="topic" data-t="${esc(t)}" aria-pressed="${topics.has(t)}">${esc(t)}</button>`).join('')}</div>
+      <input id="pf-topic-new" class="in" placeholder="Agregar otro tema y presionar Enter" style="margin-top:6px"></div>
+    <label class="field"><span>Datos para que te paguen</span><textarea id="pf-pay" maxlength="500" placeholder="Banco, titular, CLABE o número de tarjeta">${esc(p.payment_info || '')}</textarea></label>
+    <label class="field"><span>Dirección de tu perfil</span><input id="pf-slug" value="${esc(p.slug || '')}" maxlength="80"><small class="muted mono" id="pf-url"></small></label>
+    ${creating ? '' : `<label class="check"><input type="checkbox" id="pf-listed" ${p.is_listed ? 'checked' : ''}> Mostrar mi perfil en el buscador</label>`}
+    <p class="err" id="pf-err"></p>
+    <button class="btn pri big" data-a="saveProfile">${creating ? 'Crear mi perfil' : 'Guardar perfil'}</button></div>`;
+}
+
+function renderOnboarding() {
+  const name = S.user.user_metadata?.full_name || '';
+  root.innerHTML = `<div class="auth gutter" style="max-width:720px"><div class="card"><h1 style="font-size:26px">Bienvenido a PsicoAgenda</h1>
+    <p class="muted">Completa tu perfil. Después configuras tu horario y ubicaciones, y lo publicas en el buscador.</p>
+    ${profileForm({ full_name: name, slug: slugify(name) ? slugify(name) + '-' + Math.random().toString(36).slice(2, 6) : '' }, true)}</div></div>`;
+  updateSlugUrl();
+}
+const updateSlugUrl = () => { const e = document.getElementById('pf-url'); if (e) e.textContent = pageUrl('perfil.html?p=' + (val('pf-slug') || '…')); };
+
+async function saveProfile(btn) {
+  const creating = !S.profile;
+  const row = {
+    full_name: val('pf-name').replace(/\s+/g, ' '), title: val('pf-title') || null, license: val('pf-license') || null,
+    bio: val('pf-bio') || null, payment_info: val('pf-pay') || null, slug: slugify(val('pf-slug')),
+    price: val('pf-price') === '' ? null : Math.round(Number(val('pf-price'))),
+    topics: [...document.querySelectorAll('#pf-topics [aria-pressed="true"]')].map(b => b.dataset.t),
+  };
+  if (row.full_name.length < 3) return setErr('pf-err', 'Escribe tu nombre completo.');
+  if (row.slug.length < 3) return setErr('pf-err', 'La dirección del perfil debe tener al menos 3 letras o números.');
+  if (row.price != null && (isNaN(row.price) || row.price < 0)) return setErr('pf-err', 'Revisa el precio.');
+  if (!creating) {
+    row.is_listed = document.getElementById('pf-listed').checked;
+    if (row.is_listed && (!S.schedules.length || !S.locations.length)) return setErr('pf-err', 'Para aparecer en el buscador primero configura tu horario y al menos una ubicación.');
+  }
+  busy(btn, true, 'Guardando…');
+  const q = creating ? sb.from('profiles').insert({ id: S.user.id, ...row }) : sb.from('profiles').update(row).eq('id', S.user.id);
+  const { data, error } = await q.select().single();
+  busy(btn, false);
+  if (error) return setErr('pf-err', /slug|unique|duplicate/i.test(error.message) ? 'Esa dirección de perfil ya está ocupada. Prueba otra.' : 'No se pudo guardar: ' + error.message);
+  S.profile = data;
+  if (creating) { S.view = 'inicio'; location.hash = 'inicio'; toast('Perfil creado'); }
+  else toast('Perfil guardado');
+  render();
+}
+
+/* ---------- vistas ---------- */
+const V = {};
+
+V.inicio = () => {
+  const p = S.profile, now = new Date();
+  const steps = [
+    ['Completa tu perfil', 'Precio, descripción y temas', !!(p.bio && p.price != null && p.topics.length), 'perfil'],
+    ['Configura tu horario', 'Días y horas en que atiendes', S.schedules.length > 0, 'horario'],
+    ['Agrega una ubicación', 'Consultorio o consulta en línea', S.locations.length > 0, 'ubicaciones'],
+    ['Publica tu perfil', 'Aparece en el buscador para pacientes', p.is_listed, 'perfil'],
+  ];
+  const review = S.appts.filter(a => a.status === 'review'), unpaid = S.appts.filter(a => a.status === 'unpaid' && new Date(a.starts_at) > now);
+  const upcoming = S.appts.filter(a => a.status === 'confirmed' && new Date(a.starts_at) > now);
+  const answered = S.links.filter(l => l.status === 'done').length;
+  const url = pageUrl('perfil.html?p=' + p.slug);
+  return `<div class="title-row"><h1>Hola, ${esc(p.full_name.split(' ')[0])}</h1>${p.is_active ? '' : '<span class="pill p-bad">Perfil desactivado por administración</span>'}</div>
+    <div class="stats">
+      <a class="card stat" href="#citas" style="text-decoration:none;color:inherit"><b>${review.length}</b><small>Pagos por revisar</small></a>
+      <div class="card stat"><b>${unpaid.length}</b><small>Citas sin pago</small></div>
+      <div class="card stat"><b>${upcoming.length}</b><small>Próximas confirmadas</small></div>
+      <div class="card stat"><b>${answered}</b><small>Encuestas respondidas</small></div>
+    </div>
+    <div class="grid" style="margin-top:16px">
+      <section class="card"><h3>Para recibir citas</h3><div class="steps" style="margin-top:12px">${steps.map(([t, s, ok, go], i) => `<div class="stepi ${ok ? 'done' : ''}"><span class="dot">${ok ? '✓' : i + 1}</span><div><b>${t}</b><small>${s}</small></div>${ok ? '' : `<a class="btn sec sm" href="#${go}">Ir</a>`}</div>`).join('')}</div>
+        <div style="margin-top:14px"><small class="muted">Tu perfil público:</small><div class="mono" id="pub-url">${esc(url)}</div><button class="btn neu sm" style="margin-top:8px" data-a="copy" data-u="${esc(url)}" data-el="pub-url">Copiar link</button></div></section>
+      <section class="card"><h3>Próximas citas</h3><div class="stack" style="margin-top:12px;gap:10px">${[...review, ...upcoming].sort((a, b) => a.starts_at.localeCompare(b.starts_at)).slice(0, 6).map(a => `<div class="who">${av(a.patient_name, 'sm')}<div style="flex:1"><b>${esc(a.patient_name)}</b><small>${fmtDT(a.starts_at, tz())} · ${MODE[a.mode]}</small></div>${pill(a.status)}</div>`).join('') || '<div class="empty">Aún no tienes citas próximas.</div>'}</div>
+        <a class="btn neu sm" href="#citas" style="margin-top:12px">Ver todas las citas</a></section>
+    </div>`;
+};
+
+/* Citas */
+V.citas = () => {
+  const now = new Date();
+  const TABS = {
+    review: ['Por revisar', a => a.status === 'review'],
+    unpaid: ['Sin pago', a => a.status === 'unpaid' && new Date(a.starts_at) > now],
+    upcoming: ['Confirmadas', a => a.status === 'confirmed' && new Date(a.starts_at) > now],
+    history: ['Historial', a => new Date(a.starts_at) <= now || ['rejected', 'cancelled'].includes(a.status)],
+  };
+  const list = S.appts.filter(TABS[S.apptTab][1]);
+  if (S.apptTab === 'history') list.reverse();
+  return `<div class="title-row"><h1>Citas</h1><button class="btn neu sm" data-a="reload">Actualizar</button></div>
+    <div class="seg" role="group" aria-label="Filtrar citas">${Object.entries(TABS).map(([k, [t, f]]) => `<button data-a="apptTab" data-t="${k}" aria-pressed="${S.apptTab === k}">${t} (${S.appts.filter(f).length})</button>`).join('')}</div>
+    <div class="grid" style="margin-top:16px">${list.map(apptCard).join('') || '<div class="empty">No hay citas en esta lista.</div>'}</div>`;
+};
+
+function apptCard(a) {
+  const loc = S.locations.find(l => l.id === a.location_id), future = new Date(a.starts_at) > new Date();
+  const link = pageUrl('cita.html?t=' + a.patient_token);
+  const wa = waLink(a.patient_phone, `Hola ${a.patient_name.split(' ')[0]}, te escribe ${S.profile.full_name} sobre tu cita del ${fmtDT(a.starts_at, tz())}. Aquí puedes verla y subir tu comprobante: ${link}`);
+  let acts = '';
+  if (a.status === 'review') acts = `<button class="btn pri sm" data-a="setStatus" data-id="${a.id}" data-s="confirmed">Aprobar y apartar</button><button class="btn danger sm" data-a="setStatus" data-id="${a.id}" data-s="rejected">Rechazar</button>`;
+  if (a.status === 'unpaid') acts = `<a class="btn sec sm" href="${esc(wa)}" target="_blank" rel="noopener">Recordar por WhatsApp</a><button class="btn neu sm" data-a="setStatus" data-id="${a.id}" data-s="confirmed" data-confirm="Toca otra vez: confirmar sin comprobante">Ya me pagó</button><button class="btn danger sm" data-a="setStatus" data-id="${a.id}" data-s="rejected">Rechazar</button>`;
+  if (a.status === 'confirmed' && future) acts = `<a class="btn neu sm" href="${esc(wa)}" target="_blank" rel="noopener">WhatsApp</a><button class="btn danger sm" data-a="setStatus" data-id="${a.id}" data-s="cancelled" data-confirm="Toca otra vez para cancelar">Cancelar cita</button>`;
+  return `<article class="card ap s-${a.status}">
+    <div class="ap-top"><div class="who">${av(a.patient_name)}<div><b>${esc(a.patient_name)}</b><small>${fmtDay(a.starts_at, tz())} · ${fmtTime(a.starts_at, tz())}</small></div></div>${pill(a.status)}</div>
+    <div class="meta"><span>${ic(a.mode === 'en_linea' ? 'video' : 'pin', 14)}${MODE[a.mode]}${loc ? ' · ' + esc(loc.name) : ''}</span><span>${ic('phone', 14)}${esc(a.patient_phone)}</span>${a.patient_email ? `<span>${esc(a.patient_email)}</span>` : ''}</div>
+    ${a.patient_note ? `<p class="small" style="margin:0"><span class="muted">Motivo:</span> ${esc(a.patient_note)}</p>` : ''}
+    ${a.receipt_path ? `<button class="btn calm sm" style="align-self:flex-start" data-a="receipt" data-id="${a.id}">${ic('pay', 14)} Ver comprobante${a.payment_ref ? ' · ' + esc(a.payment_ref) : ''}</button>` : ''}
+    ${acts ? `<div class="acts">${acts}</div>` : ''}</article>`;
+}
+
+async function setStatus(id, st, btn) {
+  if (btn.dataset.confirm && !btn.dataset.armed) { btn.dataset.armed = 1; btn.textContent = btn.dataset.confirm; return; }
+  busy(btn, true);
+  const { data, error } = await sb.from('appointments').update({ status: st, updated_at: new Date().toISOString() }).eq('id', id).select().single();
+  if (error) { busy(btn, false); return toast('No se pudo actualizar la cita.'); }
+  S.appts = S.appts.map(a => a.id === id ? data : a);
+  closeModal(); render();
+  toast({ confirmed: 'Cita confirmada y apartada', rejected: 'Cita rechazada; el horario quedó libre', cancelled: 'Cita cancelada' }[st]);
+}
+
+async function showReceipt(id) {
+  const a = S.appts.find(x => x.id === id);
+  openModal(`<h3>Comprobante de ${esc(a.patient_name)}</h3><p class="sub">Cargando imagen…</p>`);
+  const { data, error } = await sb.storage.from('receipts').createSignedUrl(a.receipt_path, 600);
+  openModal(`<h3>Comprobante de ${esc(a.patient_name)}</h3><p class="sub">Revisa monto, destinatario y fecha antes de aprobar.</p>
+    ${error ? '<div class="empty">No se pudo cargar la imagen.</div>' : `<img class="rcpt-img" src="${esc(data.signedUrl)}" alt="Comprobante de pago de ${esc(a.patient_name)}">`}
+    <dl class="kv" style="margin:14px 0"><dt>Cita</dt><dd>${fmtDT(a.starts_at, tz())}</dd><dt>Precio</dt><dd>${money(S.profile.price)}</dd><dt>Referencia</dt><dd>${esc(a.payment_ref || '—')}</dd></dl>
+    ${a.status === 'review' ? `<div class="acts"><button class="btn pri" data-a="setStatus" data-id="${a.id}" data-s="confirmed">Pago correcto · apartar</button><button class="btn danger" data-a="setStatus" data-id="${a.id}" data-s="rejected">Rechazar</button></div>` : ''}`);
+}
+
+/* Horario */
+function weekState() {
+  if (!S.week) { S.week = {}; for (let d = 0; d < 7; d++) S.week[d] = S.schedules.filter(s => s.weekday === d).map(s => ({ start: s.start_time.slice(0, 5), end: s.end_time.slice(0, 5) })); }
+  return S.week;
+}
+V.horario = () => {
+  const p = S.profile, W = weekState(), today = new Date().toLocaleDateString('en-CA', { timeZone: tz() });
+  const opt = (vals, cur, fmt) => vals.map(v => `<option value="${v}" ${v === cur ? 'selected' : ''}>${fmt(v)}</option>`).join('');
+  return `<div class="title-row"><h1>Horario</h1></div>
+  <div class="stack">
+    <section class="card"><h3>Sesiones</h3><div class="row2" style="margin-top:12px">
+      <label class="field"><span>Duración de la sesión</span><select id="hr-dur">${opt([30, 45, 50, 60, 90, 120], p.session_minutes, v => v + ' minutos')}</select></label>
+      <label class="field"><span>Una cita cada</span><select id="hr-step">${opt([30, 45, 60, 90, 120], p.slot_minutes, v => v + ' minutos')}</select></label>
+      <label class="field"><span>Anticipación mínima para reservar</span><select id="hr-notice">${opt([0, 1, 2, 4, 12, 24, 48], p.min_notice_hours, v => v ? v + ' h' : 'Sin mínimo')}</select></label></div>
+      <p class="err" id="hr-err1"></p><button class="btn pri" style="margin-top:12px" data-a="saveSession">Guardar</button></section>
+    <section class="card"><h3>Horario semanal</h3><p class="muted small" style="margin:4px 0 6px">Agrega uno o más rangos por día. Los pacientes solo verán horas libres dentro de estos rangos.</p>
+      ${[1, 2, 3, 4, 5, 6, 0].map(d => `<div class="wk"><b>${DOW[d]}</b><div class="ranges">
+        ${W[d].map((r, i) => `<div class="rng"><input class="in" type="time" step="900" id="wk-${d}-${i}-s" data-w="${d}" data-i="${i}" data-f="start" value="${r.start}" aria-label="${DOW[d]} desde"> a <input class="in" type="time" step="900" id="wk-${d}-${i}-e" data-w="${d}" data-i="${i}" data-f="end" value="${r.end}" aria-label="${DOW[d]} hasta"><button class="mini-btn bad" data-a="wkDel" data-d="${d}" data-i="${i}" aria-label="Quitar horario">✕</button></div>`).join('') || '<span class="muted small">Descanso</span>'}
+        <button class="link" style="align-self:flex-start" data-a="wkAdd" data-d="${d}">+ Agregar horario</button></div></div>`).join('')}
+      <p class="err" id="hr-err2"></p><button class="btn pri" style="margin-top:8px" data-a="saveWeek">Guardar horario semanal</button></section>
+    <section class="card"><h3>Días de descanso y vacaciones</h3><p class="muted small" style="margin:4px 0 12px">En estas fechas nadie podrá reservar contigo.</p>
+      <div class="row2"><label class="field"><span>Desde</span><input id="to-from" type="date" min="${today}"></label><label class="field"><span>Hasta</span><input id="to-to" type="date" min="${today}"></label>
+        <label class="field"><span>Motivo (solo lo ves tú)</span><input id="to-reason" maxlength="120" placeholder="Ej. Vacaciones"></label></div>
+      <p class="err" id="to-err"></p><button class="btn sec" style="margin-top:10px" data-a="addOff">Agregar descanso</button>
+      <div style="margin-top:14px">${S.timeOff.filter(t => t.date_to >= today).map(t => `<div class="toff"><div><b>${t.date_from === t.date_to ? fmtDay(t.date_from + 'T12:00:00') : fmtShort(t.date_from + 'T12:00:00') + ' – ' + fmtShort(t.date_to + 'T12:00:00')}</b>${t.reason ? `<div class="muted small">${esc(t.reason)}</div>` : ''}</div><button class="btn danger sm" data-a="delOff" data-id="${t.id}">Quitar</button></div>`).join('') || '<div class="empty">No tienes descansos programados.</div>'}</div></section>
+  </div>`;
+};
+
+async function saveSession(btn) {
+  busy(btn, true);
+  const { data, error } = await sb.from('profiles').update({ session_minutes: +val('hr-dur'), slot_minutes: +val('hr-step'), min_notice_hours: +val('hr-notice') }).eq('id', S.user.id).select().single();
+  busy(btn, false);
+  if (error) return setErr('hr-err1', 'No se pudo guardar.');
+  S.profile = data; toast('Ajustes de sesión guardados');
+}
+
+async function saveWeek(btn) {
+  const W = weekState(), rows = [];
+  for (const d of Object.keys(W)) {
+    const rs = W[d].slice().sort((a, b) => a.start.localeCompare(b.start));
+    for (let i = 0; i < rs.length; i++) {
+      if (!rs[i].start || !rs[i].end || rs[i].end <= rs[i].start) return setErr('hr-err2', `Revisa el horario del ${DOW[d].toLowerCase()}: la hora final debe ser después de la inicial.`);
+      if (i && rs[i].start < rs[i - 1].end) return setErr('hr-err2', `Los horarios del ${DOW[d].toLowerCase()} se enciman.`);
+      rows.push({ owner_id: S.user.id, weekday: +d, start_time: rs[i].start, end_time: rs[i].end });
+    }
+  }
+  setErr('hr-err2', ''); busy(btn, true, 'Guardando…');
+  const del = await sb.from('schedules').delete().eq('owner_id', S.user.id);
+  const ins = del.error || !rows.length ? { data: [], error: del.error } : await sb.from('schedules').insert(rows).select();
+  busy(btn, false);
+  if (ins.error) return setErr('hr-err2', 'No se pudo guardar el horario. Intenta de nuevo.');
+  S.schedules = ins.data; S.week = null; render(); toast('Horario guardado');
+}
+
+async function addOff(btn) {
+  const from = val('to-from'), to = val('to-to') || from;
+  if (!from) return setErr('to-err', 'Elige la fecha de inicio.');
+  if (to < from) return setErr('to-err', 'La fecha final debe ser igual o posterior a la inicial.');
+  busy(btn, true);
+  const { data, error } = await sb.from('time_off').insert({ date_from: from, date_to: to, reason: val('to-reason') || null }).select().single();
+  busy(btn, false);
+  if (error) return setErr('to-err', 'No se pudo guardar.');
+  S.timeOff = [...S.timeOff, data].sort((a, b) => a.date_from.localeCompare(b.date_from)); render(); toast('Descanso agregado');
+}
+
+/* Ubicaciones */
+V.ubicaciones = () => `<div class="title-row"><h1>Ubicaciones</h1><button class="btn pri" data-a="locForm">+ Agregar ubicación</button></div>
+  <p class="muted" style="margin-top:-8px">Agrega tus consultorios. Si das terapia por videollamada, agrega también una ubicación “En línea”.</p>
+  <div class="grid">${S.locations.map(l => `<article class="card"><div class="who"><span class="ic-box">${ic(l.kind === 'en_linea' ? 'video' : 'pin')}</span><div><b>${esc(l.name)}</b><small>${l.kind === 'en_linea' ? 'En línea' : esc([l.address, l.city].filter(Boolean).join(', '))}</small></div></div>
+    <div class="acts" style="margin-top:12px"><button class="btn neu sm" data-a="locForm" data-id="${l.id}">Editar</button><button class="btn danger sm" data-a="delLoc" data-id="${l.id}" data-confirm="Toca otra vez para eliminar">Eliminar</button></div></article>`).join('') || '<div class="empty">Todavía no agregas ubicaciones.</div>'}</div>`;
+
+function locForm(id) {
+  const l = S.locations.find(x => x.id === id) || { kind: 'presencial' };
+  openModal(`<h3>${l.id ? 'Editar ubicación' : 'Nueva ubicación'}</h3><p class="sub">Así la verán tus pacientes al agendar.</p><div class="form">
+    <label class="field"><span>Tipo</span><select id="lc-kind"><option value="presencial" ${l.kind === 'presencial' ? 'selected' : ''}>Consultorio presencial</option><option value="en_linea" ${l.kind === 'en_linea' ? 'selected' : ''}>En línea (videollamada)</option></select></label>
+    <label class="field"><span>Nombre</span><input id="lc-name" value="${esc(l.name || '')}" placeholder="Ej. Consultorio Roma Norte"></label>
+    <label class="field"><span>Dirección</span><input id="lc-addr" value="${esc(l.address || '')}" placeholder="Calle, número, colonia"></label>
+    <label class="field"><span>Ciudad</span><input id="lc-city" value="${esc(l.city || '')}" placeholder="Ej. Ciudad de México"></label>
+    <p class="err" id="lc-err"></p><button class="btn pri big" data-a="saveLoc" data-id="${l.id || ''}">Guardar ubicación</button></div>`);
+}
+
+async function saveLoc(id, btn) {
+  const kind = val('lc-kind'), row = { kind, name: val('lc-name'), address: kind === 'presencial' ? val('lc-addr') || null : null, city: kind === 'presencial' ? val('lc-city') || null : null };
+  if (row.name.length < 2) return setErr('lc-err', 'Escribe un nombre para la ubicación.');
+  if (kind === 'presencial' && !row.city) return setErr('lc-err', 'Escribe la ciudad: así te encuentran en el buscador.');
+  busy(btn, true);
+  const { data, error } = await (id ? sb.from('locations').update(row).eq('id', id) : sb.from('locations').insert(row)).select().single();
+  busy(btn, false);
+  if (error) return setErr('lc-err', 'No se pudo guardar.');
+  S.locations = id ? S.locations.map(l => l.id === id ? data : l) : [...S.locations, data];
+  closeModal(); render(); toast('Ubicación guardada');
+}
+
+V.perfil = () => `<div class="title-row"><h1>Mi perfil</h1><a class="btn neu sm" href="perfil.html?p=${encodeURIComponent(S.profile.slug)}" target="_blank" rel="noopener">${ic('eye', 15)} Ver como paciente</a></div>
+  <section class="card">${profileForm(S.profile, false)}</section>`;
+
+/* Pacientes */
+V.pacientes = () => `<div class="title-row"><h1>Pacientes</h1><button class="btn pri" data-a="clientForm">+ Nuevo paciente</button></div>
+  <p class="muted" style="margin-top:-8px">Quien agenda contigo se agrega aquí automáticamente. El teléfono identifica a cada paciente en las encuestas.</p>
+  ${S.clients.length ? '<label class="field" style="max-width:420px;margin-bottom:14px"><span>Buscar</span><input id="cl-q" type="search" placeholder="Nombre, teléfono o correo"></label>' : ''}
+  <div class="grid" id="cl-list">${S.clients.map(c => { const ls = S.links.filter(l => l.client_id === c.id), done = ls.filter(l => l.status === 'done').length, ap = S.appts.filter(a => phoneKey(a.patient_phone) === phoneKey(c.phone)).length;
+    return `<article class="card" data-k="${esc(norm(c.full_name + ' ' + c.phone + ' ' + (c.email || '')))}"><div class="who">${av(c.full_name)}<div style="flex:1"><b>${esc(c.full_name)}</b><small>${esc(c.phone)}${c.email ? ' · ' + esc(c.email) : ''}</small><small>${ap} cita${ap === 1 ? '' : 's'} · ${done} de ${ls.length} encuestas respondidas</small></div><button class="btn neu sm" data-a="clientForm" data-id="${c.id}">Editar</button></div></article>`; }).join('') || '<div class="empty">Aún no tienes pacientes.</div>'}</div>
+  <p class="empty" id="cl-none" hidden>Ningún paciente coincide con la búsqueda.</p>`;
+
+function filterClients() {
+  const q = norm(val('cl-q')), cards = document.querySelectorAll('#cl-list [data-k]'); let n = 0;
+  cards.forEach(c => { const ok = !q || c.dataset.k.includes(q); c.hidden = !ok; if (ok) n++; });
+  const none = document.getElementById('cl-none'); if (none) none.hidden = n > 0 || !cards.length;
+}
+
+function clientForm(id) {
+  const c = S.clients.find(x => x.id === id) || {};
+  openModal(`<h3>${c.id ? 'Editar paciente' : 'Nuevo paciente'}</h3><p class="sub">El teléfono se pide al abrir un link de encuesta para confirmar que es el paciente.</p><div class="form">
+    <label class="field"><span>Nombre completo</span><input id="cl-name" value="${esc(c.full_name || '')}"></label>
+    <label class="field"><span>Correo</span><input id="cl-email" type="email" value="${esc(c.email || '')}"></label>
+    <label class="field"><span>Teléfono</span><input id="cl-phone" type="tel" value="${esc(c.phone || '')}" placeholder="Ej. 55 1234 5678"></label>
+    <p class="err" id="cl-err"></p><button class="btn pri big" data-a="saveClient" data-id="${c.id || ''}">${c.id ? 'Guardar cambios' : 'Agregar paciente'}</button>
+    ${c.id ? `<button class="btn danger big" data-a="delClient" data-id="${c.id}" data-confirm="Toca otra vez para eliminar (también se borran sus encuestas)">Eliminar paciente</button>` : ''}</div>`);
+}
+
+async function saveClient(id, btn) {
+  const name = val('cl-name').replace(/\s+/g, ' '), email = val('cl-email'), phone = val('cl-phone'), d = phone.replace(/\D/g, '');
+  if (name.length < 2) return setErr('cl-err', 'Escribe el nombre completo.');
+  if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return setErr('cl-err', 'El correo no es válido.');
+  if (d.length < 8 || d.length > 15) return setErr('cl-err', 'El teléfono debe tener entre 8 y 15 dígitos.');
+  if (S.clients.some(c => c.id !== id && phoneKey(c.phone) === phoneKey(phone))) return setErr('cl-err', 'Ya tienes un paciente con ese teléfono.');
+  busy(btn, true);
+  const row = { full_name: name, email: email || null, phone };
+  const { data, error } = await (id ? sb.from('clients').update(row).eq('id', id) : sb.from('clients').insert(row)).select().single();
+  busy(btn, false);
+  if (error) return setErr('cl-err', /duplicate|unique/i.test(error.message) ? 'Ya tienes un paciente con ese teléfono.' : 'No se pudo guardar.');
+  S.clients = (id ? S.clients.map(c => c.id === id ? data : c) : [...S.clients, data]).sort((a, b) => a.full_name.localeCompare(b.full_name));
+  closeModal(); render(); toast(id ? 'Paciente actualizado' : `${name} agregado`);
+}
+
+/* Encuestas */
+V.encuestas = () => `<div class="title-row"><h1>Encuestas</h1><div class="acts"><button class="btn neu sm" data-a="reload">Actualizar</button><button class="btn pri" data-a="newSurvey">+ Nueva encuesta</button></div></div>
+  <div class="grid">${S.surveys.map(s => { const ls = S.links.filter(l => l.survey_id === s.id), done = ls.filter(l => l.status === 'done').length;
+    return `<article class="card stack" style="gap:10px"><div class="who"><span class="ic-box">${ic('form')}</span><div><b>${esc(s.title)}</b><small>${s.questions.length} pregunta${s.questions.length === 1 ? '' : 's'}${s.description ? ' · ' + esc(s.description) : ''}</small></div></div>
+      <div class="tags">${[...new Set(s.questions.map(q => QTYPES[q.type]))].map(k => `<span class="tag">${k}</span>`).join('')}</div>
+      <div class="bar"><i style="width:${ls.length ? done / ls.length * 100 : 0}%"></i></div><div class="meta"><span>${ls.length} links enviados</span><span>${done} respondidas</span></div>
+      <div class="acts"><button class="btn neu sm" data-a="results" data-id="${s.id}">Respuestas</button><button class="btn sec sm" data-a="send" data-id="${s.id}">Enviar link</button></div></article>`; }).join('') || '<div class="empty">Aún no tienes encuestas. Crea la primera con “Nueva encuesta”.</div>'}</div>`;
+
+const newQ = (type = 'single') => ({ text: '', type, options: type === 'single' || type === 'multi' ? ['', ''] : [], required: true });
+function builderHtml() {
+  const B = S.builder, n = B.questions.length;
+  return `<h3>Nueva encuesta</h3><p class="sub">Agrega todas las preguntas que necesites. Cada una tiene su propio tipo de respuesta.</p><div class="form">
+    <label class="field"><span>Título</span><input id="sv-title" data-b="title" value="${esc(B.title)}" placeholder="Ej. Evaluación inicial"></label>
+    <label class="field"><span>Descripción (opcional)</span><input id="sv-desc" data-b="description" value="${esc(B.description)}" placeholder="Ej. Te tomará unos 5 minutos"></label>
+    <div>${B.questions.map((q, i) => `<div class="qb">
+      <div class="qb-h"><b>Pregunta ${i + 1}</b><span class="qb-tools">
+        <button class="mini-btn" data-a="qMove" data-i="${i}" data-d="-1" ${i === 0 ? 'disabled' : ''} aria-label="Subir">↑</button>
+        <button class="mini-btn" data-a="qMove" data-i="${i}" data-d="1" ${i === n - 1 ? 'disabled' : ''} aria-label="Bajar">↓</button>
+        <button class="mini-btn" data-a="qDup" data-i="${i}" aria-label="Duplicar">⧉</button>
+        <button class="mini-btn bad" data-a="qDel" data-i="${i}" ${n === 1 ? 'disabled' : ''} aria-label="Eliminar">✕</button></span></div>
+      <input class="in" id="q-${i}-text" data-b="text" data-i="${i}" value="${esc(q.text)}" placeholder="Escribe la pregunta" aria-label="Texto de la pregunta ${i + 1}">
+      <div class="qb-row"><select class="in" data-b="type" data-i="${i}" aria-label="Tipo de respuesta">${Object.entries(QTYPES).map(([k, v]) => `<option value="${k}" ${q.type === k ? 'selected' : ''}>${v}</option>`).join('')}</select>
+        <label class="check"><input type="checkbox" data-b="required" data-i="${i}" ${q.required ? 'checked' : ''}> Obligatoria</label></div>
+      ${q.type === 'single' || q.type === 'multi' ? `<div class="stack" style="gap:6px">${q.options.map((o, j) => `<div class="opt-row"><span class="mark ${q.type}"></span><input class="in" id="q-${i}-o-${j}" data-b="opt" data-i="${i}" data-j="${j}" value="${esc(o)}" placeholder="Opción ${j + 1}"><button class="mini-btn" data-a="optDel" data-i="${i}" data-j="${j}" ${q.options.length <= 2 ? 'disabled' : ''} aria-label="Quitar opción">✕</button></div>`).join('')}
+        <button class="link" style="align-self:flex-start" data-a="optAdd" data-i="${i}">+ Agregar opción</button></div>` : `<p class="muted small" style="margin:0">${QNOTE[q.type]}</p>`}</div>`).join('')}</div>
+    <div class="chips">${Object.entries(QTYPES).map(([k, v]) => `<button class="chip" data-a="qAdd" data-t="${k}">+ ${v}</button>`).join('')}</div>
+    <p class="err" id="sv-err"></p><button class="btn pri big" data-a="saveSurvey">Guardar encuesta</button></div>`;
+}
+function redrawBuilder(focusId) { openModal(builderHtml(), true); if (focusId) { const e = document.getElementById(focusId); if (e) { e.focus(); e.scrollIntoView({ block: 'center' }); } } }
+function syncBuilder(el) {
+  const B = S.builder, i = +el.dataset.i, f = el.dataset.b;
+  if (f === 'title' || f === 'description') B[f] = el.value;
+  else if (f === 'text') B.questions[i].text = el.value;
+  else if (f === 'required') B.questions[i].required = el.checked;
+  else if (f === 'opt') B.questions[i].options[+el.dataset.j] = el.value;
+  else if (f === 'type') { const q = B.questions[i]; q.type = el.value; if ((q.type === 'single' || q.type === 'multi') && q.options.length < 2) q.options = ['', '']; redrawBuilder(); }
+}
+async function saveSurvey(btn) {
+  const B = S.builder, title = B.title.trim(), questions = [];
+  if (title.length < 2) return setErr('sv-err', 'Escribe el título de la encuesta.');
+  for (let i = 0; i < B.questions.length; i++) {
+    const q = B.questions[i], text = q.text.trim();
+    if (!text) return setErr('sv-err', `Escribe el texto de la pregunta ${i + 1}.`);
+    const o = { text, type: q.type, required: q.required };
+    if (q.type === 'single' || q.type === 'multi') { o.options = [...new Set(q.options.map(x => x.trim()).filter(Boolean))]; if (o.options.length < 2) return setErr('sv-err', `La pregunta ${i + 1} necesita al menos 2 opciones distintas.`); }
+    questions.push(o);
+  }
+  busy(btn, true, 'Guardando…');
+  const { data, error } = await sb.from('surveys').insert({ title, description: B.description.trim() || null, questions }).select().single();
+  busy(btn, false);
+  if (error) return setErr('sv-err', 'No se pudo guardar la encuesta.');
+  S.surveys.unshift(data); S.builder = null; render(); sendModal(data.id); toast('Encuesta guardada. Elige a quién mandarle el link.');
+}
+function linkRow(l, sv) {
+  const c = S.clients.find(x => x.id === l.client_id); if (!c) return '';
+  const url = pageUrl('responder.html?t=' + l.token);
+  const msg = `Hola ${c.full_name.split(' ')[0]}, te comparto la encuesta "${sv.title}". Al abrirla te pediremos tu número de teléfono para confirmar que eres tú: ${url}`;
+  return `<div class="lnk">${av(c.full_name, 'sm')}<div><b>${esc(c.full_name)}</b><div class="mono" id="u-${l.id}">${esc(url)}</div></div><div class="acts">
+    <button class="btn neu sm" data-a="copy" data-u="${esc(url)}" data-el="u-${l.id}">Copiar</button><a class="btn sec sm" href="${esc(waLink(c.phone, msg))}" target="_blank" rel="noopener">WhatsApp</a>
+    ${c.email ? `<a class="btn neu sm" href="mailto:${esc(c.email)}?subject=${encodeURIComponent(sv.title)}&body=${encodeURIComponent(msg)}">Correo</a>` : ''}</div></div>`;
+}
+function sendModal(id) {
+  const sv = S.surveys.find(s => s.id === id);
+  if (S.sentIds) return openModal(`<h3>Links listos</h3><p class="sub">Cada link es personal: solo se abre con el teléfono registrado del paciente y se contesta una vez.</p>${S.links.filter(l => S.sentIds.includes(l.id)).map(l => linkRow(l, sv)).join('')}<button class="btn neu big" data-close>Listo</button>`);
+  if (!S.clients.length) return openModal(`<h3>Enviar “${esc(sv.title)}”</h3><div class="empty">Primero agrega pacientes con su teléfono.</div><a class="btn pri big" style="margin-top:12px" href="#pacientes" data-close>Ir a Pacientes</a>`);
+  openModal(`<h3>Enviar “${esc(sv.title)}”</h3><p class="sub">Se crea un link personal para cada paciente. Después lo mandas por WhatsApp, correo o lo copias.</p><div class="stack" style="gap:8px">
+    ${S.clients.map(c => { const pend = S.links.some(l => l.survey_id === sv.id && l.client_id === c.id && l.status === 'sent');
+      return `<label class="check card" style="box-shadow:none;padding:10px 12px"><input type="checkbox" class="snd" value="${c.id}" ${pend ? 'disabled' : ''}>${av(c.full_name, 'sm')}<span style="flex:1;min-width:0">${esc(c.full_name)}<small class="muted" style="display:block;font-weight:500">${esc(c.phone)}</small></span>${pend ? '<small class="muted">Ya tiene link pendiente</small>' : ''}</label>`; }).join('')}</div>
+    <p class="err" id="snd-err" style="margin-top:10px"></p><button class="btn pri big" style="margin-top:10px" data-a="createLinks" data-id="${sv.id}">Crear links</button>`);
+}
+async function createLinks(id, btn) {
+  const ids = [...document.querySelectorAll('.modal .snd:checked')].map(i => i.value);
+  if (!ids.length) return setErr('snd-err', 'Selecciona al menos un paciente.');
+  busy(btn, true);
+  const { data, error } = await sb.from('survey_links').insert(ids.map(client_id => ({ survey_id: id, client_id }))).select();
+  busy(btn, false);
+  if (error) return setErr('snd-err', 'No se pudieron crear los links.');
+  S.links = [...data, ...S.links]; S.sentIds = data.map(l => l.id); sendModal(id); S.sentIds = null; render();
+}
+function fmtAns(q, a) {
+  if (a == null || a === '' || (Array.isArray(a) && !a.length)) return '—';
+  if (q.type === 'multi') return a.map(esc).join(', ');
+  if (q.type === 'scale') return a + ' / 5';
+  if (q.type === 'freq') return FREQ[a];
+  return esc(a);
+}
+function resultsModal(id) {
+  const sv = S.surveys.find(s => s.id === id), ls = S.links.filter(l => l.survey_id === id), done = ls.filter(l => l.status === 'done'), pend = ls.filter(l => l.status === 'sent');
+  const score = ans => sv.questions.reduce((acc, q, i) => { if (typeof ans[i] === 'number') { acc.v += ans[i]; acc.max += q.type === 'freq' ? 3 : 5; } return acc; }, { v: 0, max: 0 });
+  openModal(`<h3>${esc(sv.title)}</h3><p class="sub">${done.length} de ${ls.length} respondidas. El puntaje suma escalas y frecuencias; es orientativo.</p>
+    ${done.map(l => { const sc = score(l.answers); return `<div class="card" style="margin-bottom:10px;box-shadow:none"><div class="who">${av(l.respondent_name)}<div style="flex:1"><b>${esc(l.respondent_name)}</b><small>${esc(l.respondent_phone)} · ${fmtDT(l.answered_at, tz())}</small></div>${sc.max ? `<span class="pill p-calm">${sc.v}/${sc.max}</span>` : ''}</div>
+      <ul class="ans">${sv.questions.map((q, i) => `<li><span>${i + 1}. ${esc(q.text)}</span><b>${fmtAns(q, l.answers[i])}</b></li>`).join('')}</ul></div>`; }).join('') || '<div class="empty">Aún no hay respuestas.</div>'}
+    ${pend.length ? `<h4 style="margin:16px 0 8px">Sin responder (${pend.length})</h4>${pend.map(l => linkRow(l, sv)).join('')}` : ''}`, true);
+}
+
+/* ---------- eventos ---------- */
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.dataset.b && S.builder) syncBuilder(t);
+  if (t.dataset.w) { weekState()[t.dataset.w][+t.dataset.i][t.dataset.f] = t.value; }
+  if (t.id === 'cl-q') filterClients();
+  if (t.id === 'pf-slug') updateSlugUrl();
+});
+document.addEventListener('change', e => { if (e.target.dataset.b && S.builder && e.target.type !== 'text') syncBuilder(e.target); });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.target.id === 'pf-topic-new') {
+    e.preventDefault(); const t = e.target.value.trim(); if (!t) return;
+    const box = document.getElementById('pf-topics'), ex = [...box.children].find(b => norm(b.dataset.t) === norm(t));
+    if (ex) ex.setAttribute('aria-pressed', 'true'); else box.insertAdjacentHTML('beforeend', `<button type="button" data-a="topic" data-t="${esc(t)}" aria-pressed="true">${esc(t)}</button>`);
+    e.target.value = '';
+  }
+});
+
+document.addEventListener('click', async e => {
+  const el = e.target.closest('[data-a]'); if (!el || el.disabled) return;
+  const d = el.dataset;
+  switch (d.a) {
+    case 'logout': await sb.auth.signOut(); S.recovery = false; location.hash = ''; break;
+    case 'authMode': S.authMode = d.m; render(); break;
+    case 'auth': doAuth(el); break;
+    case 'setPass': {
+      const a = document.getElementById('rc-1').value, b = document.getElementById('rc-2').value;
+      if (a.length < 8) return setErr('rc-err', 'La contraseña debe tener al menos 8 caracteres.');
+      if (a !== b) return setErr('rc-err', 'Las contraseñas no coinciden.');
+      busy(el, true); const r = await sb.auth.updateUser({ password: a }); busy(el, false);
+      if (r.error) return setErr('rc-err', 'No se pudo guardar: ' + r.error.message);
+      S.recovery = false; toast('Contraseña actualizada'); render(); break;
+    }
+    case 'reload': await loadAll(); toast('Datos actualizados'); break;
+    case 'topic': el.setAttribute('aria-pressed', el.getAttribute('aria-pressed') !== 'true'); break;
+    case 'saveProfile': saveProfile(el); break;
+    case 'copy': PA.copy(d.u, document.getElementById(d.el)); break;
+    case 'apptTab': S.apptTab = d.t; render(); break;
+    case 'setStatus': setStatus(d.id, d.s, el); break;
+    case 'receipt': showReceipt(d.id); break;
+    case 'saveSession': saveSession(el); break;
+    case 'wkAdd': { const W = weekState()[d.d], last = W[W.length - 1]; W.push(last ? { start: last.end, end: last.end < '20:00' ? String(+last.end.slice(0, 2) + 2).padStart(2, '0') + last.end.slice(2) : '21:00' } : { start: '09:00', end: '14:00' }); render(); break; }
+    case 'wkDel': weekState()[d.d].splice(+d.i, 1); render(); break;
+    case 'saveWeek': saveWeek(el); break;
+    case 'addOff': addOff(el); break;
+    case 'delOff': { busy(el, true); const r = await sb.from('time_off').delete().eq('id', d.id); if (r.error) { busy(el, false); return toast('No se pudo quitar.'); } S.timeOff = S.timeOff.filter(t => t.id !== d.id); render(); toast('Descanso quitado'); break; }
+    case 'locForm': locForm(d.id); break;
+    case 'saveLoc': saveLoc(d.id, el); break;
+    case 'delLoc': {
+      if (!d.armed) { el.dataset.armed = 1; el.textContent = d.confirm; return; }
+      busy(el, true); const r = await sb.from('locations').delete().eq('id', d.id);
+      if (r.error) { busy(el, false); return toast('No se pudo eliminar.'); }
+      S.locations = S.locations.filter(l => l.id !== d.id); render(); toast('Ubicación eliminada'); break;
+    }
+    case 'clientForm': clientForm(d.id); break;
+    case 'saveClient': saveClient(d.id, el); break;
+    case 'delClient': {
+      if (!d.armed) { el.dataset.armed = 1; el.textContent = d.confirm; return; }
+      busy(el, true); const r = await sb.from('clients').delete().eq('id', d.id);
+      if (r.error) { busy(el, false); return setErr('cl-err', 'No se pudo eliminar.'); }
+      S.clients = S.clients.filter(c => c.id !== d.id); S.links = S.links.filter(l => l.client_id !== d.id); closeModal(); render(); toast('Paciente eliminado'); break;
+    }
+    case 'newSurvey': S.builder = { title: '', description: '', questions: [newQ('single')] }; redrawBuilder(); break;
+    case 'qAdd': S.builder.questions.push(newQ(d.t)); redrawBuilder(`q-${S.builder.questions.length - 1}-text`); break;
+    case 'qDel': S.builder.questions.splice(+d.i, 1); redrawBuilder(); break;
+    case 'qDup': { const q = S.builder.questions[+d.i]; S.builder.questions.splice(+d.i + 1, 0, { ...q, options: [...q.options] }); redrawBuilder(`q-${+d.i + 1}-text`); break; }
+    case 'qMove': { const qs = S.builder.questions, i = +d.i, j = i + +d.d; [qs[i], qs[j]] = [qs[j], qs[i]]; redrawBuilder(`q-${j}-text`); break; }
+    case 'optAdd': { const o = S.builder.questions[+d.i].options; o.push(''); redrawBuilder(`q-${d.i}-o-${o.length - 1}`); break; }
+    case 'optDel': S.builder.questions[+d.i].options.splice(+d.j, 1); redrawBuilder(); break;
+    case 'saveSurvey': saveSurvey(el); break;
+    case 'send': sendModal(d.id); break;
+    case 'createLinks': createLinks(d.id, el); break;
+    case 'results': resultsModal(d.id); break;
+  }
+});
+})();
+</script>
+</body>
+</html>

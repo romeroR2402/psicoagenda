@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Mi cita · PsicoAgenda</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="assets/app.css">
+<style>
+.page{padding-block:28px 56px;max-width:720px;margin:0 auto}
+.status{display:flex;gap:14px;align-items:center}
+.status h1{font-size:clamp(24px,4vw,30px)}
+.upload{position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;padding:20px;border:1.5px dashed var(--accent);border-radius:16px;background:var(--accent-soft);color:var(--accent);font-weight:700;text-align:center;cursor:pointer;overflow-wrap:anywhere}
+.upload input{position:absolute;opacity:0;width:1px;height:1px}
+.upload img{max-height:240px;border-radius:10px;box-shadow:var(--shadow)}
+.banner{border-radius:16px;padding:14px 16px;font-weight:600;font-size:13.5px}
+</style>
+</head>
+<body class="wash">
+<header class="topbar"><div class="wrap gutter">
+  <a class="brand" href="index.html"><i>Ψ</i>PsicoAgenda</a>
+</div></header>
+<main class="page gutter"><div class="stack" id="root"><div class="empty">Cargando tu cita…</div></div></main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script src="assets/common.js"></script>
+<script>
+(() => {
+const { sb, esc, av, ic, money, MODE, fmtDay, fmtTime, pill, compress, copy, toast } = PA;
+const root = document.getElementById('root');
+const qp = new URLSearchParams(location.search), token = qp.get('t') || '';
+let A = null, file = null;
+
+async function load() {
+  if (!sb || !/^[a-f0-9]{20,}$/.test(token)) { root.innerHTML = '<div class="card"><h2>Link no válido</h2><p class="muted">Revisa que copiaste el link completo de tu cita.</p></div>'; return; }
+  const { data, error } = await sb.rpc('get_appointment', { p_token: token });
+  if (error || !data) { root.innerHTML = '<div class="card"><h2>No encontramos tu cita</h2><p class="muted">Revisa que copiaste el link completo o pide ayuda a tu psicólogo.</p></div>'; return; }
+  A = data; render();
+}
+
+function render() {
+  const tz = A.timezone, url = location.href.replace(/&nueva=1/, '');
+  const head = {
+    unpaid: ['Tu horario está apartado', 'Para confirmarlo, haz tu pago y sube tu comprobante.'],
+    review: ['Pago en revisión', `${esc(A.psych_name)} está revisando tu comprobante. Te avisará cuando confirme tu cita.`],
+    confirmed: ['¡Tu cita está confirmada!', 'Te esperamos. Si no puedes asistir, cancélala aquí para liberar el horario.'],
+    rejected: ['Tu cita no fue aprobada', 'El horario quedó libre. Puedes elegir otro horario o escribirle a tu psicólogo.'],
+    cancelled: ['Cita cancelada', 'Esta cita se canceló y el horario quedó libre.'],
+  }[A.status];
+  const canPay = A.status === 'unpaid' || A.status === 'review';
+  const canCancel = ['unpaid', 'review', 'confirmed'].includes(A.status) && new Date(A.starts_at) > new Date();
+  root.innerHTML = `
+    ${qp.get('nueva') ? `<div class="banner p-ok">Solicitud enviada. Guarda este link: con él puedes ver tu cita, pagar o cancelar.</div>` : ''}
+    <section class="card"><div class="status"><span class="ic-box">${ic(A.status === 'confirmed' ? 'check' : 'cal', 22)}</span><div><h1>${head[0]}</h1><p class="muted" style="margin:4px 0 0">${head[1]}</p></div></div>
+      <dl class="kv" style="margin-top:18px">
+        <dt>Estado</dt><dd>${pill(A.status)}</dd>
+        <dt>Paciente</dt><dd>${esc(A.patient_name)}</dd>
+        <dt>Día</dt><dd>${fmtDay(A.starts_at, tz)}</dd>
+        <dt>Hora</dt><dd>${fmtTime(A.starts_at, tz)} – ${fmtTime(A.ends_at, tz)}</dd>
+        <dt>Modalidad</dt><dd>${MODE[A.mode]}</dd>
+        ${A.location ? `<dt>Lugar</dt><dd>${esc(A.location.name)}${A.location.address ? '<br><span class="muted small">' + esc([A.location.address, A.location.city].filter(Boolean).join(', ')) + '</span>' : ''}</dd>` : ''}
+        <dt>Psicólogo</dt><dd><a href="perfil.html?p=${encodeURIComponent(A.psych_slug)}">${esc(A.psych_name)}</a></dd>
+        <dt>Costo</dt><dd>${money(A.price)}</dd>
+      </dl></section>
+    ${canPay ? `<section class="card"><h2>${A.status === 'review' ? 'Cambiar comprobante' : 'Paga y sube tu comprobante'}</h2>
+      ${A.payment_info ? `<p class="muted small" style="margin:6px 0 4px">Datos para tu pago:</p><div class="card pre" style="box-shadow:none;border:1px solid var(--line);background:var(--bg);font-weight:600">${esc(A.payment_info)}</div>` : '<p class="muted">Tu psicólogo te compartirá los datos de pago.</p>'}
+      <form class="form" id="f-pay" style="margin-top:14px" novalidate>
+        <label class="upload" for="pay-file"><input type="file" id="pay-file" accept="image/*">${ic('upload', 26)}<span id="pay-t">Subir foto o captura del comprobante</span><img id="pay-prev" alt="Vista previa del comprobante" hidden></label>
+        <label class="field"><span>Referencia o folio (opcional)</span><input id="pay-ref" maxlength="80" placeholder="Ej. SPEI 520318" value="${esc(A.payment_ref || '')}"></label>
+        <p class="err" id="pay-err"></p>
+        <button class="btn pri big" id="pay-go">Enviar comprobante</button>
+      </form></section>` : ''}
+    <section class="card"><h3>Tu link de cita</h3><p class="muted small" style="margin:4px 0 10px">Guárdalo. Es personal: con él puedes volver a esta página.</p>
+      <div class="mono" id="u">${esc(url)}</div>
+      <div class="chips" style="margin-top:12px"><button class="btn neu sm" id="cp">Copiar link</button>
+      ${canCancel ? `<button class="btn danger sm" id="cancel">Cancelar cita</button>` : ''}</div></section>`;
+  const cp = document.getElementById('cp'); cp.onclick = () => copy(url, document.getElementById('u'));
+  const cancel = document.getElementById('cancel');
+  if (cancel) cancel.onclick = async () => {
+    if (!cancel.dataset.armed) { cancel.dataset.armed = 1; cancel.textContent = 'Toca otra vez para cancelar'; return; }
+    cancel.disabled = true;
+    const { data } = await sb.rpc('cancel_appointment', { p_token: token });
+    if (data && data.ok) { toast('Cita cancelada'); load(); } else { cancel.disabled = false; toast('No se pudo cancelar. Intenta de nuevo.'); }
+  };
+}
+
+document.addEventListener('change', async e => {
+  if (e.target.id !== 'pay-file' || !e.target.files[0]) return;
+  const f = e.target.files[0], err = document.getElementById('pay-err');
+  if (!f.type.startsWith('image/')) { err.textContent = 'El archivo debe ser una imagen (foto o captura de pantalla).'; return; }
+  try {
+    file = await compress(f);
+    const pv = document.getElementById('pay-prev'); pv.src = URL.createObjectURL(file); pv.hidden = false;
+    document.getElementById('pay-t').textContent = f.name + ' · toca para cambiar'; err.textContent = '';
+  } catch (x) { err.textContent = 'No se pudo leer la imagen. Prueba con otra.'; }
+});
+
+document.addEventListener('submit', async e => {
+  if (e.target.id !== 'f-pay') return;
+  e.preventDefault();
+  const err = document.getElementById('pay-err'), btn = document.getElementById('pay-go');
+  if (!file) { err.textContent = 'Sube la imagen de tu comprobante.'; return; }
+  btn.disabled = true; btn.textContent = 'Subiendo…';
+  const path = `${token}/${Date.now()}.jpg`;
+  const up = await sb.storage.from('receipts').upload(path, file, { contentType: 'image/jpeg', upsert: false });
+  if (up.error) { btn.disabled = false; btn.textContent = 'Enviar comprobante'; err.textContent = 'No se pudo subir la imagen. Intenta de nuevo.'; return; }
+  const { data, error } = await sb.rpc('report_payment', { p_token: token, p_path: path, p_ref: document.getElementById('pay-ref').value });
+  if (error || !data.ok) { btn.disabled = false; btn.textContent = 'Enviar comprobante'; err.textContent = 'No se pudo registrar tu pago. Intenta de nuevo.'; return; }
+  file = null; toast('Comprobante enviado'); load();
+});
+
+load();
+})();
+</script>
+</body>
+</html>
