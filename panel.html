@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
 <link rel="stylesheet" href="assets/app.css">
 <style>
 .auth{max-width:440px;margin:48px auto;padding-bottom:48px}
@@ -64,6 +65,7 @@
 .sugg{display:flex;flex-wrap:wrap;gap:6px}
 .sugg button{padding:5px 10px;border-radius:999px;border:1px solid var(--line);background:var(--card);font-size:12px;font-weight:600}
 .sugg button[aria-pressed="true"]{background:var(--calm-soft);color:var(--calm);border-color:transparent}
+.locmap{height:260px;border-radius:14px;overflow:hidden;border:1px solid var(--line);z-index:0}
 /* calendario */
 .cal-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px}
 .cal-bar h2{font-size:18px;margin-right:auto}
@@ -107,6 +109,7 @@
 <div id="root"><div class="auth gutter"><div class="empty">Cargando…</div></div></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="config.js"></script>
 <script src="assets/common.js"></script>
 <script>
@@ -118,6 +121,7 @@ const S = { authKnown: false, user: null, recovery: false, authMode: location.ha
   apptTab: 'review', week: null, builder: null, sentIds: null };
 const VIEWS = { inicio: ['Inicio', 'home'], calendario: ['Calendario', 'week'], citas: ['Citas', 'cal'], horario: ['Horario', 'clock'], ubicaciones: ['Ubicaciones', 'pin'], perfil: ['Mi perfil', 'user'], pacientes: ['Pacientes', 'users'], encuestas: ['Encuestas', 'form'] };
 const TOPICS = ['Ansiedad', 'Depresión', 'Pareja', 'Duelo', 'Autoestima', 'Estrés', 'Adolescentes', 'Niños', 'Familia', 'Adicciones', 'Trauma', 'Sexualidad', 'Orientación vocacional', 'TDAH'];
+const LANGS = ['Español', 'Inglés', 'Francés', 'Portugués', 'Lengua de señas mexicana'];
 const QTYPES = { single: 'Una opción', multi: 'Varias opciones', scale: 'Escala del 1 al 5', freq: 'Frecuencia', text: 'Respuesta abierta' };
 const QNOTE = { scale: 'El paciente elige un número del 1 (nada) al 5 (mucho).', freq: 'Opciones fijas: Nunca, Varios días, Más de la mitad de los días, Casi todos los días.', text: 'El paciente escribe su respuesta, hasta 2000 caracteres.' };
 const FREQ = ['Nunca', 'Varios días', 'Más de la mitad de los días', 'Casi todos los días'];
@@ -258,6 +262,9 @@ function profileForm(p, creating) {
     <div class="field"><span>Temas que atiendes (aparecen en el buscador)</span>
       <div class="sugg" id="pf-topics">${[...new Set([...TOPICS, ...topics])].map(t => `<button type="button" data-a="topic" data-t="${esc(t)}" aria-pressed="${topics.has(t)}">${esc(t)}</button>`).join('')}</div>
       <input id="pf-topic-new" class="in" placeholder="Agregar otro tema y presionar Enter" style="margin-top:6px"></div>
+    <div class="row2"><label class="field"><span>Género (para el filtro del buscador)</span><select id="pf-gender">
+        ${[['', 'Prefiero no decir'], ['mujer', 'Mujer'], ['hombre', 'Hombre'], ['otro', 'Otro']].map(([v, t]) => `<option value="${v}" ${(p.gender || '') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
+      <div class="field"><span>Idiomas en que atiendes</span><div class="sugg" id="pf-langs">${LANGS.map(l => `<button type="button" data-a="topic" data-t="${l}" aria-pressed="${(p.languages || ['Español']).includes(l)}">${l}</button>`).join('')}</div></div></div>
     <label class="field"><span>WhatsApp (se muestra a tus pacientes para que te avisen)</span><input id="pf-wa" type="tel" value="${esc(p.whatsapp || '')}" placeholder="Ej. 55 1234 5678"></label>
     <label class="field"><span>Datos para que te paguen</span><textarea id="pf-pay" maxlength="500" placeholder="Banco, titular, CLABE o número de tarjeta">${esc(p.payment_info || '')}</textarea></label>
     <label class="field"><span>Dirección de tu perfil</span><input id="pf-slug" value="${esc(p.slug || '')}" maxlength="80"><small class="muted mono" id="pf-url"></small></label>
@@ -284,6 +291,8 @@ async function saveProfile(btn) {
     price: val('pf-price') === '' ? null : Math.round(Number(val('pf-price'))),
     topics: [...document.querySelectorAll('#pf-topics [aria-pressed="true"]')].map(b => b.dataset.t),
     whatsapp: val('pf-wa') || null,
+    gender: val('pf-gender') || null,
+    languages: [...document.querySelectorAll('#pf-langs [aria-pressed="true"]')].map(b => b.dataset.t),
   };
   if (row.whatsapp && row.whatsapp.replace(/\D/g, '').length < 8) return setErr('pf-err', 'Revisa tu WhatsApp: debe tener al menos 8 dígitos.');
   if (row.full_name.length < 3) return setErr('pf-err', 'Escribe tu nombre completo.');
@@ -509,7 +518,7 @@ async function addOff(btn) {
 /* Ubicaciones */
 V.ubicaciones = () => `<div class="title-row"><h1>Ubicaciones</h1><button class="btn pri" data-a="locForm">+ Agregar ubicación</button></div>
   <p class="muted" style="margin-top:-8px">Agrega tus consultorios. Si das terapia por videollamada, agrega también una ubicación “En línea”.</p>
-  <div class="grid">${S.locations.map(l => `<article class="card"><div class="who"><span class="ic-box">${ic(l.kind === 'en_linea' ? 'video' : 'pin')}</span><div><b>${esc(l.name)}</b><small>${l.kind === 'en_linea' ? 'En línea' : esc([l.address, l.city].filter(Boolean).join(', '))}</small></div></div>
+  <div class="grid">${S.locations.map(l => `<article class="card"><div class="who"><span class="ic-box">${ic(l.kind === 'en_linea' ? 'video' : 'pin')}</span><div><b>${esc(l.name)}</b><small>${l.kind === 'en_linea' ? 'En línea' : esc([l.address, l.city].filter(Boolean).join(', '))}</small>${l.kind === 'presencial' ? `<small style="color:${l.lat != null ? 'var(--ok)' : 'var(--warn)'}">${l.lat != null ? 'Ubicada en el mapa' : 'Falta ubicarla en el mapa'}</small>` : ''}</div></div>
     <div class="acts" style="margin-top:12px"><button class="btn neu sm" data-a="locForm" data-id="${l.id}">Editar</button><button class="btn danger sm" data-a="delLoc" data-id="${l.id}" data-confirm="Toca otra vez para eliminar">Eliminar</button></div></article>`).join('') || '<div class="empty">Todavía no agregas ubicaciones.</div>'}</div>`;
 
 function locForm(id) {
@@ -519,11 +528,45 @@ function locForm(id) {
     <label class="field"><span>Nombre</span><input id="lc-name" value="${esc(l.name || '')}" placeholder="Ej. Consultorio Roma Norte"></label>
     <label class="field"><span>Dirección</span><input id="lc-addr" value="${esc(l.address || '')}" placeholder="Calle, número, colonia"></label>
     <label class="field"><span>Ciudad</span><input id="lc-city" value="${esc(l.city || '')}" placeholder="Ej. Ciudad de México"></label>
+    <div class="stack" id="lc-mapwrap" style="gap:8px" ${l.kind === 'en_linea' ? 'hidden' : ''}>
+      <div class="field"><span>Ubicación en el mapa</span><div class="locmap" id="lc-map"></div></div>
+      <div class="acts"><button class="btn sec sm" data-a="geo">Buscar la dirección en el mapa</button><small class="muted" id="lc-pin">${l.lat != null ? 'Ubicación guardada.' : 'Aún sin ubicar.'} Toca el mapa o arrastra el marcador para ajustarla.</small></div></div>
     <p class="err" id="lc-err"></p><button class="btn pri big" data-a="saveLoc" data-id="${l.id || ''}">Guardar ubicación</button></div>`);
+  initLocMap(l);
+}
+const LM = { map: null, marker: null, lat: null, lng: null };
+function setPin(lat, lng, zoom) {
+  LM.lat = lat; LM.lng = lng;
+  if (!LM.map) return;
+  if (LM.marker) LM.marker.setLatLng([lat, lng]);
+  else { LM.marker = L.marker([lat, lng], { draggable: true }).addTo(LM.map); LM.marker.on('dragend', e => { const p = e.target.getLatLng(); setPin(p.lat, p.lng); }); }
+  if (zoom) LM.map.setView([lat, lng], zoom);
+  const t = document.getElementById('lc-pin'); if (t) t.textContent = 'Ubicación marcada. Puedes arrastrar el marcador para ajustarla.';
+}
+function initLocMap(l) {
+  Object.assign(LM, { map: null, marker: null, lat: l.lat ?? null, lng: l.lng ?? null });
+  if (!window.L) { document.getElementById('lc-map').innerHTML = '<div class="empty">No se pudo cargar el mapa.</div>'; return; }
+  LM.map = L.map('lc-map').setView(l.lat != null ? [l.lat, l.lng] : [19.4326, -99.1332], l.lat != null ? 16 : 11);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(LM.map);
+  if (l.lat != null) setPin(l.lat, l.lng);
+  LM.map.on('click', e => setPin(e.latlng.lat, e.latlng.lng));
+  setTimeout(() => LM.map && LM.map.invalidateSize(), 150);
+}
+async function geocode(btn) {
+  const q = [val('lc-addr'), val('lc-city'), 'México'].filter(Boolean).join(', ');
+  if (!val('lc-addr') && !val('lc-city')) return setErr('lc-err', 'Escribe la dirección y la ciudad primero.');
+  busy(btn, true, 'Buscando…');
+  try {
+    const r = await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=mx&accept-language=es&q=' + encodeURIComponent(q));
+    const j = await r.json(); busy(btn, false);
+    if (!j.length) return setErr('lc-err', 'No encontramos esa dirección. Ubícala tocando el mapa.');
+    setErr('lc-err', ''); setPin(+j[0].lat, +j[0].lon, 17);
+  } catch (e) { busy(btn, false); setErr('lc-err', 'No se pudo buscar la dirección. Ubícala tocando el mapa.'); }
 }
 
 async function saveLoc(id, btn) {
-  const kind = val('lc-kind'), row = { kind, name: val('lc-name'), address: kind === 'presencial' ? val('lc-addr') || null : null, city: kind === 'presencial' ? val('lc-city') || null : null };
+  const kind = val('lc-kind'), row = { kind, name: val('lc-name'), address: kind === 'presencial' ? val('lc-addr') || null : null, city: kind === 'presencial' ? val('lc-city') || null : null,
+    lat: kind === 'presencial' ? LM.lat : null, lng: kind === 'presencial' ? LM.lng : null };
   if (row.name.length < 2) return setErr('lc-err', 'Escribe un nombre para la ubicación.');
   if (kind === 'presencial' && !row.city) return setErr('lc-err', 'Escribe la ciudad: así te encuentran en el buscador.');
   busy(btn, true);
@@ -715,6 +758,7 @@ document.addEventListener('input', e => {
 document.addEventListener('change', e => {
   if (e.target.dataset.b && S.builder && e.target.type !== 'text') syncBuilder(e.target);
   if (e.target.id === 'pf-file' && e.target.files[0]) uploadPhoto(e.target.files[0]);
+  if (e.target.id === 'lc-kind') { document.getElementById('lc-mapwrap').hidden = e.target.value !== 'presencial'; if (LM.map) setTimeout(() => LM.map.invalidateSize(), 50); }
 });
 document.addEventListener('keydown', e => {
   if (e.key === 'Enter' && e.target.id === 'pf-topic-new') {
@@ -758,6 +802,7 @@ document.addEventListener('click', async e => {
     case 'delOff': { busy(el, true); const r = await sb.from('time_off').delete().eq('id', d.id); if (r.error) { busy(el, false); return toast('No se pudo quitar.'); } S.timeOff = S.timeOff.filter(t => t.id !== d.id); render(); toast('Descanso quitado'); break; }
     case 'locForm': locForm(d.id); break;
     case 'saveLoc': saveLoc(d.id, el); break;
+    case 'geo': geocode(el); break;
     case 'delLoc': {
       if (!d.armed) { el.dataset.armed = 1; el.textContent = d.confirm; return; }
       busy(el, true); const r = await sb.from('locations').delete().eq('id', d.id);

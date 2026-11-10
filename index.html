@@ -8,18 +8,19 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
 <link rel="stylesheet" href="assets/app.css">
 <style>
-.hero{padding-block:56px 40px}
+.hero{padding-block:48px 34px}
 .hero h1{font-size:clamp(30px,5vw,52px);line-height:1.04;max-width:16ch}
 .hero h1 em{font-style:normal;color:var(--accent)}
-.hero p.lead{color:var(--muted);font-size:16.5px;max-width:52ch;margin:14px 0 26px}
+.hero p.lead{color:var(--muted);font-size:16.5px;max-width:52ch;margin:14px 0 24px}
 .kinds{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
 .kinds .chip small{font-weight:600;font-size:11px;opacity:.8}
 .searchbox{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) auto;gap:8px;background:var(--card);border-radius:22px;padding:8px;box-shadow:var(--shadow);border:1px solid var(--line);max-width:900px}
 .searchbox label{display:flex;align-items:center;gap:10px;padding:6px 12px;border-radius:14px;min-width:0}
 .searchbox label+label{border-left:1px solid var(--line)}
-.searchbox label span{color:var(--muted);flex:none}
+.searchbox label span{color:var(--muted);flex:none;display:flex}
 .searchbox input,.searchbox select{border:0;background:transparent;width:100%;padding:10px 0;font-size:15px;min-width:0}
 .searchbox input:focus,.searchbox select:focus{outline:none}
 .searchbox label:focus-within{background:var(--bg)}
@@ -27,14 +28,45 @@
 .popular{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:16px;font-size:13px}
 .popular button{padding:6px 12px;border-radius:999px;background:color-mix(in srgb,var(--card) 70%,transparent);border:1px solid var(--line);font-weight:600;font-size:12.5px}
 .results{padding-block:8px 48px}
-.results-h{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:16px}
-.results-h h2{font-size:24px}
-.doc{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:16px;align-items:start}
-.doc h3{font-size:18px}
-.doc .side{text-align:right;display:flex;flex-direction:column;gap:10px;align-items:flex-end}
-.doc .price{font-family:var(--f-display);font-size:20px;font-weight:700}
-.doc p.bio{margin:8px 0 10px;color:var(--muted);font-size:13.5px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.list{display:flex;flex-direction:column;gap:14px}
+.panel{background:var(--card);border-radius:26px;box-shadow:var(--shadow);border:1px solid var(--line);overflow:hidden}
+.tools{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.tools .count{margin-right:auto;color:var(--muted);font-size:13px;font-weight:600}
+.tools .btn{border-radius:999px}
+.tools .btn b{min-width:20px;height:20px;border-radius:10px;background:var(--accent);color:var(--on-accent);font-size:11px;display:grid;place-items:center;padding:0 6px}
+.doc{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:24px;padding:22px 20px;border-bottom:1px solid var(--line)}
+.doc:last-child{border-bottom:0}
+.doc-head{display:flex;gap:16px;align-items:flex-start}
+.doc-photo{width:112px;height:112px;border-radius:20px;flex:none;object-fit:cover;font-size:34px}
+span.doc-photo{display:grid;place-items:center}
+.doc h3{font-size:18px;display:flex;align-items:center;gap:6px}
+.doc h3 a{color:var(--ink);text-decoration:none}
+.doc h3 a:hover{text-decoration:underline}
+.badge-ok{color:var(--ok);display:inline-flex}
+.doc .sub{color:var(--muted);font-size:13.5px;margin-top:2px}
+.doc ul{list-style:none;padding:0;margin:16px 0 0;display:flex;flex-direction:column;gap:9px;font-size:13.5px}
+.doc li{display:flex;gap:8px;align-items:flex-start}
+.doc li svg{flex:none;margin-top:2px;color:var(--muted)}
+.doc li .link{font-size:13px;text-decoration:underline;margin-left:4px}
+.mini{min-width:0}
+.mini-h{display:grid;grid-template-columns:34px repeat(3,minmax(0,1fr)) 34px;align-items:center;text-align:center;gap:4px}
+.mini-h b{display:block;font-size:14px;text-transform:lowercase}
+.mini-h small{color:var(--muted);font-size:12px}
+.mini-nav{width:32px;height:32px;border-radius:50%;background:var(--bg);font-size:17px;font-weight:700;display:grid;place-items:center}
+.mini-nav:disabled{opacity:.3}
+.mini-g{display:grid;grid-template-columns:34px repeat(3,minmax(0,1fr)) 34px;gap:8px 4px;margin-top:12px}
+.mini-col{grid-column:span 1;display:flex;flex-direction:column;gap:8px;align-items:center}
+.mini-col:first-child{grid-column:2}
+.tslot{width:100%;max-width:92px;padding:9px 4px;border-radius:12px;background:var(--ok-soft);color:var(--ok);font-weight:700;font-size:13.5px;text-align:center;text-decoration:none;font-variant-numeric:tabular-nums}
+.tslot:hover{background:var(--ok);color:#fff}
+.dash{color:var(--muted);padding:9px 0}
+.more{display:flex;justify-content:flex-end;margin-top:12px}
+.more button{font-weight:700;font-size:13px;color:var(--ink);display:inline-flex;gap:6px;align-items:center}
+.none-slots{grid-column:2/5;text-align:center;color:var(--muted);font-size:13px;padding:14px 0}
+.fsec{margin-bottom:16px}
+.fsec h4{margin:0 0 8px;font-size:13px;color:var(--muted)}
+.fchips{display:flex;gap:8px;flex-wrap:wrap}
+.fchips button{padding:9px 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);font-weight:600;font-size:13.5px}
+.fchips button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:transparent}
 .pro{border-radius:28px;padding:32px;background:linear-gradient(140deg,var(--calm),color-mix(in srgb,var(--calm) 55%,var(--accent-2)));color:#fff;display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:24px;align-items:center;margin-bottom:56px}
 .pro h2{font-size:clamp(24px,3.4vw,34px)}
 .pro p{opacity:.9;margin:10px 0 0;max-width:46ch}
@@ -42,13 +74,15 @@
 .pro li{display:flex;gap:10px;align-items:center;background:rgba(255,255,255,.14);padding:10px 14px;border-radius:14px;font-weight:600;font-size:13.5px}
 .pro .btn{margin-top:18px;background:#fff;color:#2c2f7a}
 footer{padding-block:24px 40px;color:var(--muted);font-size:12.5px;border-top:1px solid var(--line)}
+@media (max-width:860px){
+  .doc{grid-template-columns:minmax(0,1fr)}
+  .doc-photo{width:84px;height:84px;border-radius:16px;font-size:26px}
+}
 @media (max-width:760px){
-  .hero{padding-block:32px 28px}
+  .hero{padding-block:30px 26px}
   .searchbox{grid-template-columns:1fr;border-radius:20px}
   .searchbox label+label{border-left:0;border-top:1px solid var(--line)}
   .searchbox .btn{width:100%}
-  .doc{grid-template-columns:auto minmax(0,1fr)}
-  .doc .side{grid-column:1/-1;flex-direction:row;justify-content:space-between;align-items:center;text-align:left}
   .pro{grid-template-columns:1fr;padding:24px}
 }
 </style>
@@ -69,8 +103,8 @@ footer{padding-block:24px 40px;color:var(--muted);font-size:12.5px;border-top:1p
       <button class="chip" disabled>Terapeutas <small>próximamente</small></button>
     </div>
     <form class="searchbox" id="f-search" role="search">
-      <label for="q"><span></span><input id="q" name="q" placeholder="Ansiedad, pareja, duelo… o un nombre" autocomplete="off"></label>
-      <label for="c"><span></span><select id="c" name="c" aria-label="Ciudad o modalidad"><option value="">Cualquier ciudad</option><option value="en_linea">En línea</option></select></label>
+      <label for="q"><span id="ic-q"></span><input id="q" name="q" placeholder="Ansiedad, pareja, duelo… o un nombre" autocomplete="off"></label>
+      <label for="c"><span id="ic-c"></span><select id="c" name="c" aria-label="Ciudad o modalidad"><option value="">Cualquier ciudad</option><option value="en_linea">En línea</option></select></label>
       <button class="btn pri" type="submit">Buscar</button>
     </form>
     <div class="popular"><span class="muted">Temas frecuentes:</span>
@@ -80,9 +114,13 @@ footer{padding-block:24px 40px;color:var(--muted);font-size:12.5px;border-top:1p
     </div>
   </div></section>
 
-  <section class="results"><div class="wrap gutter">
-    <div class="results-h"><h2 id="r-title">Psicólogos disponibles</h2><span class="muted small" id="r-count"></span></div>
-    <div class="list" id="r-list"><div class="empty">Cargando psicólogos…</div></div>
+  <section class="results" id="results"><div class="wrap gutter">
+    <div class="panel">
+      <div class="tools"><span class="count" id="r-count">Cargando…</span>
+        <button class="btn neu" data-a="map"><span id="ic-map"></span>Mapa</button>
+        <button class="btn neu" data-a="filters"><span id="ic-f"></span>Filtros <b id="f-n" hidden></b></button></div>
+      <div id="r-list"><div class="empty" style="margin:18px">Cargando psicólogos…</div></div>
+    </div>
   </div></section>
 
   <section><div class="wrap gutter">
@@ -94,70 +132,194 @@ footer{padding-block:24px 40px;color:var(--muted);font-size:12.5px;border-top:1p
     </div>
   </div></section>
 </main>
-<footer><div class="wrap gutter">PsicoAgenda · Plataforma de citas de psicología</div></footer>
+<footer><div class="wrap gutter">PsicoAgenda · Te conectamos con psicólogos. No damos diagnóstico ni atención de emergencias: si estás en crisis, llama al 911 o a la Línea de la Vida 800 911 2000.</div></footer>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="config.js"></script>
 <script src="assets/common.js"></script>
 <script>
 (() => {
-const { sb, esc, av, ic, norm, money, MODE } = PA;
-document.querySelector('label[for="q"] span').innerHTML = ic('search');
-document.querySelector('label[for="c"] span').innerHTML = ic('pin');
-const list = document.getElementById('r-list'), qEl = document.getElementById('q'), cEl = document.getElementById('c');
-let all = [];
+const { sb, esc, av, ic, norm, money, dayKey, fmtTime, openModal, toast } = PA;
+const $ = id => document.getElementById(id);
+$('ic-q').innerHTML = ic('search'); $('ic-c').innerHTML = ic('pin');
+$('ic-map').innerHTML = ic('pin', 17);
+$('ic-f').innerHTML = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>';
+const list = $('r-list'), qEl = $('q'), cEl = $('c');
+const FILTERS = [
+  ['Disponibilidad', [['today', 'Disponibles hoy'], ['in3', 'Disponibles en 3 días']]],
+  ['Precio', [['cheap', 'Menos de $600 MXN']]],
+  ['Ubicación', [['near', 'Cerca de mí'], ['online', 'Solo en línea']]],
+  ['Elección del psicólogo', [['women', 'Solo mujeres'], ['kids', 'Atiende a niños'], ['english', 'Habla inglés']]],
+];
+const F = {}; let all = [], slots = {}, view = {}, me = null;
+const MAX = 4, STEP = 3, WINDOW = 14;
+const tzOf = p => p.timezone || PA.TZ;
+const keyAdd = (k, n) => { const d = new Date(k + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+const kLabel = (k, o) => new Date(k + 'T12:00:00Z').toLocaleDateString('es-MX', { timeZone: 'UTC', ...o }).replace('.', '');
+const km = (a, b) => { const R = 6371, r = x => x * Math.PI / 180, dLa = r(b.lat - a.lat), dLo = r(b.lng - a.lng); const h = Math.sin(dLa / 2) ** 2 + Math.cos(r(a.lat)) * Math.cos(r(b.lat)) * Math.sin(dLo / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(h)); };
+const pinned = p => (p.locations || []).filter(l => l.kind === 'presencial' && l.lat != null);
+const dist = p => me && pinned(p).length ? Math.min(...pinned(p).map(l => km(me, l))) : null;
+
+function daySlots(p, k) { return (slots[p.id] || {})[k] || []; }
+function nextSlot(p) { const s = Object.values(slots[p.id] || {}).flat(); return s.length ? s.sort()[0] : null; }
+
+function mini(p) {
+  const tz = tzOf(p), today = PA.todayKey(tz), v = view[p.id] || (view[p.id] = { off: 0, more: false });
+  const days = [0, 1, 2].map(i => keyAdd(today, v.off + i));
+  const any = days.some(k => daySlots(p, k).length);
+  const rows = v.more ? 99 : MAX, needMore = days.some(k => daySlots(p, k).length > MAX);
+  const href = s => `perfil.html?p=${encodeURIComponent(p.slug)}&slot=${encodeURIComponent(s)}#agendar`;
+  return `<div class="mini">
+    <div class="mini-h"><button class="mini-nav" data-a="mini" data-id="${p.id}" data-d="-1" ${v.off <= 0 ? 'disabled' : ''} aria-label="Días anteriores">‹</button>
+      ${days.map(k => `<div><b>${kLabel(k, { weekday: 'short' })}</b><small>${kLabel(k, { day: 'numeric', month: 'short' })}</small></div>`).join('')}
+      <button class="mini-nav" data-a="mini" data-id="${p.id}" data-d="1" ${v.off + STEP >= WINDOW ? 'disabled' : ''} aria-label="Días siguientes">›</button></div>
+    <div class="mini-g">${any ? days.map(k => { const ss = daySlots(p, k);
+        return `<div class="mini-col">${ss.length ? ss.slice(0, rows).map(s => `<a class="tslot" href="${href(s)}">${new Date(s).toLocaleTimeString('es-MX', { timeZone: tz, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })}</a>`).join('') : '<span class="dash">–</span>'}</div>`; }).join('')
+      : `<div class="none-slots">${nextSlot(p) ? `Sin horarios estos días. <button class="link" data-a="jump" data-id="${p.id}">Próximo: ${kLabel(dayKey(nextSlot(p), tz), { weekday: 'short', day: 'numeric', month: 'short' })}</button>` : 'Sin horarios libres por ahora.'}</div>`}</div>
+    ${any && needMore ? `<div class="more"><button data-a="more" data-id="${p.id}">${v.more ? 'Mostrar menos horarios ▴' : 'Mostrar más horarios ▾'}</button></div>` : ''}
+  </div>`;
+}
 
 function card(p) {
-  const locs = p.locations || [];
-  const cities = [...new Set(locs.filter(l => l.kind === 'presencial' && l.city).map(l => l.city))];
-  const online = locs.some(l => l.kind === 'en_linea');
-  return `<article class="card doc">${av(p.full_name, 'lg', p.photo_url)}
-    <div><h3>${esc(p.full_name)}</h3><div class="muted small">${esc(p.title || 'Psicólogo')}${p.license ? ' · Céd. ' + esc(p.license) : ''}</div>
-      ${p.bio ? `<p class="bio">${esc(p.bio)}</p>` : ''}
-      <div class="tags" style="margin:8px 0">${(p.topics || []).slice(0, 5).map(t => `<span class="tag">${esc(t)}</span>`).join('')}</div>
-      <div class="meta">${cities.length ? `<span>${ic('pin', 14)}${cities.map(esc).join(', ')}</span>` : ''}${online ? `<span>${ic('video', 14)}En línea</span>` : ''}<span>${ic('clock', 14)}${p.session_minutes} min</span></div></div>
-    <div class="side"><span class="price">${money(p.price)}</span><a class="btn pri" href="perfil.html?p=${encodeURIComponent(p.slug)}">Ver horarios y agendar</a></div></article>`;
+  const locs = p.locations || [], pres = locs.filter(l => l.kind === 'presencial'), online = locs.some(l => l.kind === 'en_linea');
+  const main = pres.find(l => l.lat != null) || pres[0], d = dist(p);
+  const url = `perfil.html?p=${encodeURIComponent(p.slug)}`;
+  return `<article class="doc" id="doc-${p.id}"><div>
+    <div class="doc-head"><a href="${url}">${av(p.full_name, 'doc-photo', p.photo_url)}</a>
+      <div style="min-width:0"><h3><a href="${url}">${esc(p.full_name)}</a>${p.license ? `<span class="badge-ok" title="Cédula profesional registrada">${ic('shield', 16)}</span>` : ''}</h3>
+        <div class="sub">${esc(p.title || 'Psicólogo')}</div>
+        <div class="tags" style="margin-top:8px">${(p.topics || []).slice(0, 4).map(t => `<span class="tag">${esc(t)}</span>`).join('')}</div></div></div>
+    <ul>
+      ${main ? `<li>${ic('pin', 16)}<span>${esc([main.address, main.city].filter(Boolean).join(' · ') || main.name)}${d != null ? ` · <b>${d < 1 ? '<1' : Math.round(d)} km</b>` : ''}${main.lat != null ? `<button class="link" data-a="map" data-id="${p.id}">Mapa</button>` : ''}</span></li>` : ''}
+      ${online ? `<li>${ic('video', 16)}<span>También en línea por videollamada</span></li>` : ''}
+      <li>${ic('pay', 16)}<span>Sesión de ${p.session_minutes} min · <b>${money(p.price)}</b></span></li>
+      ${p.bio ? `<li>${ic('user', 16)}<span>${esc(p.bio.length > 150 ? p.bio.slice(0, 150).trim() + '…' : p.bio)}</span></li>` : ''}
+    </ul></div>${mini(p)}</article>`;
+}
+
+function filtered() {
+  const q = norm(qEl.value.trim()), c = cEl.value, today = PA.todayKey();
+  let res = all.filter(p => {
+    const locs = p.locations || [];
+    const hay = norm([p.full_name, p.title, p.bio, ...(p.topics || [])].join(' '));
+    if (q && !q.split(/\s+/).every(w => hay.includes(w))) return false;
+    if (c && !(c === 'en_linea' ? locs.some(l => l.kind === 'en_linea') : locs.some(l => l.kind === 'presencial' && norm(l.city) === norm(c)))) return false;
+    if (F.today && !daySlots(p, PA.todayKey(tzOf(p))).length) return false;
+    if (F.in3 && ![0, 1, 2].some(i => daySlots(p, keyAdd(PA.todayKey(tzOf(p)), i)).length)) return false;
+    if (F.cheap && !(p.price != null && p.price < 600)) return false;
+    if (F.online && !locs.some(l => l.kind === 'en_linea')) return false;
+    if (F.near && !(dist(p) != null && dist(p) <= 25)) return false;
+    if (F.women && p.gender !== 'mujer') return false;
+    if (F.kids && !(p.topics || []).some(t => norm(t) === 'ninos')) return false;
+    if (F.english && !(p.languages || []).some(l => norm(l) === 'ingles')) return false;
+    return true;
+  });
+  if (F.near) res.sort((a, b) => dist(a) - dist(b));
+  return res;
 }
 
 function show() {
-  const q = norm(qEl.value.trim()), c = cEl.value;
-  const res = all.filter(p => {
-    const hay = norm([p.full_name, p.title, p.bio, ...(p.topics || [])].join(' '));
-    const okQ = !q || q.split(/\s+/).every(w => hay.includes(w));
-    const locs = p.locations || [];
-    const okC = !c || (c === 'en_linea' ? locs.some(l => l.kind === 'en_linea') : locs.some(l => l.kind === 'presencial' && norm(l.city) === norm(c)));
-    return okQ && okC;
-  });
-  document.getElementById('r-title').textContent = q || c ? 'Resultados de tu búsqueda' : 'Psicólogos disponibles';
-  document.getElementById('r-count').textContent = `${res.length} psicólogo${res.length === 1 ? '' : 's'}`;
+  const res = filtered(), n = Object.values(F).filter(Boolean).length;
+  $('f-n').hidden = !n; $('f-n').textContent = n;
+  $('r-count').textContent = `${res.length} psicólogo${res.length === 1 ? '' : 's'}`;
   list.innerHTML = res.length ? res.map(card).join('')
-    : `<div class="empty">${all.length ? 'No encontramos psicólogos con esa búsqueda. Prueba con otro tema o ciudad.' : 'Todavía no hay psicólogos publicados. Si eres psicólogo, regístrate y sé el primero.'}</div>`;
+    : `<div class="empty" style="margin:18px">${all.length ? 'No encontramos psicólogos con esa búsqueda o filtros. Prueba quitando alguno.' : 'Todavía no hay psicólogos publicados. Si eres psicólogo, regístrate y sé el primero.'}</div>`;
+}
+
+function filtersModal() {
+  openModal(`<h3>Ajusta los filtros</h3><p class="sub">Combina los que necesites.</p>
+    ${FILTERS.map(([t, opts]) => `<div class="fsec"><h4>${t}</h4><div class="fchips">${opts.map(([k, l]) => `<button data-a="f" data-k="${k}" aria-pressed="${!!F[k]}">${l}</button>`).join('')}</div></div>`).join('')}
+    <label class="field" style="margin-top:6px"><span>Describe lo que buscas</span><input id="f-q" value="${esc(qEl.value)}" placeholder="Ej. ansiedad, terapia de pareja, duelo"></label>
+    <div class="acts" style="display:flex;gap:8px;margin-top:16px"><button class="btn neu" data-a="fclear">Quitar filtros</button><button class="btn pri" style="flex:1" data-a="fapply">Ver ${filtered().length} resultados</button></div>`);
+}
+
+let map = null;
+function mapModal(focusId) {
+  const res = filtered().filter(p => pinned(p).length);
+  openModal(`<div class="map-box" id="map"></div>`, 'map');
+  if (!window.L) { $('map').innerHTML = '<div class="empty" style="margin:40px">No se pudo cargar el mapa.</div>'; return; }
+  map = L.map('map', { zoomControl: true }).setView([19.4326, -99.1332], 11);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(map);
+  const pts = [];
+  res.forEach(p => pinned(p).forEach(l => {
+    const ns = nextSlot(p), tz = tzOf(p);
+    const label = `<b>${ns ? kLabel(dayKey(ns, tz), { day: 'numeric', month: 'short' }) : 'Sin horario'}</b>${p.price != null ? '$' + p.price.toLocaleString('es-MX') : ''}`;
+    const m = L.marker([l.lat, l.lng], { icon: L.divIcon({ className: '', html: `<div class="mk ${p.id === focusId ? 'on' : ''}">${label}</div>`, iconSize: [0, 0] }) }).addTo(map);
+    m.bindPopup(`<b>${esc(p.full_name)}</b><br><span style="color:#6f6d88">${esc([l.name, l.address].filter(Boolean).join(' · '))}</span><br><a href="perfil.html?p=${encodeURIComponent(p.slug)}#agendar">Ver horarios y agendar</a>`, { offset: [0, -36] });
+    pts.push([l.lat, l.lng]);
+    if (p.id === focusId) setTimeout(() => { map.setView([l.lat, l.lng], 15); m.openPopup(); }, 50);
+  }));
+  if (me) L.circleMarker([me.lat, me.lng], { radius: 8, color: '#4f63e8', fillOpacity: .9 }).addTo(map).bindTooltip('Tú');
+  if (!focusId && pts.length) map.fitBounds(pts, { padding: [60, 60], maxZoom: 14 });
+  if (!pts.length) toast('Aún no hay consultorios ubicados en el mapa con estos filtros.');
+  setTimeout(() => map.invalidateSize(), 120);
 }
 
 async function load() {
-  if (!sb) { list.innerHTML = '<div class="empty">No se pudo cargar la conexión.</div>'; return; }
+  if (!sb) { list.innerHTML = '<div class="empty" style="margin:18px">No se pudo cargar la conexión.</div>'; return; }
   const { data, error } = await sb.from('profiles')
-    .select('id,full_name,slug,title,license,bio,topics,price,session_minutes,photo_url,locations(kind,name,city)')
+    .select('id,full_name,slug,title,license,bio,topics,price,session_minutes,photo_url,timezone,gender,languages,locations(kind,name,address,city,lat,lng)')
     .eq('is_listed', true).eq('is_active', true).order('created_at');
-  if (error) { list.innerHTML = '<div class="empty">No pudimos cargar los psicólogos. Revisa tu conexión y recarga la página.</div>'; return; }
+  if (error) { list.innerHTML = '<div class="empty" style="margin:18px">No pudimos cargar los psicólogos. Revisa tu conexión y recarga la página.</div>'; return; }
   all = data;
   const cities = [...new Set(all.flatMap(p => (p.locations || []).filter(l => l.kind === 'presencial' && l.city).map(l => l.city.trim())))].sort((a, b) => a.localeCompare(b));
   cEl.insertAdjacentHTML('beforeend', cities.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join(''));
-  const p = new URLSearchParams(location.search);
-  if (p.get('q')) qEl.value = p.get('q');
-  if (p.get('c')) cEl.value = p.get('c');
+  const qp = new URLSearchParams(location.search);
+  if (qp.get('q')) qEl.value = qp.get('q');
+  if (qp.get('c')) cEl.value = qp.get('c');
   show();
+  if (all.length) {
+    const r = await sb.rpc('search_availability', { p_ids: all.map(p => p.id), p_from: PA.todayKey(), p_days: WINDOW });
+    (r.data || []).forEach(({ psychologist_id: id, starts_at: s }) => {
+      const p = all.find(x => x.id === id), k = dayKey(s, tzOf(p));
+      ((slots[id] = slots[id] || {})[k] = slots[id][k] || []).push(s);
+    });
+    show();
+  }
 }
 
 function sync() {
-  const p = new URLSearchParams();
-  if (qEl.value.trim()) p.set('q', qEl.value.trim());
-  if (cEl.value) p.set('c', cEl.value);
-  history.replaceState(null, '', location.pathname + (p.toString() ? '?' + p : ''));
+  const qp = new URLSearchParams();
+  if (qEl.value.trim()) qp.set('q', qEl.value.trim());
+  if (cEl.value) qp.set('c', cEl.value);
+  history.replaceState(null, '', location.pathname + (qp.toString() ? '?' + qp : ''));
 }
-document.getElementById('f-search').addEventListener('submit', e => { e.preventDefault(); sync(); show(); document.querySelector('.results').scrollIntoView({ behavior: 'smooth' }); });
+const toResults = () => $('results').scrollIntoView({ behavior: 'smooth' });
+
+function locate() {
+  return new Promise(res => {
+    if (!navigator.geolocation) return res(false);
+    navigator.geolocation.getCurrentPosition(pos => { me = { lat: pos.coords.latitude, lng: pos.coords.longitude }; res(true); }, () => res(false), { timeout: 10000 });
+  });
+}
+
+$('f-search').addEventListener('submit', e => { e.preventDefault(); sync(); show(); toResults(); });
 cEl.addEventListener('change', () => { sync(); show(); });
-document.querySelector('.popular').addEventListener('click', e => { const b = e.target.closest('[data-q]'); if (!b) return; qEl.value = b.dataset.q; sync(); show(); document.querySelector('.results').scrollIntoView({ behavior: 'smooth' }); });
+document.addEventListener('click', async e => {
+  const pop = e.target.closest('.popular [data-q]');
+  if (pop) { qEl.value = pop.dataset.q; sync(); show(); toResults(); return; }
+  const el = e.target.closest('[data-a]'); if (!el || el.disabled) return;
+  const d = el.dataset, v = view[d.id];
+  switch (d.a) {
+    case 'mini': v.off = Math.max(0, Math.min(WINDOW - STEP, v.off + STEP * +d.d)); v.more = false; refreshCard(d.id); break;
+    case 'more': v.more = !v.more; refreshCard(d.id); break;
+    case 'jump': { const p = all.find(x => x.id === d.id), k = dayKey(nextSlot(p), tzOf(p)), today = PA.todayKey(tzOf(p));
+      const diff = Math.round((new Date(k) - new Date(today)) / 864e5); v.off = Math.min(WINDOW - STEP, Math.floor(diff / STEP) * STEP); refreshCard(d.id); break; }
+    case 'filters': filtersModal(); break;
+    case 'f': {
+      const on = el.getAttribute('aria-pressed') !== 'true';
+      if (d.k === 'near' && on && !me) { el.textContent = 'Buscando tu ubicación…'; const ok = await locate(); el.textContent = 'Cerca de mí'; if (!ok) { toast('No pudimos obtener tu ubicación. Revisa los permisos del navegador.'); return; } }
+      F[d.k] = on; el.setAttribute('aria-pressed', on);
+      document.querySelector('[data-a="fapply"]').textContent = `Ver ${filtered().length} resultados`; break;
+    }
+    case 'fclear': Object.keys(F).forEach(k => F[k] = false); qEl.value = ''; filtersModal(); break;
+    case 'fapply': qEl.value = $('f-q').value; sync(); PA.closeModal(); show(); toResults(); break;
+    case 'map': mapModal(d.id); break;
+  }
+});
+document.addEventListener('input', e => { if (e.target.id === 'f-q') { qEl.value = e.target.value; const b = document.querySelector('[data-a="fapply"]'); if (b) b.textContent = `Ver ${filtered().length} resultados`; } });
+function refreshCard(id) { const el = $('doc-' + id), p = all.find(x => x.id === id); if (el && p) el.outerHTML = card(p); }
 load();
 })();
 </script>

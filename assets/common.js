@@ -65,7 +65,7 @@ window.PA = (() => {
     let w = document.getElementById('modal');
     const prev = w && w.querySelector('.modal'), top = prev ? prev.scrollTop : 0;
     if (!w) { w = document.createElement('div'); w.id = 'modal'; w.className = 'modal-wrap'; document.body.appendChild(w); }
-    w.innerHTML = `<button class="scrim" data-close aria-label="Cerrar"></button><div class="modal ${wide ? 'wide' : ''}" role="dialog" aria-modal="true"><button class="x" data-close aria-label="Cerrar">✕</button>${html}</div>`;
+    w.innerHTML = `<button class="scrim" data-close aria-label="Cerrar"></button><div class="modal ${wide === true ? 'wide' : wide || ''}" role="dialog" aria-modal="true"><button class="x" data-close aria-label="Cerrar">✕</button>${html}</div>`;
     w.hidden = false; w.querySelector('.modal').scrollTop = top;
   }
   function closeModal() { const w = document.getElementById('modal'); if (w) { w.hidden = true; w.innerHTML = ''; } }

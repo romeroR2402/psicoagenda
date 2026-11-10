@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
 <link rel="stylesheet" href="assets/app.css">
 <style>
 .page{padding-block:28px 56px}
@@ -19,6 +20,7 @@
 .loc:first-child{border-top:0}
 .step{display:flex;align-items:center;gap:10px;font-weight:700;font-size:14px;margin:18px 0 10px}
 .step b{width:24px;height:24px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-size:12px}
+.locmap{height:240px;border-radius:16px;margin-top:12px;overflow:hidden;z-index:0}
 .back{display:inline-flex;align-items:center;gap:6px;color:var(--muted);text-decoration:none;font-weight:600;font-size:13px;margin-bottom:14px}
 .layout>*{min-width:0}
 .head{flex-wrap:wrap}
@@ -34,6 +36,7 @@
 <main class="page"><div class="wrap gutter" id="root"><div class="empty">Cargando perfil…</div></div></main>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="config.js"></script>
 <script src="assets/common.js"></script>
 <script>
@@ -47,7 +50,7 @@ function fail(msg) { root.innerHTML = `<a class="back" href="index.html">← Vol
 
 async function load() {
   if (!sb) return fail('No se pudo cargar la conexión.');
-  const { data, error } = await sb.from('profiles').select('id,full_name,slug,title,license,bio,topics,price,session_minutes,timezone,photo_url,whatsapp,locations(id,kind,name,address,city)')
+  const { data, error } = await sb.from('profiles').select('id,full_name,slug,title,license,bio,topics,price,session_minutes,timezone,photo_url,whatsapp,languages,locations(id,kind,name,address,city,lat,lng)')
     .eq('slug', slug).eq('is_listed', true).eq('is_active', true).maybeSingle();
   if (error || !data) return fail('Puede que el link esté mal escrito o que el psicólogo ya no esté disponible.');
   P = data; document.title = `${P.full_name} · PsicoAgenda`;
@@ -64,9 +67,12 @@ async function loadSlots() {
   slots = error ? [] : data.map(r => r.starts_at);
   byDay = {};
   slots.forEach(s => { const k = dayKey(s, P.timezone); (byDay[k] = byDay[k] || []).push(s); });
+  const want = new URLSearchParams(location.search).get('slot');
+  if (want && !B.slot && slots.includes(want)) { B.slot = want; B.day = dayKey(want, P.timezone); history.replaceState(null, '', location.pathname + '?p=' + encodeURIComponent(slug) + '#agendar'); }
   if (!B.day || !byDay[B.day]) B.day = Object.keys(byDay)[0] || null;
   if (B.slot && !slots.includes(B.slot)) B.slot = null;
   renderBooking(error ? 'No pudimos cargar los horarios. Recarga la página.' : '');
+  if (location.hash === '#agendar') document.getElementById('agendar').scrollIntoView({ block: 'start' });
 }
 
 function render() {
@@ -78,13 +84,22 @@ function render() {
         <h1>${esc(P.full_name)}</h1><div class="muted">${esc(P.title || 'Psicólogo')}${P.license ? ' · Cédula profesional ' + esc(P.license) : ''}</div>
         <div class="meta" style="margin-top:8px"><span class="price">${money(P.price)}</span><span>${ic('clock', 14)}Sesión de ${P.session_minutes} min</span></div></div></div>
         ${(P.topics || []).length ? `<div class="tags" style="margin-top:16px">${P.topics.map(t => `<span class="tag">${esc(t)}</span>`).join('')}</div>` : ''}
+        ${(P.languages || []).length ? `<div class="muted small" style="margin-top:10px">Idiomas: ${P.languages.map(esc).join(', ')}</div>` : ''}
       </section>
       ${P.bio ? `<section class="card"><h3>Sobre mí</h3><p class="pre" style="margin:8px 0 0">${esc(P.bio)}</p></section>` : ''}
-      <section class="card"><h3>Dónde atiende</h3><div style="margin-top:6px">${locs.length ? locs.map(l => `<div class="loc"><span class="ic-box">${ic(l.kind === 'en_linea' ? 'video' : 'pin')}</span><div><b>${esc(l.name)}</b><div class="muted small">${l.kind === 'en_linea' ? 'Consulta en línea por videollamada' : esc([l.address, l.city].filter(Boolean).join(', '))}</div></div></div>`).join('') : '<p class="muted">Aún no hay ubicaciones registradas.</p>'}</div></section>
+      <section class="card"><h3>Dónde atiende</h3><div style="margin-top:6px">${locs.length ? locs.map(l => `<div class="loc"><span class="ic-box">${ic(l.kind === 'en_linea' ? 'video' : 'pin')}</span><div><b>${esc(l.name)}</b><div class="muted small">${l.kind === 'en_linea' ? 'Consulta en línea por videollamada' : esc([l.address, l.city].filter(Boolean).join(', '))}</div></div></div>`).join('') : '<p class="muted">Aún no hay ubicaciones registradas.</p>'}</div>
+        ${locs.some(l => l.lat != null) ? '<div class="locmap" id="locmap"></div>' : ''}</section>
     </div>
-    <div class="sticky"><section class="card" id="booking"></section></div>
+    <div class="sticky" id="agendar"><section class="card" id="booking"></section></div>
   </div>`;
   renderBooking();
+  const pins = locs.filter(l => l.lat != null);
+  if (pins.length && window.L) {
+    const m = L.map('locmap', { scrollWheelZoom: false });
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(m);
+    pins.forEach(l => L.marker([l.lat, l.lng], { icon: L.divIcon({ className: '', html: `<div class="mk"><b>${esc(l.name)}</b></div>`, iconSize: [0, 0] }) }).addTo(m));
+    if (pins.length === 1) m.setView([pins[0].lat, pins[0].lng], 15); else m.fitBounds(pins.map(l => [l.lat, l.lng]), { padding: [40, 40] });
+  }
 }
 
 function renderBooking(err = '') {
