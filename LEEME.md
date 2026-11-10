@@ -41,6 +41,32 @@ En https://supabase.com/dashboard/project/welweahxizjuufjyzbkj/auth/url-configur
 El correo integrado de Supabase envía pocos correos por hora. Para recibir muchos registros,
 configura un SMTP propio en Authentication → Emails. Mientras tanto, el administrador puede confirmar cuentas a mano.
 
+## Avisos automáticos por correo
+La función `notify` (`supabase/functions/notify`) envía correos cuando:
+- un paciente agenda (al paciente y al psicólogo),
+- sube su comprobante (al psicólogo),
+- se confirma o rechaza la cita (al paciente),
+- alguien cancela (a la otra parte),
+- falta un día para una cita confirmada (recordatorio al paciente, revisado cada 30 minutos).
+
+Cada aviso queda registrado en `notifications` y el psicólogo lo ve en su Inicio.
+Además hay botones de WhatsApp con el mensaje ya escrito (paciente → psicólogo y psicólogo → paciente).
+El envío automático por WhatsApp necesita la API de WhatsApp Business de Meta y no está incluido.
+
+### Activar el envío de correos (una sola vez)
+1. Crea una cuenta gratis en https://www.brevo.com (300 correos al día).
+2. En Brevo, agrega y verifica tu correo como remitente (Senders).
+3. En Brevo, crea una clave en **SMTP & API → API Keys**.
+4. En https://supabase.com/dashboard/project/welweahxizjuufjyzbkj/functions/secrets agrega:
+   - `BREVO_API_KEY` = la clave de Brevo
+   - `EMAIL_FROM` = el correo que verificaste como remitente
+Con un dominio propio verificado en Brevo los correos llegan mejor y no caen en spam.
+También funciona con Resend: usa `RESEND_API_KEY` en lugar de `BREVO_API_KEY`.
+
+## Foto de perfil y calendario
+- Cada psicólogo sube su foto en **Mi perfil**; se guarda en el bucket público `avatars`.
+- **Calendario** muestra la semana con horario disponible, citas por estado y días de descanso.
+
 ## Comprobantes en Google Drive (opcional)
 `drive-pagos.gs` es un Apps Script que guarda imágenes en una carpeta "Pagos" de Drive.
 Hoy los comprobantes se guardan en Supabase (`receipts`); el script queda como opción futura.

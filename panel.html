@@ -64,6 +64,29 @@
 .sugg{display:flex;flex-wrap:wrap;gap:6px}
 .sugg button{padding:5px 10px;border-radius:999px;border:1px solid var(--line);background:var(--card);font-size:12px;font-weight:600}
 .sugg button[aria-pressed="true"]{background:var(--calm-soft);color:var(--calm);border-color:transparent}
+/* calendario */
+.cal-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.cal-bar h2{font-size:18px;margin-right:auto}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-bottom:12px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:4px;margin-right:6px;vertical-align:-2px}
+.cal{background:var(--card);border-radius:20px;box-shadow:var(--shadow);overflow-x:auto}
+.cal-grid{display:grid;grid-template-columns:52px repeat(7,minmax(108px,1fr));min-width:820px}
+.cal-h{padding:10px 6px;text-align:center;font-weight:700;font-size:12.5px;border-bottom:1px solid var(--line);text-transform:capitalize}
+.cal-h.today{color:var(--accent)}
+.cal-times{position:relative}
+.cal-times span{position:absolute;right:8px;font-size:11px;color:var(--muted);transform:translateY(-50%);font-variant-numeric:tabular-nums}
+.cal-col{position:relative;border-left:1px solid var(--line);background-image:repeating-linear-gradient(to bottom,var(--line) 0 1px,transparent 1px var(--hp))}
+.cal-col.off{background:repeating-linear-gradient(135deg,var(--bg) 0 8px,var(--line) 8px 9px)}
+.band{position:absolute;left:0;right:0;background:color-mix(in srgb,var(--ok-soft) 65%,transparent)}
+.off-l{position:absolute;top:8px;left:6px;right:6px;font-size:11px;font-weight:700;color:var(--muted);text-align:center;background:var(--card);border-radius:8px;padding:3px}
+.ev{position:absolute;left:4px;right:4px;border-radius:9px;padding:3px 7px;font-size:11px;line-height:1.25;text-align:left;overflow:hidden;border-left:3px solid var(--bar);z-index:1}
+.ev b{display:block;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ev.s-review{--bar:var(--calm);background:var(--calm-soft);color:var(--ink)} .ev.s-unpaid{--bar:var(--warn);background:var(--warn-soft);color:var(--ink)} .ev.s-confirmed{--bar:var(--ok);background:var(--ok-soft);color:var(--ink)}
+.now{position:absolute;left:0;right:0;height:2px;background:var(--bad);z-index:2}
+.cal-list{display:none;flex-direction:column;gap:12px}
+.cal-day h4{margin:0 0 8px;font-size:15px}
+.cal-day .ev{position:static;display:block;width:100%;margin-top:6px;padding:8px 10px}
+@media (max-width:700px){.cal{display:none}.cal-list{display:flex}}
 @media (max-width:900px){
   .app{grid-template-columns:minmax(0,1fr);align-content:start}
   #top-user .muted{display:none}
@@ -91,9 +114,9 @@
 const { sb, esc, av, ic, money, MODE, DOW, fmtDay, fmtShort, fmtTime, fmtDT, pill, toast, openModal, closeModal, copy, waLink, pageUrl, slugify, norm } = PA;
 const root = document.getElementById('root');
 const S = { authKnown: false, user: null, recovery: false, authMode: location.hash === '#registro' ? 'signup' : 'login',
-  loaded: false, isAdmin: false, profile: null, view: 'inicio', locations: [], schedules: [], timeOff: [], appts: [], clients: [], surveys: [], links: [],
+  loaded: false, isAdmin: false, profile: null, view: 'inicio', locations: [], schedules: [], timeOff: [], appts: [], clients: [], surveys: [], links: [], notes: [],
   apptTab: 'review', week: null, builder: null, sentIds: null };
-const VIEWS = { inicio: ['Inicio', 'home'], citas: ['Citas', 'cal'], horario: ['Horario', 'week'], ubicaciones: ['Ubicaciones', 'pin'], perfil: ['Mi perfil', 'user'], pacientes: ['Pacientes', 'users'], encuestas: ['Encuestas', 'form'] };
+const VIEWS = { inicio: ['Inicio', 'home'], calendario: ['Calendario', 'week'], citas: ['Citas', 'cal'], horario: ['Horario', 'clock'], ubicaciones: ['Ubicaciones', 'pin'], perfil: ['Mi perfil', 'user'], pacientes: ['Pacientes', 'users'], encuestas: ['Encuestas', 'form'] };
 const TOPICS = ['Ansiedad', 'Depresión', 'Pareja', 'Duelo', 'Autoestima', 'Estrés', 'Adolescentes', 'Niños', 'Familia', 'Adicciones', 'Trauma', 'Sexualidad', 'Orientación vocacional', 'TDAH'];
 const QTYPES = { single: 'Una opción', multi: 'Varias opciones', scale: 'Escala del 1 al 5', freq: 'Frecuencia', text: 'Respuesta abierta' };
 const QNOTE = { scale: 'El paciente elige un número del 1 (nada) al 5 (mucho).', freq: 'Opciones fijas: Nunca, Varios días, Más de la mitad de los días, Casi todos los días.', text: 'El paciente escribe su respuesta, hasta 2000 caracteres.' };
@@ -119,7 +142,7 @@ async function loadAll() {
   const [pr, adm] = await Promise.all([sb.from('profiles').select('*').eq('id', uid).maybeSingle(), sb.rpc('is_admin')]);
   S.profile = pr.data || null; S.isAdmin = !!adm.data;
   if (S.profile) {
-    const [l, s, t, a, c, sv, lk] = await Promise.all([
+    const [l, s, t, a, c, sv, lk, nt] = await Promise.all([
       sb.from('locations').select('*').eq('owner_id', uid).order('created_at'),
       sb.from('schedules').select('*').eq('owner_id', uid).order('weekday').order('start_time'),
       sb.from('time_off').select('*').eq('owner_id', uid).order('date_from'),
@@ -127,15 +150,27 @@ async function loadAll() {
       sb.from('clients').select('*').eq('owner_id', uid).order('full_name'),
       sb.from('surveys').select('*').eq('owner_id', uid).order('created_at', { ascending: false }),
       sb.from('survey_links').select('*').eq('owner_id', uid).order('created_at', { ascending: false }),
+      sb.from('notifications').select('*').eq('psychologist_id', uid).order('created_at', { ascending: false }).limit(12),
     ]);
     S.locations = l.data || []; S.schedules = s.data || []; S.timeOff = t.data || []; S.appts = a.data || [];
-    S.clients = c.data || []; S.surveys = sv.data || []; S.links = lk.data || [];
+    S.clients = c.data || []; S.surveys = sv.data || []; S.links = lk.data || []; S.notes = nt.data || [];
     S.week = null;
   }
-  S.loaded = true;
+  S.loaded = true; lastLoad = Date.now();
   const h = location.hash.slice(1); if (VIEWS[h]) S.view = h;
   render();
 }
+// Mantiene el panel al día: al volver a la pestaña y cada minuto, sin interrumpir formularios abiertos.
+let lastLoad = 0;
+async function refresh() {
+  if (!S.user || !S.profile || document.hidden || document.getElementById('modal')?.hidden === false) return;
+  if (document.activeElement && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return;
+  if (['horario', 'perfil'].includes(S.view) || Date.now() - lastLoad < 30000) return;
+  lastLoad = Date.now(); await loadAll();
+}
+document.addEventListener('visibilitychange', refresh);
+setInterval(refresh, 60000);
+
 window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (VIEWS[h] && S.profile) { S.view = h; render(); scrollTo(0, 0); } });
 
 function render() {
@@ -210,6 +245,10 @@ function renderRecovery() {
 function profileForm(p, creating) {
   const topics = new Set(p.topics || []);
   return `<div class="form">
+    ${creating ? '' : `<div class="who"><span id="pf-photo">${av(p.full_name, 'xl', p.photo_url)}</span><div class="stack" style="gap:8px">
+      <b>Foto de perfil</b><small>Aparece en el buscador y en tu perfil. Usa una foto clara de tu rostro.</small>
+      <div class="acts"><label class="btn sec sm" for="pf-file" style="cursor:pointer">${p.photo_url ? 'Cambiar foto' : 'Subir foto'}<input type="file" id="pf-file" accept="image/*" hidden></label>
+      ${p.photo_url ? '<button class="btn neu sm" data-a="delPhoto">Quitar foto</button>' : ''}</div><p class="err" id="ph-err"></p></div></div>`}
     <div class="row2"><label class="field"><span>Nombre completo</span><input id="pf-name" value="${esc(p.full_name || '')}"></label>
       <label class="field"><span>Título</span><input id="pf-title" value="${esc(p.title || '')}" placeholder="Ej. Psicóloga clínica"></label></div>
     <div class="row2"><label class="field"><span>Cédula profesional</span><input id="pf-license" value="${esc(p.license || '')}" maxlength="40"></label>
@@ -218,9 +257,11 @@ function profileForm(p, creating) {
     <div class="field"><span>Temas que atiendes (aparecen en el buscador)</span>
       <div class="sugg" id="pf-topics">${[...new Set([...TOPICS, ...topics])].map(t => `<button type="button" data-a="topic" data-t="${esc(t)}" aria-pressed="${topics.has(t)}">${esc(t)}</button>`).join('')}</div>
       <input id="pf-topic-new" class="in" placeholder="Agregar otro tema y presionar Enter" style="margin-top:6px"></div>
+    <label class="field"><span>WhatsApp (se muestra a tus pacientes para que te avisen)</span><input id="pf-wa" type="tel" value="${esc(p.whatsapp || '')}" placeholder="Ej. 55 1234 5678"></label>
     <label class="field"><span>Datos para que te paguen</span><textarea id="pf-pay" maxlength="500" placeholder="Banco, titular, CLABE o número de tarjeta">${esc(p.payment_info || '')}</textarea></label>
     <label class="field"><span>Dirección de tu perfil</span><input id="pf-slug" value="${esc(p.slug || '')}" maxlength="80"><small class="muted mono" id="pf-url"></small></label>
-    ${creating ? '' : `<label class="check"><input type="checkbox" id="pf-listed" ${p.is_listed ? 'checked' : ''}> Mostrar mi perfil en el buscador</label>`}
+    ${creating ? '' : `<label class="check"><input type="checkbox" id="pf-listed" ${p.is_listed ? 'checked' : ''}> Mostrar mi perfil en el buscador</label>
+    <label class="check"><input type="checkbox" id="pf-notify" ${p.notify_email !== false ? 'checked' : ''}> Recibir correos cuando me agenden, paguen o cancelen</label>`}
     <p class="err" id="pf-err"></p>
     <button class="btn pri big" data-a="saveProfile">${creating ? 'Crear mi perfil' : 'Guardar perfil'}</button></div>`;
 }
@@ -241,12 +282,15 @@ async function saveProfile(btn) {
     bio: val('pf-bio') || null, payment_info: val('pf-pay') || null, slug: slugify(val('pf-slug')),
     price: val('pf-price') === '' ? null : Math.round(Number(val('pf-price'))),
     topics: [...document.querySelectorAll('#pf-topics [aria-pressed="true"]')].map(b => b.dataset.t),
+    whatsapp: val('pf-wa') || null,
   };
+  if (row.whatsapp && row.whatsapp.replace(/\D/g, '').length < 8) return setErr('pf-err', 'Revisa tu WhatsApp: debe tener al menos 8 dígitos.');
   if (row.full_name.length < 3) return setErr('pf-err', 'Escribe tu nombre completo.');
   if (row.slug.length < 3) return setErr('pf-err', 'La dirección del perfil debe tener al menos 3 letras o números.');
   if (row.price != null && (isNaN(row.price) || row.price < 0)) return setErr('pf-err', 'Revisa el precio.');
   if (!creating) {
     row.is_listed = document.getElementById('pf-listed').checked;
+    row.notify_email = document.getElementById('pf-notify').checked;
     if (row.is_listed && (!S.schedules.length || !S.locations.length)) return setErr('pf-err', 'Para aparecer en el buscador primero configura tu horario y al menos una ubicación.');
   }
   busy(btn, true, 'Guardando…');
@@ -287,7 +331,57 @@ V.inicio = () => {
         <div style="margin-top:14px"><small class="muted">Tu perfil público:</small><div class="mono" id="pub-url">${esc(url)}</div><button class="btn neu sm" style="margin-top:8px" data-a="copy" data-u="${esc(url)}" data-el="pub-url">Copiar link</button></div></section>
       <section class="card"><h3>Próximas citas</h3><div class="stack" style="margin-top:12px;gap:10px">${[...review, ...upcoming].sort((a, b) => a.starts_at.localeCompare(b.starts_at)).slice(0, 6).map(a => `<div class="who">${av(a.patient_name, 'sm')}<div style="flex:1"><b>${esc(a.patient_name)}</b><small>${fmtDT(a.starts_at, tz())} · ${MODE[a.mode]}</small></div>${pill(a.status)}</div>`).join('') || '<div class="empty">Aún no tienes citas próximas.</div>'}</div>
         <a class="btn neu sm" href="#citas" style="margin-top:12px">Ver todas las citas</a></section>
+      ${notesCard()}
     </div>`;
+};
+
+const NOTE_EV = { booked: 'Cita solicitada', review: 'Comprobante recibido', confirmed: 'Cita confirmada', rejected: 'Cita rechazada', cancelled: 'Cita cancelada', reminder: 'Recordatorio' };
+function notesCard() {
+  const noProvider = S.notes.some(n => n.status === 'skipped' && /servicio de correo|remitente/.test(n.detail || ''));
+  return `<section class="card"><h3>Avisos por correo</h3>
+    ${noProvider ? '<p class="small" style="margin:8px 0 0;color:var(--warn)">Los correos todavía no se envían: falta conectar el servicio de correo de la plataforma. El administrador lo activa una sola vez.</p>' : ''}
+    <div class="stack" style="margin-top:12px;gap:8px">${S.notes.map(n => `<div class="who"><div style="flex:1"><b class="small">${NOTE_EV[n.event] || n.event} · a ${n.recipient === 'patient' ? 'paciente' : 'ti'}</b><small>${esc(n.to_address || 'sin correo')} · ${fmtDT(n.created_at, tz())}</small></div>
+      <span class="pill ${n.status === 'sent' ? 'p-ok' : n.status === 'failed' ? 'p-bad' : 'p-mute'}" title="${esc(n.detail || '')}">${n.status === 'sent' ? 'Enviado' : n.status === 'failed' ? 'Falló' : 'No enviado'}</span></div>`).join('') || '<div class="empty">Aquí verás los correos que se envían a ti y a tus pacientes.</div>'}</div></section>`;
+}
+
+/* Calendario semanal */
+const keyAdd = (k, n) => { const d = new Date(k + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+const keyDow = k => new Date(k + 'T00:00:00Z').getUTCDay();
+const mondayOf = k => keyAdd(k, -((keyDow(k) + 6) % 7));
+const keyLabel = (k, o) => new Date(k + 'T12:00:00Z').toLocaleDateString('es-MX', { timeZone: 'UTC', ...o });
+const toMin = t => +t.slice(0, 2) * 60 + +t.slice(3, 5);
+const localMin = iso => toMin(new Date(iso).toLocaleTimeString('en-GB', { timeZone: tz(), hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }));
+
+V.calendario = () => {
+  const today = PA.todayKey(tz()); if (!S.calStart) S.calStart = mondayOf(today);
+  const days = [...Array(7)].map((_, i) => keyAdd(S.calStart, i));
+  const ACTIVE = ['unpaid', 'review', 'confirmed'];
+  const ev = S.appts.filter(a => ACTIVE.includes(a.status) && days.includes(PA.dayKey(a.starts_at, tz())));
+  const mins = [...S.schedules.map(s => toMin(s.start_time)), ...ev.map(a => localMin(a.starts_at))];
+  const maxs = [...S.schedules.map(s => toMin(s.end_time)), ...ev.map(a => localMin(a.ends_at) || 1440)];
+  const h0 = Math.floor((mins.length ? Math.min(...mins) : 8 * 60) / 60), h1 = Math.min(24, Math.ceil((maxs.length ? Math.max(...maxs) : 20 * 60) / 60));
+  const HP = 54, px = m => (m - h0 * 60) / 60 * HP, H = (h1 - h0) * HP;
+  const offOf = k => S.timeOff.find(t => k >= t.date_from && k <= t.date_to);
+  const evHtml = (a, pos) => { const t0 = localMin(a.starts_at), t1 = localMin(a.ends_at) || 1440;
+    return `<button class="ev s-${a.status}" data-a="calAppt" data-id="${a.id}" ${pos ? `style="top:${px(t0)}px;height:${Math.max(px(t1) - px(t0) - 2, 22)}px"` : ''}><b>${esc(a.patient_name)}</b>${fmtTime(a.starts_at, tz())} · ${MODE[a.mode]}</button>`; };
+  const nowMin = localMin(new Date().toISOString());
+  const title = `${keyLabel(days[0], { day: 'numeric', month: 'short' })} – ${keyLabel(days[6], { day: 'numeric', month: 'short', year: 'numeric' })}`;
+  return `<div class="title-row"><h1>Calendario</h1></div>
+    <div class="cal-bar"><h2>${title}</h2><button class="btn neu sm" data-a="calMove" data-d="-7" aria-label="Semana anterior">‹ Anterior</button><button class="btn neu sm" data-a="calMove" data-d="0">Hoy</button><button class="btn neu sm" data-a="calMove" data-d="7" aria-label="Semana siguiente">Siguiente ›</button></div>
+    <div class="legend"><span><i style="background:var(--ok-soft)"></i>Horario disponible</span><span><i style="background:var(--ok);"></i>Confirmada</span><span><i style="background:var(--calm)"></i>Pago por revisar</span><span><i style="background:var(--warn)"></i>Sin pago</span><span><i style="background:repeating-linear-gradient(135deg,var(--bg) 0 3px,var(--line) 3px 4px)"></i>Descanso</span></div>
+    <div class="cal"><div class="cal-grid" style="--hp:${HP}px">
+      <div></div>${days.map(k => `<div class="cal-h ${k === today ? 'today' : ''}">${keyLabel(k, { weekday: 'short', day: 'numeric' })}</div>`).join('')}
+      <div class="cal-times" style="height:${H}px">${[...Array(h1 - h0)].map((_, i) => `<span style="top:${i * HP + (i ? 0 : 8)}px">${String(h0 + i).padStart(2, '0')}:00</span>`).join('')}</div>
+      ${days.map(k => { const off = offOf(k);
+        return `<div class="cal-col ${off ? 'off' : ''}" style="height:${H}px">
+          ${off ? `<span class="off-l">Descanso${off.reason ? ' · ' + esc(off.reason) : ''}</span>` : S.schedules.filter(s => s.weekday === keyDow(k)).map(s => `<div class="band" style="top:${px(toMin(s.start_time))}px;height:${px(toMin(s.end_time)) - px(toMin(s.start_time))}px"></div>`).join('')}
+          ${ev.filter(a => PA.dayKey(a.starts_at, tz()) === k).map(a => evHtml(a, true)).join('')}
+          ${k === today && nowMin >= h0 * 60 && nowMin <= h1 * 60 ? `<div class="now" style="top:${px(nowMin)}px"></div>` : ''}</div>`; }).join('')}
+    </div></div>
+    <div class="cal-list">${days.map(k => { const off = offOf(k), sch = S.schedules.filter(s => s.weekday === keyDow(k)), list = ev.filter(a => PA.dayKey(a.starts_at, tz()) === k);
+      return `<section class="card cal-day"><h4 style="${k === today ? 'color:var(--accent)' : ''}">${PA.cap(keyLabel(k, { weekday: 'long', day: 'numeric', month: 'long' }))}</h4>
+        <div class="muted small">${off ? 'Descanso' + (off.reason ? ' · ' + esc(off.reason) : '') : sch.length ? 'Atiendes ' + sch.map(s => s.start_time.slice(0, 5) + '–' + s.end_time.slice(0, 5)).join(', ') : 'Sin horario'}</div>
+        ${list.map(a => evHtml(a, false)).join('')}</section>`; }).join('')}</div>`;
 };
 
 /* Citas */
@@ -309,7 +403,10 @@ V.citas = () => {
 function apptCard(a) {
   const loc = S.locations.find(l => l.id === a.location_id), future = new Date(a.starts_at) > new Date();
   const link = pageUrl('cita.html?t=' + a.patient_token);
-  const wa = waLink(a.patient_phone, `Hola ${a.patient_name.split(' ')[0]}, te escribe ${S.profile.full_name} sobre tu cita del ${fmtDT(a.starts_at, tz())}. Aquí puedes verla y subir tu comprobante: ${link}`);
+  const hi = `Hola ${a.patient_name.split(' ')[0]}, te escribe ${S.profile.full_name}.`, when = `${fmtDay(a.starts_at, tz())} a las ${fmtTime(a.starts_at, tz())}`;
+  const wa = waLink(a.patient_phone, a.status === 'confirmed'
+    ? `${hi} Tu cita del ${when} está confirmada. Aquí tienes los detalles: ${link}`
+    : `${hi} Para confirmar tu cita del ${when}, haz tu pago y sube tu comprobante aquí: ${link}`);
   let acts = '';
   if (a.status === 'review') acts = `<button class="btn pri sm" data-a="setStatus" data-id="${a.id}" data-s="confirmed">Aprobar y apartar</button><button class="btn danger sm" data-a="setStatus" data-id="${a.id}" data-s="rejected">Rechazar</button>`;
   if (a.status === 'unpaid') acts = `<a class="btn sec sm" href="${esc(wa)}" target="_blank" rel="noopener">Recordar por WhatsApp</a><button class="btn neu sm" data-a="setStatus" data-id="${a.id}" data-s="confirmed" data-confirm="Toca otra vez: confirmar sin comprobante">Ya me pagó</button><button class="btn danger sm" data-a="setStatus" data-id="${a.id}" data-s="rejected">Rechazar</button>`;
@@ -325,7 +422,8 @@ function apptCard(a) {
 async function setStatus(id, st, btn) {
   if (btn.dataset.confirm && !btn.dataset.armed) { btn.dataset.armed = 1; btn.textContent = btn.dataset.confirm; return; }
   busy(btn, true);
-  const { data, error } = await sb.from('appointments').update({ status: st, updated_at: new Date().toISOString() }).eq('id', id).select().single();
+  const patch = { status: st, updated_at: new Date().toISOString(), ...(st === 'cancelled' ? { cancelled_by: 'psychologist' } : {}) };
+  const { data, error } = await sb.from('appointments').update(patch).eq('id', id).select().single();
   if (error) { busy(btn, false); return toast('No se pudo actualizar la cita.'); }
   S.appts = S.appts.map(a => a.id === id ? data : a);
   closeModal(); render();
@@ -572,6 +670,39 @@ function resultsModal(id) {
     ${pend.length ? `<h4 style="margin:16px 0 8px">Sin responder (${pend.length})</h4>${pend.map(l => linkRow(l, sv)).join('')}` : ''}`, true);
 }
 
+/* Foto de perfil */
+function squareJpeg(file, size = 512) {
+  return new Promise((res, rej) => {
+    const img = new Image(), url = URL.createObjectURL(file);
+    img.onload = () => {
+      const side = Math.min(img.width, img.height), c = document.createElement('canvas'); c.width = c.height = size;
+      c.getContext('2d').drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, size, size);
+      URL.revokeObjectURL(url); c.toBlob(b => b ? res(b) : rej(new Error('blob')), 'image/jpeg', 0.88);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('img')); };
+    img.src = url;
+  });
+}
+const photoPath = u => u ? decodeURIComponent(u.split('/object/public/avatars/')[1] || '').split('?')[0] : '';
+async function setPhoto(url) {
+  const old = photoPath(S.profile.photo_url);
+  const { data, error } = await sb.from('profiles').update({ photo_url: url }).eq('id', S.user.id).select().single();
+  if (error) return setErr('ph-err', 'No se pudo guardar la foto.');
+  S.profile = data;
+  if (old) await sb.storage.from('avatars').remove([old]);
+  render(); toast(url ? 'Foto actualizada' : 'Foto quitada');
+}
+async function uploadPhoto(f) {
+  if (!f.type.startsWith('image/')) return setErr('ph-err', 'El archivo debe ser una imagen.');
+  setErr('ph-err', ''); document.getElementById('pf-photo').style.opacity = .5;
+  try {
+    const blob = await squareJpeg(f), path = `${S.user.id}/${Date.now()}.jpg`;
+    const up = await sb.storage.from('avatars').upload(path, blob, { contentType: 'image/jpeg' });
+    if (up.error) throw up.error;
+    await setPhoto(sb.storage.from('avatars').getPublicUrl(path).data.publicUrl);
+  } catch (e) { document.getElementById('pf-photo').style.opacity = 1; setErr('ph-err', 'No se pudo subir la foto. Prueba con otra imagen.'); }
+}
+
 /* ---------- eventos ---------- */
 document.addEventListener('input', e => {
   const t = e.target;
@@ -580,7 +711,10 @@ document.addEventListener('input', e => {
   if (t.id === 'cl-q') filterClients();
   if (t.id === 'pf-slug') updateSlugUrl();
 });
-document.addEventListener('change', e => { if (e.target.dataset.b && S.builder && e.target.type !== 'text') syncBuilder(e.target); });
+document.addEventListener('change', e => {
+  if (e.target.dataset.b && S.builder && e.target.type !== 'text') syncBuilder(e.target);
+  if (e.target.id === 'pf-file' && e.target.files[0]) uploadPhoto(e.target.files[0]);
+});
 document.addEventListener('keydown', e => {
   if (e.key === 'Enter' && e.target.id === 'pf-topic-new') {
     e.preventDefault(); const t = e.target.value.trim(); if (!t) return;
@@ -608,8 +742,11 @@ document.addEventListener('click', async e => {
     case 'reload': await loadAll(); toast('Datos actualizados'); break;
     case 'topic': el.setAttribute('aria-pressed', el.getAttribute('aria-pressed') !== 'true'); break;
     case 'saveProfile': saveProfile(el); break;
+    case 'delPhoto': setPhoto(null); break;
     case 'copy': PA.copy(d.u, document.getElementById(d.el)); break;
     case 'apptTab': S.apptTab = d.t; render(); break;
+    case 'calMove': S.calStart = +d.d ? keyAdd(S.calStart, +d.d) : mondayOf(PA.todayKey(tz())); render(); break;
+    case 'calAppt': openModal(apptCard(S.appts.find(a => a.id === d.id))); break;
     case 'setStatus': setStatus(d.id, d.s, el); break;
     case 'receipt': showReceipt(d.id); break;
     case 'saveSession': saveSession(el); break;

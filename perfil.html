@@ -47,7 +47,7 @@ function fail(msg) { root.innerHTML = `<a class="back" href="index.html">← Vol
 
 async function load() {
   if (!sb) return fail('No se pudo cargar la conexión.');
-  const { data, error } = await sb.from('profiles').select('id,full_name,slug,title,license,bio,topics,price,session_minutes,timezone,locations(id,kind,name,address,city)')
+  const { data, error } = await sb.from('profiles').select('id,full_name,slug,title,license,bio,topics,price,session_minutes,timezone,photo_url,whatsapp,locations(id,kind,name,address,city)')
     .eq('slug', slug).eq('is_listed', true).eq('is_active', true).maybeSingle();
   if (error || !data) return fail('Puede que el link esté mal escrito o que el psicólogo ya no esté disponible.');
   P = data; document.title = `${P.full_name} · PsicoAgenda`;
@@ -74,7 +74,7 @@ function render() {
   root.innerHTML = `<a class="back" href="index.html">← Volver al buscador</a>
   <div class="layout">
     <div class="stack">
-      <section class="card"><div class="head">${av(P.full_name, 'xl')}<div>
+      <section class="card"><div class="head">${av(P.full_name, 'xl', P.photo_url)}<div>
         <h1>${esc(P.full_name)}</h1><div class="muted">${esc(P.title || 'Psicólogo')}${P.license ? ' · Cédula profesional ' + esc(P.license) : ''}</div>
         <div class="meta" style="margin-top:8px"><span class="price">${money(P.price)}</span><span>${ic('clock', 14)}Sesión de ${P.session_minutes} min</span></div></div></div>
         ${(P.topics || []).length ? `<div class="tags" style="margin-top:16px">${P.topics.map(t => `<span class="tag">${esc(t)}</span>`).join('')}</div>` : ''}
@@ -109,7 +109,7 @@ function renderBooking(err = '') {
     <form class="form" id="f-book" novalidate>
       <label class="field"><span>Nombre completo</span><input id="bk-name" autocomplete="name" required></label>
       <label class="field"><span>Teléfono (WhatsApp)</span><input id="bk-phone" type="tel" autocomplete="tel" inputmode="tel" placeholder="Ej. 55 1234 5678" required></label>
-      <label class="field"><span>Correo (opcional)</span><input id="bk-email" type="email" autocomplete="email"></label>
+      <label class="field"><span>Correo (recomendado)</span><input id="bk-email" type="email" autocomplete="email" placeholder="Para enviarte la confirmación y el recordatorio"></label>
       <label class="field"><span>Motivo de consulta (opcional)</span><textarea id="bk-note" maxlength="500" placeholder="Cuéntale brevemente qué te gustaría trabajar"></textarea></label>
       <p class="err" id="bk-err">${err && days.length ? esc(err) : ''}</p>
       <button class="btn pri big" id="bk-go" ${B.slot ? '' : 'disabled'}>${B.slot ? `Solicitar cita · ${fmtTime(B.slot, P.timezone)}` : 'Elige un horario'}</button>

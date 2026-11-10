@@ -96,7 +96,7 @@ function render() {
     <div class="tbl-wrap"><table><thead><tr><th>Psicólogo</th><th>Usuario (correo)</th><th>Registro</th><th>Último acceso</th><th>Estado</th><th>Citas</th><th>Pacientes</th><th>Encuestas</th><th>Acciones</th></tr></thead><tbody>
       ${rows.map(u => { const p = u.profile;
         const st = !u.confirmed ? '<span class="pill p-warn">Correo sin confirmar</span>' : !p ? '<span class="pill p-mute">Sin perfil</span>' : !p.is_active ? '<span class="pill p-bad">Desactivado</span>' : p.is_listed ? '<span class="pill p-ok">Publicado</span>' : '<span class="pill p-mute">No publicado</span>';
-        return `<tr><td><div class="who">${av(p?.full_name || u.email, 'sm')}<div><b>${esc(p?.full_name || '—')}</b><small>${esc(p?.title || '')}${u.is_admin ? ' · Admin' : ''}</small></div></div></td>
+        return `<tr><td><div class="who">${av(p?.full_name || u.email, 'sm', p?.photo_url)}<div><b>${esc(p?.full_name || '—')}</b><small>${esc(p?.title || '')}${u.is_admin ? ' · Admin' : ''}</small></div></div></td>
           <td>${esc(u.email)}</td><td>${date(u.created_at)}</td><td>${date(u.last_sign_in_at)}</td><td>${st}</td>
           <td class="num">${u.appointments}</td><td class="num">${u.clients}</td><td class="num">${u.surveys}</td>
           <td><div class="acts"><button class="btn neu sm" data-a="detail" data-id="${u.id}">Ver</button><button class="btn sec sm" data-a="pass" data-id="${u.id}">Contraseña</button></div></td></tr>`; }).join('') || '<tr><td colspan="9"><div class="empty">Sin resultados.</div></td></tr>'}

@@ -42,6 +42,13 @@ async function load() {
   A = data; render();
 }
 
+function waText(url) {
+  const when = `${fmtDay(A.starts_at, A.timezone)} a las ${fmtTime(A.starts_at, A.timezone)}`;
+  return { unpaid: `Hola, soy ${A.patient_name}. Aparté una cita contigo para el ${when}. Esta es mi cita: ${url}`,
+    review: `Hola, soy ${A.patient_name}. Ya subí mi comprobante de pago de la cita del ${when}: ${url}`,
+    confirmed: `Hola, soy ${A.patient_name}, tengo cita contigo el ${when}.` }[A.status] || '';
+}
+
 function render() {
   const tz = A.timezone, url = location.href.replace(/&nueva=1/, '');
   const head = {
@@ -55,7 +62,7 @@ function render() {
   const canCancel = ['unpaid', 'review', 'confirmed'].includes(A.status) && new Date(A.starts_at) > new Date();
   root.innerHTML = `
     ${qp.get('nueva') ? `<div class="banner p-ok">Solicitud enviada. Guarda este link: con él puedes ver tu cita, pagar o cancelar.</div>` : ''}
-    <section class="card"><div class="status"><span class="ic-box">${ic(A.status === 'confirmed' ? 'check' : 'cal', 22)}</span><div><h1>${head[0]}</h1><p class="muted" style="margin:4px 0 0">${head[1]}</p></div></div>
+    <section class="card"><div class="status">${A.photo_url ? av(A.psych_name, 'lg', A.photo_url) : `<span class="ic-box">${ic(A.status === 'confirmed' ? 'check' : 'cal', 22)}</span>`}<div><h1>${head[0]}</h1><p class="muted" style="margin:4px 0 0">${head[1]}</p></div></div>
       <dl class="kv" style="margin-top:18px">
         <dt>Estado</dt><dd>${pill(A.status)}</dd>
         <dt>Paciente</dt><dd>${esc(A.patient_name)}</dd>
@@ -77,6 +84,7 @@ function render() {
     <section class="card"><h3>Tu link de cita</h3><p class="muted small" style="margin:4px 0 10px">Guárdalo. Es personal: con él puedes volver a esta página.</p>
       <div class="mono" id="u">${esc(url)}</div>
       <div class="chips" style="margin-top:12px"><button class="btn neu sm" id="cp">Copiar link</button>
+      ${A.psych_whatsapp && ['unpaid', 'review', 'confirmed'].includes(A.status) ? `<a class="btn sec sm" target="_blank" rel="noopener" href="${esc(PA.waLink(A.psych_whatsapp, waText(url)))}">Avisar a ${esc(A.psych_name.split(' ')[0])} por WhatsApp</a>` : ''}
       ${canCancel ? `<button class="btn danger sm" id="cancel">Cancelar cita</button>` : ''}</div></section>`;
   const cp = document.getElementById('cp'); cp.onclick = () => copy(url, document.getElementById('u'));
   const cancel = document.getElementById('cancel');

@@ -7,7 +7,9 @@ window.PA = (() => {
   const COLORS = ['#e8743b', '#5162e0', '#1f9a70', '#c74f8e', '#b88a12', '#7a58ea'];
   const avc = n => COLORS[[...String(n || '?')].reduce((a, c) => a + c.charCodeAt(0), 0) % COLORS.length];
   const ini = n => String(n || '?').trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
-  const av = (n, cls = '') => `<span class="av ${cls}" style="--c:${avc(n)}" aria-hidden="true">${esc(ini(n))}</span>`;
+  const av = (n, cls = '', photo = null) => photo
+    ? `<img class="av ${cls}" src="${esc(photo)}" alt="" loading="lazy">`
+    : `<span class="av ${cls}" style="--c:${avc(n)}" aria-hidden="true">${esc(ini(n))}</span>`;
   const cap = s => s ? s[0].toUpperCase() + s.slice(1) : s;
   const norm = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
   const slugify = s => norm(s).replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60);
