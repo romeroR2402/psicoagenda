@@ -132,7 +132,9 @@ img.av{object-fit:cover;background:var(--line)}
 .modal.map .x{z-index:1000}
 .map-box{height:min(78vh,720px);width:100%}
 .mk{background:var(--card);color:var(--ink);border-radius:12px;padding:5px 9px;box-shadow:0 6px 16px -6px rgba(0,0,0,.35);text-align:center;font-size:11.5px;line-height:1.2;white-space:nowrap;border:1px solid var(--line);transform:translate(-50%,-100%);display:inline-block}
-.mk b{display:block;font-size:12px}
+.mk b{display:block;font-size:14px;font-family:var(--f-display)}
+.mk span{display:block;font-size:10.5px;color:var(--muted)}
+.mk.on span{color:var(--on-accent)}
 .mk.on{background:var(--accent);color:var(--on-accent);border-color:transparent}
 .leaflet-div-icon{background:none;border:0}
 .leaflet-popup-content{font-family:var(--f-body)}

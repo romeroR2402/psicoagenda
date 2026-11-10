@@ -518,7 +518,7 @@ async function addOff(btn) {
 /* Ubicaciones */
 V.ubicaciones = () => `<div class="title-row"><h1>Ubicaciones</h1><button class="btn pri" data-a="locForm">+ Agregar ubicación</button></div>
   <p class="muted" style="margin-top:-8px">Agrega tus consultorios. Si das terapia por videollamada, agrega también una ubicación “En línea”.</p>
-  <div class="grid">${S.locations.map(l => `<article class="card"><div class="who"><span class="ic-box">${ic(l.kind === 'en_linea' ? 'video' : 'pin')}</span><div><b>${esc(l.name)}</b><small>${l.kind === 'en_linea' ? 'En línea' : esc([l.address, l.city].filter(Boolean).join(', '))}</small>${l.kind === 'presencial' ? `<small style="color:${l.lat != null ? 'var(--ok)' : 'var(--warn)'}">${l.lat != null ? 'Ubicada en el mapa' : 'Falta ubicarla en el mapa'}</small>` : ''}</div></div>
+  <div class="grid">${S.locations.map(l => `<article class="card"><div class="who"><span class="ic-box">${ic(l.kind === 'en_linea' ? 'video' : 'pin')}</span><div><b>${esc(l.name)}</b><small>${l.kind === 'en_linea' ? 'En línea' : esc([l.address, l.city].filter(Boolean).join(', '))}</small>${l.kind === 'presencial' ? `<small style="color:${l.lat != null ? 'var(--ok)' : 'var(--warn)'}">${l.lat != null ? 'Ubicada en el mapa' : 'No encontramos la dirección: edítala y toca el mapa para ubicarla'}</small>` : ''}</div></div>
     <div class="acts" style="margin-top:12px"><button class="btn neu sm" data-a="locForm" data-id="${l.id}">Editar</button><button class="btn danger sm" data-a="delLoc" data-id="${l.id}" data-confirm="Toca otra vez para eliminar">Eliminar</button></div></article>`).join('') || '<div class="empty">Todavía no agregas ubicaciones.</div>'}</div>`;
 
 function locForm(id) {
@@ -534,9 +534,9 @@ function locForm(id) {
     <p class="err" id="lc-err"></p><button class="btn pri big" data-a="saveLoc" data-id="${l.id || ''}">Guardar ubicación</button></div>`);
   initLocMap(l);
 }
-const LM = { map: null, marker: null, lat: null, lng: null };
-function setPin(lat, lng, zoom) {
-  LM.lat = lat; LM.lng = lng;
+const LM = { map: null, marker: null, lat: null, lng: null, touched: false };
+function setPin(lat, lng, zoom, auto) {
+  LM.lat = lat; LM.lng = lng; if (!auto) LM.touched = true;
   if (!LM.map) return;
   if (LM.marker) LM.marker.setLatLng([lat, lng]);
   else { LM.marker = L.marker([lat, lng], { draggable: true }).addTo(LM.map); LM.marker.on('dragend', e => { const p = e.target.getLatLng(); setPin(p.lat, p.lng); }); }
@@ -544,11 +544,11 @@ function setPin(lat, lng, zoom) {
   const t = document.getElementById('lc-pin'); if (t) t.textContent = 'Ubicación marcada. Puedes arrastrar el marcador para ajustarla.';
 }
 function initLocMap(l) {
-  Object.assign(LM, { map: null, marker: null, lat: l.lat ?? null, lng: l.lng ?? null });
+  Object.assign(LM, { map: null, marker: null, lat: l.lat ?? null, lng: l.lng ?? null, touched: false, orig: l });
   if (!window.L) { document.getElementById('lc-map').innerHTML = '<div class="empty">No se pudo cargar el mapa.</div>'; return; }
   LM.map = L.map('lc-map').setView(l.lat != null ? [l.lat, l.lng] : [19.4326, -99.1332], l.lat != null ? 16 : 11);
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(LM.map);
-  if (l.lat != null) setPin(l.lat, l.lng);
+  if (l.lat != null) setPin(l.lat, l.lng, 0, true);
   LM.map.on('click', e => setPin(e.latlng.lat, e.latlng.lng));
   setTimeout(() => LM.map && LM.map.invalidateSize(), 150);
 }
@@ -567,6 +567,8 @@ async function geocode(btn) {
 async function saveLoc(id, btn) {
   const kind = val('lc-kind'), row = { kind, name: val('lc-name'), address: kind === 'presencial' ? val('lc-addr') || null : null, city: kind === 'presencial' ? val('lc-city') || null : null,
     lat: kind === 'presencial' ? LM.lat : null, lng: kind === 'presencial' ? LM.lng : null };
+  // Si cambió la dirección y no se movió el marcador, se borra la ubicación vieja para que se ubique sola.
+  if (kind === 'presencial' && !LM.touched && LM.orig && (row.address !== (LM.orig.address || null) || row.city !== (LM.orig.city || null))) { row.lat = null; row.lng = null; }
   if (row.name.length < 2) return setErr('lc-err', 'Escribe un nombre para la ubicación.');
   if (kind === 'presencial' && !row.city) return setErr('lc-err', 'Escribe la ciudad: así te encuentran en el buscador.');
   busy(btn, true);
@@ -574,7 +576,8 @@ async function saveLoc(id, btn) {
   busy(btn, false);
   if (error) return setErr('lc-err', 'No se pudo guardar.');
   S.locations = id ? S.locations.map(l => l.id === id ? data : l) : [...S.locations, data];
-  closeModal(); render(); toast('Ubicación guardada');
+  closeModal(); render(); toast(data.kind === 'presencial' && data.lat == null ? 'Ubicación guardada. Se marcará en el mapa automáticamente en unos segundos.' : 'Ubicación guardada');
+  if (data.kind === 'presencial' && data.lat == null) setTimeout(async () => { const r = await sb.from('locations').select('*').eq('id', data.id).single(); if (r.data) { S.locations = S.locations.map(l => l.id === data.id ? r.data : l); if (S.view === 'ubicaciones') render(); } }, 15000);
 }
 
 V.perfil = () => `<div class="title-row"><h1>Mi perfil</h1><a class="btn neu sm" href="perfil.html?p=${encodeURIComponent(S.profile.slug)}" target="_blank" rel="noopener">${ic('eye', 15)} Ver como paciente</a></div>

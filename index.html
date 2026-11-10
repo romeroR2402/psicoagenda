@@ -244,15 +244,15 @@ function mapModal(focusId) {
   const pts = [];
   res.forEach(p => pinned(p).forEach(l => {
     const ns = nextSlot(p), tz = tzOf(p);
-    const label = `<b>${ns ? kLabel(dayKey(ns, tz), { day: 'numeric', month: 'short' }) : 'Sin horario'}</b>${p.price != null ? '$' + p.price.toLocaleString('es-MX') : ''}`;
+    const label = `<b>${p.price != null ? '$' + p.price.toLocaleString('es-MX') : 'Consultar'}</b><span>${ns ? 'Próx. ' + kLabel(dayKey(ns, tz), { day: 'numeric', month: 'short' }) : 'Sin horario'}</span>`;
     const m = L.marker([l.lat, l.lng], { icon: L.divIcon({ className: '', html: `<div class="mk ${p.id === focusId ? 'on' : ''}">${label}</div>`, iconSize: [0, 0] }) }).addTo(map);
-    m.bindPopup(`<b>${esc(p.full_name)}</b><br><span style="color:#6f6d88">${esc([l.name, l.address].filter(Boolean).join(' · '))}</span><br><a href="perfil.html?p=${encodeURIComponent(p.slug)}#agendar">Ver horarios y agendar</a>`, { offset: [0, -36] });
+    m.bindPopup(`<b>${esc(p.full_name)}</b><br><span style="color:#6f6d88">${esc([l.name, l.address].filter(Boolean).join(' · '))}</span><br>Consulta: <b>${money(p.price)}</b><br><a href="perfil.html?p=${encodeURIComponent(p.slug)}#agendar">Ver horarios y agendar</a>`, { offset: [0, -36] });
     pts.push([l.lat, l.lng]);
     if (p.id === focusId) setTimeout(() => { map.setView([l.lat, l.lng], 15); m.openPopup(); }, 50);
   }));
   if (me) L.circleMarker([me.lat, me.lng], { radius: 8, color: '#4f63e8', fillOpacity: .9 }).addTo(map).bindTooltip('Tú');
   if (!focusId && pts.length) map.fitBounds(pts, { padding: [60, 60], maxZoom: 14 });
-  if (!pts.length) toast('Aún no hay consultorios ubicados en el mapa con estos filtros.');
+  if (!pts.length) toast('Ningún consultorio de estos resultados está ubicado en el mapa todavía.');
   setTimeout(() => map.invalidateSize(), 120);
 }
 

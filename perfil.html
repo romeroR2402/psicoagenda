@@ -97,7 +97,7 @@ function render() {
   if (pins.length && window.L) {
     const m = L.map('locmap', { scrollWheelZoom: false });
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(m);
-    pins.forEach(l => L.marker([l.lat, l.lng], { icon: L.divIcon({ className: '', html: `<div class="mk"><b>${esc(l.name)}</b></div>`, iconSize: [0, 0] }) }).addTo(m));
+    pins.forEach(l => L.marker([l.lat, l.lng], { icon: L.divIcon({ className: '', html: `<div class="mk"><b>${P.price != null ? '$' + P.price.toLocaleString('es-MX') : 'Consultar'}</b><span>${esc(l.name)}</span></div>`, iconSize: [0, 0] }) }).addTo(m));
     if (pins.length === 1) m.setView([pins[0].lat, pins[0].lng], 15); else m.fitBounds(pins.map(l => [l.lat, l.lng]), { padding: [40, 40] });
   }
 }
