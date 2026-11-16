@@ -25,6 +25,11 @@
 .place b{display:block;color:var(--ink);font-size:14px}
 .place small{display:block;font-size:12px}
 .place[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.ev-row{display:flex;gap:12px;align-items:center;text-decoration:none;color:var(--ink);padding:8px;border-radius:14px;border:1px solid var(--line)}
+.ev-row img{width:72px;height:48px;object-fit:cover;border-radius:10px;flex:none}
+.ev-row div{flex:1;min-width:0}
+.ev-row b{display:block}
+.ev-row small{color:var(--muted)}
 .locmap{height:240px;border-radius:16px;margin-top:12px;overflow:hidden;z-index:0}
 .back{display:inline-flex;align-items:center;gap:6px;color:var(--muted);text-decoration:none;font-weight:600;font-size:13px;margin-bottom:14px}
 .layout>*{min-width:0}
@@ -62,6 +67,7 @@ async function load() {
   if (error || !data) return fail('Puede que el link esté mal escrito o que el especialista ya no esté disponible.');
   P = data; document.title = `${P.full_name} · MiConsulta`;
   render();
+  sb.rpc('public_events', { p_psych: P.id }).then(({ data }) => { if (data && data.length) renderEvents(data); });
   await loadSlots();
 }
 
@@ -96,6 +102,13 @@ function hoursOf(l) {
   return rs.map(r => `${DOW3[r.weekday]} ${r.start_time.slice(0, 5)}–${r.end_time.slice(0, 5)}`).join(' · ');
 }
 
+function renderEvents(list) {
+  const el = document.getElementById('events'); if (!el) return;
+  el.hidden = false;
+  el.innerHTML = `<h3>Próximas conferencias</h3><div class="stack" style="margin-top:12px;gap:10px">${list.map(e => `<a class="ev-row" href="evento.html?e=${e.public_token}">
+    ${e.image_url ? `<img src="${esc(e.image_url)}" alt="">` : `<span class="ic-box">${ic('mic')}</span>`}<div><b>${esc(e.title)}</b><small>${fmtDay(e.starts_at, P.timezone)} · ${fmtTime(e.starts_at, P.timezone)} · ${e.mode === 'en_linea' ? 'En línea' : esc(e.place || 'Presencial')}</small></div><span class="btn sec sm">Asistir</span></a>`).join('')}</div>`;
+}
+
 function render() {
   const locs = P.locations || [];
   root.innerHTML = `<a class="back" href="index.html">← Volver al buscador</a>
@@ -112,6 +125,7 @@ function render() {
           ${hoursOf(l) ? `<div class="small" style="margin-top:4px">${ic('clock', 13)} ${hoursOf(l)}</div>` : ''}
           ${l.kind === 'presencial' ? `<div class="chips" style="margin-top:8px"><a class="btn sec sm" href="${esc(PA.gdir(l))}" target="_blank" rel="noopener">${ic('pin', 14)} Cómo llegar</a><a class="btn neu sm" href="${esc(PA.gmaps(l))}" target="_blank" rel="noopener">Ver en Google Maps</a></div>` : ''}</div></div>`).join('') : '<p class="muted">Aún no hay ubicaciones registradas.</p>'}</div>
         ${locs.some(l => l.lat != null) ? '<div class="locmap" id="locmap"></div>' : ''}</section>
+      <section class="card" id="events" hidden></section>
     </div>
     <div class="sticky" id="agendar"><section class="card" id="booking"></section></div>
   </div>`;

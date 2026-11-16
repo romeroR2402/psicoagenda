@@ -86,3 +86,12 @@ El expediente clínico y las notas solo los ve el profesional (`clinical_records
 Cada encuesta puede tener un **link abierto** (`responder.html?s=…`) para personas que aún no son pacientes:
 escriben su nombre y teléfono, contestan y quedan registradas como pacientes con origen "Encuesta".
 Si el teléfono ya es de un paciente, la respuesta se agrega a su expediente.
+
+## Conferencias
+En **Conferencias** (menú "Más" en celular) cada especialista crea conferencias presenciales o en línea con imagen,
+descripción, fecha, horario y cupo. Aparecen en su **Calendario** y, si son públicas, en su perfil.
+- **Invitar pacientes:** se eligen de la lista y a cada uno se le manda por WhatsApp su link personal (`evento.html?i=…`), donde responde "Asistiré" o "No podré".
+- **Link abierto** (`evento.html?e=…`): cualquiera aparta su lugar con nombre y teléfono y queda como paciente.
+- El link de la reunión en línea solo lo ven quienes confirmaron.
+- **Alertas por WhatsApp al especialista** un día y una hora antes, con CallMeBot (se activa en **Mi perfil**).
+  La función `event-reminders` corre cada 15 minutos; si hay servicio de correo, también avisa por correo al especialista y a los asistentes.

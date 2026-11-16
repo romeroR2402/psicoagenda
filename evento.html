@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Conferencia · MiConsulta</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="assets/app.css">
+<style>
+.page{padding-block:24px 56px;max-width:760px;margin:0 auto}
+.cover{width:100%;aspect-ratio:16/8;object-fit:cover;border-radius:22px;background:var(--line);display:block}
+.cover-ph{display:grid;place-items:center;color:var(--calm);background:linear-gradient(140deg,var(--calm-soft),var(--accent-soft))}
+.ev h1{font-size:clamp(24px,4.4vw,34px);margin:18px 0 8px}
+.facts{display:flex;flex-direction:column;gap:10px;margin:16px 0}
+.facts div{display:flex;gap:12px;align-items:flex-start;font-weight:600}
+.facts svg{flex:none;color:var(--accent);margin-top:2px}
+.facts small{display:block;color:var(--muted);font-weight:500}
+.rsvp{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.banner{border-radius:16px;padding:14px 16px;font-weight:600;font-size:14px}
+@media (max-width:520px){.rsvp{grid-template-columns:1fr}}
+</style>
+</head>
+<body class="wash">
+<header class="topbar"><div class="wrap gutter">
+  <a class="brand" href="index.html"><i><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5.5v13M5.5 12h13"/></svg></i>MiConsulta</a>
+</div></header>
+<main class="page gutter"><div class="stack" id="root"><div class="empty">Cargando conferencia…</div></div></main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script src="assets/common.js"></script>
+<script>
+(() => {
+const { sb, esc, av, ic, fmtDay, fmtTime, toast, copy } = PA;
+const root = document.getElementById('root');
+const qp = new URLSearchParams(location.search), invite = qp.get('i') || '', open = qp.get('e') || '';
+const token = invite || open;
+let E = null, joinUrl = null;
+const val = id => (document.getElementById(id)?.value || '').trim();
+
+async function load() {
+  if (!sb || !/^[a-f0-9]{16,}$/.test(token)) return fail();
+  const { data, error } = await sb.rpc('get_event', { p_token: token });
+  if (error || !data || !data.ok) return fail();
+  E = data; joinUrl = data.online_url || joinUrl; document.title = `${E.title} · MiConsulta`; render();
+}
+function fail() { root.innerHTML = '<div class="card"><h2>No encontramos esta conferencia</h2><p class="muted">Revisa que el link esté completo o pide uno nuevo a quien te invitó.</p></div>'; }
+
+function render() {
+  const tz = E.professional?.timezone || PA.TZ, pr = E.professional || {};
+  const left = E.capacity ? Math.max(0, E.capacity - E.confirmed) : null;
+  const gmaps = E.location ? PA.gdir(E.location) : E.place ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(E.place)}` : '';
+  let action = '';
+  if (E.past) action = '<div class="banner p-mute">Esta conferencia ya terminó.</div>';
+  else if (E.invite) {
+    action = `<h2>${esc(E.name)}, ¿asistirás?</h2>
+      ${E.status === 'confirmado' ? '<div class="banner p-ok">Confirmaste tu asistencia. ¡Te esperamos!</div>' : E.status === 'no_asiste' ? '<div class="banner p-mute">Indicaste que no podrás asistir. Si cambias de opinión, confirma abajo.</div>' : ''}
+      <div class="rsvp" style="margin-top:12px"><button class="btn pri big" data-a="rsvp" data-s="confirmado" ${E.status === 'confirmado' ? 'disabled' : ''}>Asistiré</button>
+        <button class="btn neu big" data-a="rsvp" data-s="no_asiste" ${E.status === 'no_asiste' ? 'disabled' : ''}>No podré asistir</button></div>`;
+  } else if (left === 0 && !joinUrl) action = '<div class="banner p-bad">El cupo de esta conferencia está lleno.</div>';
+  else action = joinUrl ? '<div class="banner p-ok">¡Listo! Tu lugar está registrado.</div>' : `<h2>Regístrate</h2><p class="muted small" style="margin:4px 0 12px">Aparta tu lugar con tu nombre y teléfono.</p>
+      <form class="form" id="f-reg" novalidate>
+        <label class="field"><span>Nombre completo</span><input id="rg-name" autocomplete="name"></label>
+        <label class="field"><span>Teléfono (WhatsApp)</span><input id="rg-phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="Ej. 55 1234 5678"></label>
+        <label class="field"><span>Correo (para el recordatorio)</span><input id="rg-email" type="email" autocomplete="email"></label>
+        <p class="err" id="rg-err"></p><button class="btn pri big">Apartar mi lugar</button></form>`;
+  root.innerHTML = `<article class="ev">
+    ${E.image_url ? `<img class="cover" src="${esc(E.image_url)}" alt="">` : `<div class="cover cover-ph">${ic('users', 48)}</div>`}
+    <h1>${esc(E.title)}</h1>
+    <div class="who">${av(pr.name, 'sm', pr.photo_url)}<div><b>${esc(pr.name || '')}</b><small>${esc(pr.title || '')}</small></div></div>
+    <div class="facts">
+      <div>${ic('cal', 20)}<span>${fmtDay(E.starts_at, tz)}<small>${fmtTime(E.starts_at, tz)} – ${fmtTime(E.ends_at, tz)}</small></span></div>
+      <div>${ic(E.mode === 'en_linea' ? 'video' : 'pin', 20)}<span>${E.mode === 'en_linea' ? 'En línea' : esc(E.place || 'Presencial')}
+        <small>${E.mode === 'en_linea' ? (joinUrl ? 'Este es tu link para entrar:' : 'El link para entrar aparece al confirmar tu asistencia.') : gmaps ? `<a href="${esc(gmaps)}" target="_blank" rel="noopener">Cómo llegar en Google Maps</a>` : ''}</small></span></div>
+      ${E.capacity ? `<div>${ic('users', 20)}<span>${E.confirmed} confirmados<small>${left > 0 ? `Quedan ${left} lugares` : 'Cupo lleno'}</small></span></div>` : `<div>${ic('users', 20)}<span>${E.confirmed} confirmados</span></div>`}
+    </div>
+    ${joinUrl ? `<a class="btn calm big" href="${esc(joinUrl)}" target="_blank" rel="noopener">${ic('video', 18)} Entrar a la conferencia</a>` : ''}
+    ${E.description ? `<section class="card" style="margin-top:16px"><h3>Acerca de la conferencia</h3><p class="pre" style="margin:8px 0 0">${esc(E.description)}</p></section>` : ''}
+    <section class="card" style="margin-top:16px">${action}</section>
+    ${pr.slug ? `<p class="muted small" style="margin-top:14px">¿Quieres una consulta? <a href="perfil.html?p=${encodeURIComponent(pr.slug)}">Agenda con ${esc((pr.name || '').split(' ')[0])}</a>.</p>` : ''}
+  </article>`;
+}
+
+document.addEventListener('click', async e => {
+  const b = e.target.closest('[data-a="rsvp"]'); if (!b) return;
+  b.disabled = true;
+  const { data, error } = await sb.rpc('event_rsvp', { p_token: invite, p_status: b.dataset.s });
+  if (error || !data.ok) { b.disabled = false; return toast(data && data.error === 'full' ? 'El cupo ya está lleno.' : 'No se pudo guardar. Intenta de nuevo.'); }
+  toast(b.dataset.s === 'confirmado' ? '¡Asistencia confirmada!' : 'Gracias por avisar');
+  load();
+});
+document.addEventListener('submit', async e => {
+  if (e.target.id !== 'f-reg') return;
+  e.preventDefault();
+  const err = document.getElementById('rg-err'), btn = e.target.querySelector('button');
+  const name = val('rg-name'), phone = val('rg-phone'), email = val('rg-email');
+  if (name.length < 3) return err.textContent = 'Escribe tu nombre completo.';
+  if (phone.replace(/\D/g, '').length < 8) return err.textContent = 'Escribe tu teléfono con al menos 8 dígitos.';
+  if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return err.textContent = 'Revisa tu correo.';
+  btn.disabled = true; btn.textContent = 'Apartando…';
+  const { data, error } = await sb.rpc('event_register', { p_token: open, p_name: name, p_phone: phone, p_email: email || null });
+  if (error || !data.ok) { btn.disabled = false; btn.textContent = 'Apartar mi lugar'; err.textContent = data && data.error === 'full' ? 'El cupo ya está lleno.' : data && data.error === 'past' ? 'Esta conferencia ya terminó.' : 'No se pudo registrar. Revisa tus datos.'; return; }
+  // Desde ahora se usa su link personal para que pueda volver a verlo
+  history.replaceState(null, '', location.pathname + '?i=' + data.token);
+  location.reload();
+});
+load();
+})();
+</script>
+</body>
+</html>
