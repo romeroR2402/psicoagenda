@@ -38,6 +38,8 @@ const root = document.getElementById('root');
 const qp = new URLSearchParams(location.search), invite = qp.get('i') || '', open = qp.get('e') || '';
 const token = invite || open;
 let E = null, joinUrl = null;
+// Cómo se entra según el link: grupo de WhatsApp, WhatsApp del especialista o videollamada
+const viaOf = url => /^https:\/\/chat\.whatsapp\.com\//i.test(url || '') ? 'grupo' : /^https:\/\/(wa\.me|api\.whatsapp\.com)\//i.test(url || '') ? 'llamada' : 'link';
 const val = id => (document.getElementById(id)?.value || '').trim();
 
 async function load() {
@@ -72,11 +74,13 @@ function render() {
     <div class="who">${av(pr.name, 'sm', pr.photo_url)}<div><b>${esc(pr.name || '')}</b><small>${esc(pr.title || '')}</small></div></div>
     <div class="facts">
       <div>${ic('cal', 20)}<span>${fmtDay(E.starts_at, tz)}<small>${fmtTime(E.starts_at, tz)} – ${fmtTime(E.ends_at, tz)}</small></span></div>
-      <div>${ic(E.mode === 'en_linea' ? 'video' : 'pin', 20)}<span>${E.mode === 'en_linea' ? 'En línea' : esc(E.place || 'Presencial')}
-        <small>${E.mode === 'en_linea' ? (joinUrl ? 'Este es tu link para entrar:' : 'El link para entrar aparece al confirmar tu asistencia.') : gmaps ? `<a href="${esc(gmaps)}" target="_blank" rel="noopener">Cómo llegar en Google Maps</a>` : ''}</small></span></div>
+      <div>${ic(E.mode === 'en_linea' ? 'video' : 'pin', 20)}<span>${E.mode === 'en_linea' ? (joinUrl ? { link: 'En línea', grupo: 'En línea por grupo de WhatsApp', llamada: 'En línea por videollamada de WhatsApp' }[viaOf(joinUrl)] : 'En línea') : esc(E.place || 'Presencial')}
+        <small>${E.mode === 'en_linea' ? (joinUrl ? { link: 'Este es tu link para entrar:', grupo: 'La conferencia será en un grupo de WhatsApp:', llamada: 'La conferencia será por videollamada de WhatsApp. Escríbele para que te agregue:' }[viaOf(joinUrl)] : 'El acceso aparece al confirmar tu asistencia.') : gmaps ? `<a href="${esc(gmaps)}" target="_blank" rel="noopener">Cómo llegar en Google Maps</a>` : ''}</small></span></div>
       ${E.capacity ? `<div>${ic('users', 20)}<span>${E.confirmed} confirmados<small>${left > 0 ? `Quedan ${left} lugares` : 'Cupo lleno'}</small></span></div>` : `<div>${ic('users', 20)}<span>${E.confirmed} confirmados</span></div>`}
     </div>
-    ${joinUrl ? `<a class="btn calm big" href="${esc(joinUrl)}" target="_blank" rel="noopener">${ic('video', 18)} Entrar a la conferencia</a>` : ''}
+    ${joinUrl ? (viaOf(joinUrl) === 'link' ? `<a class="btn calm big" href="${esc(joinUrl)}" target="_blank" rel="noopener">${ic('video', 18)} Entrar a la conferencia</a>`
+      : viaOf(joinUrl) === 'grupo' ? `<a class="btn big" style="background:#25d366;color:#fff" href="${esc(joinUrl)}" target="_blank" rel="noopener">${ic('phone', 18)} Unirme al grupo de WhatsApp</a>`
+      : `<a class="btn big" style="background:#25d366;color:#fff" href="${esc(joinUrl)}?text=${encodeURIComponent(`Hola, confirmé mi asistencia a la conferencia "${E.title}".`)}" target="_blank" rel="noopener">${ic('phone', 18)} Escribir por WhatsApp</a>`) : ''}
     ${E.description ? `<section class="card" style="margin-top:16px"><h3>Acerca de la conferencia</h3><p class="pre" style="margin:8px 0 0">${esc(E.description)}</p></section>` : ''}
     <section class="card" style="margin-top:16px">${action}</section>
     ${pr.slug ? `<p class="muted small" style="margin-top:14px">¿Quieres una consulta? <a href="perfil.html?p=${encodeURIComponent(pr.slug)}">Agenda con ${esc((pr.name || '').split(' ')[0])}</a>.</p>` : ''}

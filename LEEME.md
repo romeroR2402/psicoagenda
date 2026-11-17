@@ -92,6 +92,8 @@ En **Conferencias** (menú "Más" en celular) cada especialista crea conferencia
 descripción, fecha, horario y cupo. Aparecen en su **Calendario** y, si son públicas, en su perfil.
 - **Invitar pacientes:** se eligen de la lista y a cada uno se le manda por WhatsApp su link personal (`evento.html?i=…`), donde responde "Asistiré" o "No podré".
 - **Link abierto** (`evento.html?e=…`): cualquiera aparta su lugar con nombre y teléfono y queda como paciente.
-- El link de la reunión en línea solo lo ven quienes confirmaron.
+- En línea puede ser por **link de videollamada** (Zoom, Meet, Teams…), por **grupo de WhatsApp** (link `chat.whatsapp.com/…`)
+  o por **videollamada de WhatsApp** al número del especialista (los asistentes ven un botón para escribirle).
+  El acceso solo lo ven quienes confirmaron.
 - **Alertas por WhatsApp al especialista** un día y una hora antes, con CallMeBot (se activa en **Mi perfil**).
   La función `event-reminders` corre cada 15 minutos; si hay servicio de correo, también avisa por correo al especialista y a los asistentes.

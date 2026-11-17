@@ -61,7 +61,10 @@ Deno.serve(async (req) => {
       ]);
       const tz = p?.timezone || 'America/Mexico_City', cuando = when(e.starts_at, tz);
       const conf = (att || []).filter((a: any) => a.status === 'confirmado');
-      const lugar = e.mode === 'en_linea' ? 'En línea' : e.place || 'Presencial';
+      const url = String(e.online_url || '');
+      const lugar = e.mode !== 'en_linea' ? e.place || 'Presencial'
+        : /^https:\/\/chat\.whatsapp\.com\//i.test(url) ? 'En línea por grupo de WhatsApp'
+        : /^https:\/\/(wa\.me|api\.whatsapp\.com)\//i.test(url) ? 'En línea por videollamada de WhatsApp' : 'En línea';
       const msg = `MiConsulta: tu conferencia "${e.title}" es ${kind === 'dia' ? 'mañana' : 'en una hora'} (${cuando}). ${lugar}. Asistentes confirmados: ${conf.length}.`;
       let wa = false, mail = false;
       const phone = st?.wa_phone || p?.whatsapp;

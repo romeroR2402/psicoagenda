@@ -974,7 +974,10 @@ async function togglePublic(id, on, btn) {
 /* Conferencias */
 const attOf = id => S.attendees.filter(a => a.event_id === id);
 const ATT = { confirmado: ['Asistirá', 'p-ok'], no_asiste: ['No asistirá', 'p-bad'], invitado: ['Sin responder', 'p-warn'] };
-const evPlace = e => e.mode === 'en_linea' ? 'En línea' : e.location_id ? (S.locations.find(l => l.id === e.location_id)?.name || 'Presencial') : (e.place || 'Presencial');
+// Cómo se conecta una conferencia en línea según su link
+const viaOf = url => /^https:\/\/chat\.whatsapp\.com\//i.test(url || '') ? 'grupo' : /^https:\/\/(wa\.me|api\.whatsapp\.com)\//i.test(url || '') ? 'llamada' : 'link';
+const VIA = { link: 'En línea', grupo: 'Grupo de WhatsApp', llamada: 'Videollamada por WhatsApp' };
+const evPlace = e => e.mode === 'en_linea' ? VIA[viaOf(e.online_url)] : e.location_id ? (S.locations.find(l => l.id === e.location_id)?.name || 'Presencial') : (e.place || 'Presencial');
 const evOpenUrl = e => pageUrl('evento.html?e=' + e.public_token);
 
 V.conferencias = () => {
@@ -1008,7 +1011,11 @@ function eventForm(id) {
     <div id="ev-pres" class="form" ${e.mode === 'en_linea' ? 'hidden' : ''}>
       <label class="field"><span>Lugar</span><select id="ev-loc">${pres.map(l => `<option value="${l.id}" ${e.location_id === l.id ? 'selected' : ''}>${esc(l.name)}</option>`).join('')}<option value="" ${!e.location_id && e.id ? 'selected' : ''}>Otra dirección…</option></select></label>
       <label class="field" id="ev-place-w" ${pres.length && (e.location_id || !e.id) ? 'hidden' : ''}><span>Dirección del lugar</span><input id="ev-place" value="${esc(e.place || '')}" maxlength="240" placeholder="Ej. Auditorio Centro Cultural, Av. Reforma 100, CDMX"></label></div>
-    <label class="field" id="ev-url-w" ${e.mode === 'en_linea' ? '' : 'hidden'}><span>Link de la reunión (Zoom, Meet, Teams…)</span><input id="ev-url" value="${esc(e.online_url || '')}" placeholder="https://"><small class="muted">Solo lo ven quienes confirman su asistencia.</small></label>
+    <div class="form" id="ev-url-w" ${e.mode === 'en_linea' ? '' : 'hidden'}>
+      <label class="field"><span>¿Por dónde será?</span><select id="ev-via">${[['link', 'Link de videollamada (Zoom, Meet, Teams…)'], ['grupo', 'Grupo de WhatsApp'], ['llamada', 'Videollamada por WhatsApp a mi número']].map(([k, t]) => `<option value="${k}" ${viaOf(e.online_url) === k ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
+      <label class="field" id="ev-url-l"><span id="ev-url-t">${viaOf(e.online_url) === 'grupo' ? 'Link de invitación al grupo' : 'Link de la reunión'}</span><input id="ev-url" value="${esc(viaOf(e.online_url) === 'llamada' ? '' : e.online_url || '')}" placeholder="${viaOf(e.online_url) === 'grupo' ? 'https://chat.whatsapp.com/…' : 'https://'}"></label>
+      <label class="field" id="ev-wa-l" ${viaOf(e.online_url) === 'llamada' ? '' : 'hidden'}><span>Tu número de WhatsApp</span><input id="ev-wa" type="tel" value="${esc(viaOf(e.online_url) === 'llamada' ? e.online_url.replace(/\D/g, '').replace(/^52(?=\d{10}$)/, '') : S.profile.whatsapp || '')}" placeholder="Ej. 55 1234 5678"></label>
+      <small class="muted" id="ev-via-h">${{ link: 'Solo lo ven quienes confirman su asistencia.', grupo: 'En WhatsApp abre el grupo → Invitar al grupo mediante enlace → Copiar enlace. Solo lo ven quienes confirman.', llamada: 'Quienes confirmen verán un botón para escribirte por WhatsApp. Tú haces la videollamada desde WhatsApp.' }[viaOf(e.online_url)]}</small></div>
     <div class="row2"><label class="field"><span>Cupo máximo (opcional)</span><input id="ev-cap" type="number" min="1" max="10000" value="${e.capacity ?? ''}" placeholder="Sin límite"></label>
       <label class="check" style="align-self:end;padding-bottom:12px"><input type="checkbox" id="ev-public" ${e.is_public ? 'checked' : ''}> Mostrar en mi perfil público</label></div>
     <p class="err" id="ev-err"></p>
@@ -1030,8 +1037,19 @@ async function saveEvent(id, btn) {
   if (title.length < 3) return setErr('ev-err', 'Escribe el título de la conferencia.');
   if (!day || !st || !en) return setErr('ev-err', 'Elige la fecha y las horas.');
   if (en <= st) return setErr('ev-err', 'La hora de término debe ser después de la de inicio.');
-  const loc = mode === 'presencial' ? val('ev-loc') : '', url = mode === 'en_linea' ? val('ev-url') : '';
-  if (mode === 'en_linea' && !/^https:\/\//.test(url)) return setErr('ev-err', 'Pega el link de la reunión (empieza con https://).');
+  const loc = mode === 'presencial' ? val('ev-loc') : '', via = val('ev-via');
+  let url = '';
+  if (mode === 'en_linea') {
+    if (via === 'llamada') {
+      const dg = val('ev-wa').replace(/\D/g, '');
+      if (dg.length < 8) return setErr('ev-err', 'Escribe tu número de WhatsApp.');
+      url = 'https://wa.me/' + (dg.length === 10 ? '52' + dg : dg);
+    } else {
+      url = val('ev-url');
+      if (via === 'grupo' && !/^https:\/\/chat\.whatsapp\.com\/\S+/i.test(url)) return setErr('ev-err', 'Pega el link de invitación del grupo (empieza con https://chat.whatsapp.com/).');
+      if (via === 'link' && !/^https:\/\//.test(url)) return setErr('ev-err', 'Pega el link de la reunión (empieza con https://).');
+    }
+  }
   if (mode === 'presencial' && !loc && val('ev-place').length < 5) return setErr('ev-err', 'Escribe la dirección del lugar.');
   const cap = val('ev-cap') ? Math.round(Number(val('ev-cap'))) : null;
   if (cap !== null && !(cap >= 1)) return setErr('ev-err', 'Revisa el cupo.');
@@ -1259,6 +1277,13 @@ document.addEventListener('change', e => {
   if (e.target.dataset.b && S.builder && e.target.type !== 'text') syncBuilder(e.target);
   if (e.target.id === 'pf-file' && e.target.files[0]) uploadPhoto(e.target.files[0]);
   if (e.target.id === 'ev-mode') { document.getElementById('ev-pres').hidden = e.target.value !== 'presencial'; document.getElementById('ev-url-w').hidden = e.target.value !== 'en_linea'; }
+  if (e.target.id === 'ev-via') {
+    const v = e.target.value;
+    document.getElementById('ev-url-l').hidden = v === 'llamada'; document.getElementById('ev-wa-l').hidden = v !== 'llamada';
+    document.getElementById('ev-url-t').textContent = v === 'grupo' ? 'Link de invitación al grupo' : 'Link de la reunión';
+    document.getElementById('ev-url').placeholder = v === 'grupo' ? 'https://chat.whatsapp.com/…' : 'https://';
+    document.getElementById('ev-via-h').textContent = { link: 'Solo lo ven quienes confirman su asistencia.', grupo: 'En WhatsApp abre el grupo → Invitar al grupo mediante enlace → Copiar enlace. Solo lo ven quienes confirman.', llamada: 'Quienes confirmen verán un botón para escribirte por WhatsApp. Tú haces la videollamada desde WhatsApp.' }[v];
+  }
   if (e.target.id === 'ev-loc') document.getElementById('ev-place-w').hidden = !!e.target.value;
   if (e.target.id === 'ev-file' && e.target.files[0]) {
     const f = e.target.files[0];
