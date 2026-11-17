@@ -97,9 +97,11 @@ footer{padding-block:24px 40px;color:var(--muted);font-size:12.5px;border-top:1p
 <main>
   <section class="hero wash"><div class="wrap gutter">
     <h1>Encuentra a tu especialista y <em>agenda tu cita</em></h1>
-    <p class="lead">Psicólogos, médicos y dentistas. Busca por lo que necesitas, tu ciudad o consulta en línea, mira los horarios libres y aparta el tuyo en minutos.</p>
+    <p class="lead">Psicólogos, psicoterapeutas, tanatólogos, médicos y dentistas. Busca por lo que necesitas, tu ciudad o consulta en línea, mira los horarios libres y aparta el tuyo en minutos.</p>
     <div class="kinds" role="group" aria-label="Tipo de especialista">
       <button class="chip on" data-spec="psicologia" aria-pressed="true">Psicólogos</button>
+      <button class="chip" data-spec="psicoterapia" aria-pressed="false">Psicoterapeutas</button>
+      <button class="chip" data-spec="tanatologia" aria-pressed="false">Tanatólogos</button>
       <button class="chip" data-spec="medicina" aria-pressed="false">Médicos</button>
       <button class="chip" data-spec="odontologia" aria-pressed="false">Dentistas</button>
     </div>
@@ -126,7 +128,7 @@ footer{padding-block:24px 40px;color:var(--muted);font-size:12.5px;border-top:1p
 
   <section><div class="wrap gutter">
     <div class="pro">
-      <div><h2>¿Eres psicólogo, médico o dentista?</h2>
+      <div><h2>¿Eres psicólogo, psicoterapeuta, tanatólogo, médico o dentista?</h2>
         <p>Crea tu perfil gratis, configura tus horarios, días de descanso y consultorios, y recibe citas con pago verificado.</p>
         <a class="btn" href="panel.html#registro">Registrarme</a></div>
       <ul><li>Agenda en línea con tus horarios reales</li><li>Apruebas cada cita al verificar el pago</li><li>Encuestas personalizadas para tus pacientes</li></ul>
@@ -153,7 +155,7 @@ const FILTERS = [
   ['Ubicación', [['near', 'Cerca de mí'], ['online', 'Solo en línea']]],
   ['Elección del especialista', [['women', 'Solo mujeres'], ['kids', 'Atiende a niños'], ['english', 'Habla inglés']]],
 ];
-const SPEC = { psicologia: ['psicólogo', 'psicólogos', 'Psicólogo'], medicina: ['médico', 'médicos', 'Médico general'], odontologia: ['dentista', 'dentistas', 'Cirujano dentista'] };
+const SPEC = { psicologia: ['psicólogo', 'psicólogos', 'Psicólogo'], psicoterapia: ['psicoterapeuta', 'psicoterapeutas', 'Psicoterapeuta'], tanatologia: ['tanatólogo', 'tanatólogos', 'Tanatólogo'], medicina: ['médico', 'médicos', 'Médico general'], odontologia: ['dentista', 'dentistas', 'Cirujano dentista'] };
 let spec = 'psicologia';
 const F = {}; let all = [], slots = {}, byLoc = {}, view = {}, me = null;
 const MAX = 4, STEP = 3, WINDOW = 14;
@@ -230,7 +232,7 @@ function show() {
   $('f-n').hidden = !n; $('f-n').textContent = n;
   $('r-count').textContent = `${res.length} ${res.length === 1 ? SPEC[spec][0] : SPEC[spec][1]}`;
   list.innerHTML = res.length ? res.map(card).join('')
-    : `<div class="empty" style="margin:18px">${all.length ? 'No encontramos especialistas con esa búsqueda o filtros. Prueba quitando alguno.' : `Todavía no hay ${SPEC[spec][1]} publicados. Si eres ${SPEC[spec][0]}, regístrate y sé el primero.`}</div>`;
+    : `<div class="empty" style="margin:18px">${all.some(p => (p.specialty || 'psicologia') === spec) ? 'No encontramos especialistas con esa búsqueda o filtros. Prueba quitando alguno.' : `Todavía no hay ${SPEC[spec][1]} publicados. Si eres ${SPEC[spec][0]}, regístrate y sé el primero.`}</div>`;
 }
 
 function filtersModal() {
@@ -305,7 +307,7 @@ $('f-search').addEventListener('submit', e => { e.preventDefault(); sync(); show
 cEl.addEventListener('change', () => { sync(); show(); });
 document.addEventListener('click', async e => {
   const sp = e.target.closest('[data-spec]');
-  if (sp) { spec = sp.dataset.spec; document.querySelectorAll('[data-spec]').forEach(b => { b.classList.toggle('on', b === sp); b.setAttribute('aria-pressed', b === sp); }); qEl.placeholder = spec === 'psicologia' ? 'Ansiedad, pareja, duelo… o un nombre' : spec === 'medicina' ? 'Chequeo general, diabetes… o un nombre' : 'Limpieza, ortodoncia, caries… o un nombre'; show(); return; }
+  if (sp) { spec = sp.dataset.spec; document.querySelectorAll('[data-spec]').forEach(b => { b.classList.toggle('on', b === sp); b.setAttribute('aria-pressed', b === sp); }); qEl.placeholder = spec === 'psicologia' || spec === 'psicoterapia' ? 'Ansiedad, pareja, duelo… o un nombre' : spec === 'tanatologia' ? 'Duelo, pérdida, enfermedad terminal… o un nombre' : spec === 'medicina' ? 'Chequeo general, diabetes… o un nombre' : 'Limpieza, ortodoncia, caries… o un nombre'; show(); return; }
   const pop = e.target.closest('.popular [data-q]');
   if (pop) { qEl.value = pop.dataset.q; sync(); show(); toResults(); return; }
   const el = e.target.closest('[data-a]'); if (!el || el.disabled) return;

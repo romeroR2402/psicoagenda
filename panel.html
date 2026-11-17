@@ -171,8 +171,8 @@ const S = { linkErr, authKnown: false, user: null, recovery: false, authMode: lo
   loaded: false, isAdmin: false, profile: null, view: 'inicio', locations: [], schedules: [], timeOff: [], appts: [], clients: [], surveys: [], links: [], notes: [],
   apptTab: 'review', week: null, builder: null, sentIds: null };
 const VIEWS = { inicio: ['Inicio', 'home'], calendario: ['Calendario', 'week'], citas: ['Citas', 'cal'], horario: ['Horario', 'clock'], ubicaciones: ['Ubicaciones', 'pin'], perfil: ['Mi perfil', 'user'], pacientes: ['Pacientes', 'users'], conferencias: ['Conferencias', 'mic'], encuestas: ['Encuestas', 'form'] };
-const TOPICS = ['Ansiedad', 'Depresión', 'Pareja', 'Duelo', 'Autoestima', 'Estrés', 'Adolescentes', 'Niños', 'Familia', 'Adicciones', 'Trauma', 'Sexualidad', 'Orientación vocacional', 'TDAH'];
-const SPECS = { psicologia: 'Psicología', medicina: 'Medicina general', odontologia: 'Odontología' };
+const TOPICS = ['Ansiedad', 'Depresión', 'Pareja', 'Duelo', 'Pérdida de un hijo', 'Enfermedad terminal', 'Cuidados paliativos', 'Duelo por suicidio', 'Autoestima', 'Estrés', 'Adolescentes', 'Niños', 'Familia', 'Adicciones', 'Trauma', 'Sexualidad', 'Orientación vocacional', 'TDAH'];
+const SPECS = { psicologia: 'Psicología', psicoterapia: 'Psicoterapia', tanatologia: 'Tanatología', medicina: 'Medicina general', odontologia: 'Odontología' };
 const LANGS = ['Español', 'Inglés', 'Francés', 'Portugués', 'Lengua de señas mexicana'];
 const QTYPES = { single: 'Una opción', multi: 'Varias opciones', scale: 'Escala del 1 al 5', freq: 'Frecuencia', text: 'Respuesta abierta' };
 const QNOTE = { scale: 'El paciente elige un número del 1 (nada) al 5 (mucho).', freq: 'Opciones fijas: Nunca, Varios días, Más de la mitad de los días, Casi todos los días.', text: 'El paciente escribe su respuesta, hasta 2000 caracteres.' };
@@ -298,7 +298,8 @@ function renderAuth() {
   const T = { login: ['Entra a tu panel', 'Administra tus citas, horarios y encuestas.'], signup: ['Crea tu cuenta de especialista', 'Es gratis. Después configuras tu perfil, horarios y ubicaciones.'], forgot: ['Recupera tu contraseña', 'Te enviamos un correo con un enlace para crear una nueva.'] }[m];
   root.innerHTML = `<div class="auth gutter"><div class="card form">
     <div><h1>${T[0]}</h1><p class="muted" style="margin:0">${T[1]}</p></div>
-    ${m === 'signup' ? `<label class="field"><span>Nombre completo</span><input id="au-name" autocomplete="name" placeholder="Ej. Laura Méndez Ruiz"></label>` : ''}
+    ${m === 'signup' ? `<label class="field"><span>Nombre completo</span><input id="au-name" autocomplete="name" placeholder="Ej. Laura Méndez Ruiz"></label>
+    <label class="field"><span>Especialidad</span><select id="au-spec">${Object.entries(SPECS).map(([k, t]) => `<option value="${k}">${t}</option>`).join('')}</select></label>` : ''}
     <label class="field"><span>Correo</span><input id="au-email" type="email" autocomplete="email" placeholder="tu@correo.com"></label>
     ${m !== 'forgot' ? `<label class="field"><span>Contraseña</span><input id="au-pass" type="password" autocomplete="${m === 'signup' ? 'new-password' : 'current-password'}" placeholder="${m === 'signup' ? 'Mínimo 8 caracteres' : ''}"></label>` : ''}
     ${S.linkErr ? `<div class="banner-acc warn">${ic('lock', 16)}<span>${esc(S.linkErr)}</span></div>` : ''}
@@ -339,7 +340,7 @@ async function doAuth(btn) {
     const name = val('au-name');
     if (name.length < 3) { busy(btn, false); return setErr('au-err', 'Escribe tu nombre completo.'); }
     if (pass.length < 8) { busy(btn, false); return setErr('au-err', 'La contraseña debe tener al menos 8 caracteres.'); }
-    r = await sb.auth.signUp({ email, password: pass, options: { data: { full_name: name }, emailRedirectTo: back } });
+    r = await sb.auth.signUp({ email, password: pass, options: { data: { full_name: name, specialty: val('au-spec') || 'psicologia' }, emailRedirectTo: back } });
     busy(btn, false);
     if (r.error) return setErr('au-err', authMsg(r.error));
     // Supabase no devuelve error si el correo ya existe: lo indica con una cuenta sin identidades.
@@ -406,7 +407,7 @@ function renderOnboarding() {
   const name = S.user.user_metadata?.full_name || '';
   root.innerHTML = `<div class="auth gutter" style="max-width:720px"><div class="card"><h1 style="font-size:26px">Bienvenido a MiConsulta</h1>
     <p class="muted">Completa tu perfil. Después configuras tu horario y ubicaciones, y lo publicas en el buscador.</p>
-    ${profileForm({ full_name: name, slug: slugify(name) ? slugify(name) + '-' + Math.random().toString(36).slice(2, 6) : '' }, true)}</div></div>`;
+    ${profileForm({ full_name: name, specialty: S.user.user_metadata?.specialty, slug: slugify(name) ? slugify(name) + '-' + Math.random().toString(36).slice(2, 6) : '' }, true)}</div></div>`;
   updateSlugUrl();
 }
 const updateSlugUrl = () => { const e = document.getElementById('pf-url'); if (e) e.textContent = pageUrl('perfil.html?p=' + (val('pf-slug') || '…')); };
@@ -838,6 +839,10 @@ const TEMPLATES = {
     ['Antecedentes familiares', 'history_family'], ['Tratamientos previos y medicación actual', 'meds'], ['Consumo de sustancias', 'substances'],
     ['Evaluación de riesgo (ideación suicida, autolesiones, violencia)', 'risk'], ['Examen mental e impresión clínica', 'mental_exam'],
     ['Diagnóstico (CIE-11 / DSM-5-TR)', 'diagnosis', 'line'], ['Enfoque terapéutico', 'approach', 'line'], ['Objetivos y plan terapéutico', 'plan']],
+  tanatologia: [['Motivo de consulta', 'reason'], ['Pérdida que vive (quién o qué, relación, fecha)', 'loss', 'line'], ['Circunstancias de la pérdida', 'history_present'],
+    ['Reacciones actuales (emocionales, físicas, sueño, apetito)', 'reactions'], ['Etapa y tipo de duelo (anticipado, complicado…)', 'grief_stage', 'line'],
+    ['Pérdidas previas y antecedentes', 'history_personal'], ['Red de apoyo y creencias', 'support'], ['Medicación actual', 'meds'],
+    ['Evaluación de riesgo (ideación suicida, autolesiones)', 'risk'], ['Impresión tanatológica', 'diagnosis'], ['Objetivos y plan de acompañamiento', 'plan']],
   medicina: [['Motivo de consulta', 'reason'], ['Padecimiento actual', 'history_present'], ['Antecedentes heredofamiliares', 'history_family'],
     ['Antecedentes personales patológicos', 'history_personal'], ['Antecedentes personales no patológicos', 'non_pathological'], ['Alergias', 'allergies', 'line'],
     ['Medicamentos actuales', 'meds'], ['Tensión arterial', 'bp', 'line'], ['Frecuencia cardiaca', 'hr', 'line'], ['Temperatura (°C)', 'temp', 'line'],
@@ -847,6 +852,7 @@ const TEMPLATES = {
     ['Higiene oral y hábitos (bruxismo, tabaco…)', 'hygiene'], ['Estado periodontal', 'perio'], ['Piezas a tratar / odontograma', 'teeth'],
     ['Radiografías y estudios', 'studies'], ['Diagnóstico', 'diagnosis', 'line'], ['Plan de tratamiento', 'plan'], ['Presupuesto', 'budget', 'line']],
 };
+TEMPLATES.psicoterapia = TEMPLATES.psicologia;
 const NOTE_KIND = { sesion: 'Sesión', consulta: 'Consulta', llamada: 'Llamada', nota: 'Nota' };
 
 async function openClient(id) {

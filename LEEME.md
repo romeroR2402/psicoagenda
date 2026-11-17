@@ -1,6 +1,6 @@
 # MiConsulta
 
-Plataforma tipo directorio para encontrar psicólogos y agendar citas con pago verificado.
+Plataforma tipo directorio para encontrar psicólogos, psicoterapeutas, tanatólogos, médicos y dentistas, y agendar citas con pago verificado.
 
 ## Páginas
 | Página | Para quién | Qué hace |
@@ -75,7 +75,7 @@ Hoy los comprobantes se guardan en Supabase (`receipts`); el script queda como o
 En **Pacientes** cada paciente tiene su expediente con pestañas:
 - **Datos:** nombre, teléfono, correo, nacimiento, sexo, ocupación, dirección, contacto de emergencia,
   origen (particular, empresa, referido, redes, buscador, encuesta) y detalle (por ejemplo, el nombre de la empresa).
-- **Expediente clínico:** campos según la especialidad del profesional (psicología, medicina u odontología).
+- **Expediente clínico:** campos según la especialidad del profesional (psicología, psicoterapia, tanatología, medicina u odontología).
 - **Notas de evolución** con fecha y tipo (sesión, consulta, llamada, nota).
 - **Encuestas** enviadas a ese paciente, con sus respuestas.
 - **Citas** del paciente.
