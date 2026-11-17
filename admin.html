@@ -110,7 +110,7 @@ function render() {
         return `<tr><td><div class="who">${av(p?.full_name || u.email, 'sm', p?.photo_url)}<div><b>${esc(p?.full_name || '—')}</b><small>${esc(p?.title || '')}${u.is_admin ? ' · Admin' : ''}</small></div></div></td>
           <td>${esc(u.email)}<small class="muted" style="display:block">Desde ${date(u.created_at)}</small></td><td>${accPill(u)}</td><td>${st}</td><td>${date(u.last_sign_in_at)}</td>
           <td class="num">${u.appointments}</td><td class="num">${u.clients}</td><td class="num">${u.surveys}</td>
-          <td><div class="acts">${u.is_admin ? '' : `<button class="btn pri sm" data-a="access" data-id="${u.id}">Acceso</button>`}<button class="btn neu sm" data-a="detail" data-id="${u.id}">Ver</button><button class="btn sec sm" data-a="pass" data-id="${u.id}">Contraseña</button></div></td></tr>`; }).join('') || '<tr><td colspan="9"><div class="empty">Sin resultados.</div></td></tr>'}
+          <td><div class="acts">${u.is_admin ? '' : `<button class="btn pri sm" data-a="access" data-id="${u.id}">Acceso</button>`}<button class="btn neu sm" data-a="detail" data-id="${u.id}">Ver</button><button class="btn sec sm" data-a="pass" data-id="${u.id}">Contraseña</button>${u.is_admin || u.id === S.user.id ? '' : `<button class="btn danger sm" data-a="delUser" data-id="${u.id}" aria-label="Eliminar cuenta">${ic('trash', 15)}</button>`}</div></td></tr>`; }).join('') || '<tr><td colspan="9"><div class="empty">Sin resultados.</div></td></tr>'}
     </tbody></table></div>`;
 }
 
@@ -162,9 +162,9 @@ function clientsView() {
   const list = S.clients.filter(c => !q || norm([c.full_name, c.phone, c.email, owner(c.owner_id)?.profile?.full_name].join(' ')).includes(q));
   return `<div class="title-row"><h1>Pacientes</h1><span class="muted">${S.clients.length} en total</span></div>
     <label class="field" style="max-width:420px;margin-bottom:14px"><span>Buscar</span><input id="cq" type="search" placeholder="Nombre, teléfono, correo o especialista" value="${esc(S.cq)}"></label>
-    <div class="tbl-wrap"><table style="min-width:720px"><thead><tr><th>Paciente</th><th>Teléfono</th><th>Correo</th><th>Especialista</th><th>Registrado</th></tr></thead><tbody>
+    <div class="tbl-wrap"><table style="min-width:720px"><thead><tr><th>Paciente</th><th>Teléfono</th><th>Correo</th><th>Especialista</th><th>Registrado</th><th></th></tr></thead><tbody>
       ${list.slice(0, 500).map(c => { const o = owner(c.owner_id); return `<tr><td><div class="who">${av(c.full_name, 'sm')}<b>${esc(c.full_name)}</b></div></td><td>${esc(c.phone)}</td><td>${esc(c.email || '—')}</td>
-        <td>${o ? `<button class="link" data-a="detail" data-id="${o.id}">${esc(o.profile?.full_name || o.email)}</button>` : '—'}</td><td>${date(c.created_at)}</td></tr>`; }).join('') || '<tr><td colspan="5"><div class="empty">Sin pacientes.</div></td></tr>'}
+        <td>${o ? `<button class="link" data-a="detail" data-id="${o.id}">${esc(o.profile?.full_name || o.email)}</button>` : '—'}</td><td>${date(c.created_at)}</td><td><button class="btn danger sm" data-a="delClient" data-id="${c.id}" aria-label="Eliminar paciente">${ic('trash', 15)}</button></td></tr>`; }).join('') || '<tr><td colspan="6"><div class="empty">Sin pacientes.</div></td></tr>'}
     </tbody></table></div>${list.length > 500 ? '<p class="muted small">Mostrando los primeros 500. Usa el buscador para encontrar a alguien.</p>' : ''}`;
 }
 
@@ -303,6 +303,28 @@ document.addEventListener('click', async e => {
       if (!r.ok) { el.disabled = false; return setErr('np-err', 'No se pudo confirmar: ' + r.error); }
       setErr('np-ok', 'Correo confirmado. Ya puede entrar.'); el.remove(); load(); break;
     }
+    case 'delUser': case 'delClient': {
+      const isU = d.a === 'delUser', u = isU && userOf(d.id), c = !isU && S.clients.find(x => x.id === d.id);
+      const name = isU ? (u.profile?.full_name || u.email) : c.full_name;
+      openModal(`<h3>Eliminar ${isU ? 'especialista' : 'paciente'}</h3><p class="sub">${esc(name)}${isU ? ' · ' + esc(u.email) : c.phone ? ' · ' + esc(c.phone) : ''}</p>
+        <div class="banner-acc warn" style="margin:12px 0">${ic('lock', 16)}<span>${isU
+          ? `Se borra su cuenta y <b>todo</b> lo suyo: perfil, horarios, ubicaciones, citas, pacientes, expedientes, encuestas, conferencias, pagos y fotos. Ya no podrá entrar.`
+          : `Se borra de la lista de pacientes de su especialista, junto con su expediente clínico, notas y encuestas. Sus citas pasadas se conservan en el historial.`} No se puede deshacer.</span></div>
+        <label class="field"><span>Escribe <b>ELIMINAR</b> para confirmar</span><input id="del-ok" autocomplete="off"></label>
+        <p class="err" id="del-err"></p>
+        <div class="acts"><button class="btn danger" data-a="doDelete" data-k="${isU ? 'u' : 'c'}" data-id="${d.id}">Eliminar definitivamente</button><button class="btn neu" data-a="closeModal">Cancelar</button></div>`);
+      break;
+    }
+    case 'doDelete': {
+      if (val('del-ok').toUpperCase() !== 'ELIMINAR') return setErr('del-err', 'Escribe ELIMINAR para confirmar.');
+      el.disabled = true; el.textContent = 'Eliminando…';
+      let msg = '';
+      if (d.k === 'u') { const r = await callAdmin({ action: 'delete_user', user_id: d.id }); if (!r.ok) msg = r.error === 'is_admin' ? 'No se puede eliminar a otro administrador.' : r.error === 'self' ? 'No puedes eliminar tu propia cuenta.' : r.error; }
+      else { const { data, error } = await sb.rpc('admin_delete_client', { p_id: d.id }); if (error || !data) msg = error ? error.message : 'Ya no existe.'; }
+      if (msg) { el.disabled = false; el.textContent = 'Eliminar definitivamente'; return setErr('del-err', 'No se pudo eliminar: ' + msg); }
+      closeModal(); await load(); toast(d.k === 'u' ? 'Especialista eliminado' : 'Paciente eliminado'); break;
+    }
+    case 'closeModal': closeModal(); break;
     case 'toggleActive': {
       const u = userOf(d.id); el.disabled = true;
       const { error } = await sb.from('profiles').update({ is_active: !u.profile.is_active }).eq('id', d.id);

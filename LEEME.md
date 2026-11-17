@@ -10,7 +10,7 @@ Plataforma tipo directorio para encontrar psicólogos, psicoterapeutas, tanatól
 | `cita.html?t=…` | Pacientes | Link privado de su cita: ver estado, pagar (subir comprobante) o cancelar |
 | `responder.html?t=…` | Pacientes | Contestar una encuesta (se verifica con su teléfono) |
 | `panel.html` | Psicólogos | Registro, perfil, horario semanal, días de descanso, ubicaciones, citas, pacientes y encuestas |
-| `admin.html` | Super administrador | Lista de psicólogos registrados, detalle de solo lectura, restablecer contraseñas, activar o desactivar perfiles |
+| `admin.html` | Super administrador | Lista de especialistas y pacientes, detalle de solo lectura, restablecer contraseñas, activar o desactivar perfiles, acceso y pagos, eliminar especialistas o pacientes |
 | `demo.html` | — | Prototipo anterior de demostración |
 
 Archivos compartidos: `assets/app.css`, `assets/common.js` y `config.js` (conexión pública a Supabase).
@@ -28,7 +28,8 @@ Los horarios libres salen del horario semanal, menos los días de descanso y las
 - `clients`, `surveys`, `survey_links`: pacientes y encuestas de cada psicólogo.
 - `admins`: cuentas de super administrador.
 - Bucket privado `receipts`: comprobantes de pago.
-- Función `admin-users` (`supabase/functions/admin-users`): asignar contraseña o confirmar correo, solo para administradores.
+- Función `admin-users` (`supabase/functions/admin-users`): asignar contraseña, confirmar correo o eliminar la cuenta de un especialista (con todos sus datos y archivos), solo para administradores.
+- `admin_delete_client`: el administrador elimina un paciente con su expediente; sus citas pasadas se conservan.
 
 Cada psicólogo solo ve sus datos. El administrador puede ver los de todos, pero las contraseñas
 están cifradas y nadie puede verlas: el administrador puede asignar una nueva o enviar un correo de restablecimiento.

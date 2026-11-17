@@ -1,4 +1,4 @@
-// Acciones del super administrador sobre cuentas de psicólogos.
+// Acciones del super administrador sobre cuentas de especialistas: contraseña, confirmar correo y eliminar cuenta.
 // Solo responde si quien llama está en la tabla public.admins.
 import { createClient } from 'npm:@supabase/supabase-js@2.45.4';
 
@@ -36,6 +36,22 @@ Deno.serve(async (req) => {
     if (body.action === 'confirm_email') {
       const { error } = await admin.auth.admin.updateUserById(userId, { email_confirm: true });
       return error ? json({ ok: false, error: error.message }, 400) : json({ ok: true });
+    }
+    if (body.action === 'delete_user') {
+      // Borra la cuenta y, en cascada, todo lo suyo (perfil, citas, pacientes, encuestas, conferencias…).
+      if (userId === who.user.id) return json({ ok: false, error: 'self' }, 400);
+      const { data: other } = await admin.from('admins').select('user_id').eq('user_id', userId).maybeSingle();
+      if (other) return json({ ok: false, error: 'is_admin' }, 400);
+      // Archivos guardados: comprobantes de sus citas, foto de perfil e imágenes de conferencias
+      const { data: aps } = await admin.from('appointments').select('receipt_path').eq('psychologist_id', userId).not('receipt_path', 'is', null);
+      const receipts = (aps || []).map((a: { receipt_path: string }) => a.receipt_path).filter(Boolean);
+      const own = async (bucket: string) => ((await admin.storage.from(bucket).list(userId, { limit: 1000 })).data || []).map((f) => `${userId}/${f.name}`);
+      const [avatars, images] = await Promise.all([own('avatars'), own('event-images')]);
+      const { error } = await admin.auth.admin.deleteUser(userId);
+      if (error) return json({ ok: false, error: error.message }, 400);
+      for (const [bucket, paths] of [['receipts', receipts], ['avatars', avatars], ['event-images', images]] as [string, string[]][])
+        for (let i = 0; i < paths.length; i += 100) await admin.storage.from(bucket).remove(paths.slice(i, i + 100));
+      return json({ ok: true, files: receipts.length + avatars.length + images.length });
     }
     return json({ ok: false, error: 'unknown_action' }, 400);
   } catch (e) {
