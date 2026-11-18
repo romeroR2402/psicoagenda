@@ -15,6 +15,10 @@ Plataforma tipo directorio para encontrar psicólogos, psicoterapeutas, tanatól
 
 Archivos compartidos: `assets/app.css`, `assets/common.js` y `config.js` (conexión pública a Supabase).
 
+**Estilo visual:** texto azul marino (`#0b3558`) sobre gris frío (`#f8f9fb`), un solo azul vivo (`#006bff`) para las acciones,
+tarjetas blancas con borde fino y sombras azuladas, botones con esquinas de 8 px y letra Manrope. Los colores están en `assets/app.css`
+(con modo oscuro); `responder.html` tiene su propia copia porque no carga ese archivo.
+
 ## Cómo funciona una cita
 1. El paciente elige día y hora libres. El horario queda **apartado** (pago pendiente).
 2. El paciente sube la foto de su comprobante en su link de cita, y la cita pasa a **pago por revisar**.

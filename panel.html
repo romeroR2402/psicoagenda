@@ -7,7 +7,7 @@
 <title>Panel del especialista · MiConsulta</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
 <link rel="stylesheet" href="assets/app.css">
 <style>
@@ -47,7 +47,7 @@
 .mini-btn.bad{color:var(--bad)}
 .toff{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
 .toff:first-child{border-top:0}
-.qb{background:var(--card);border-radius:18px;padding:14px;margin-bottom:12px;display:flex;flex-direction:column;gap:10px;border:1px solid var(--line)}
+.qb{background:var(--card);border-radius:14px;padding:14px;margin-bottom:12px;display:flex;flex-direction:column;gap:10px;border:1px solid var(--line)}
 .qb-h{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .qb-h b{font-size:13px;color:var(--muted)}
 .qb-tools{display:flex;gap:4px}
@@ -83,7 +83,7 @@
 .nt-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .conf{display:flex;flex-direction:column;gap:12px;padding:0;overflow:hidden}
 .conf-img{width:100%;aspect-ratio:16/8;object-fit:cover;display:block;background:var(--line)}
-.conf-ph{display:grid;place-items:center;color:#7a58ea;background:linear-gradient(140deg,var(--calm-soft),var(--accent-soft))}
+.conf-ph{display:grid;place-items:center;color:#9b4dca;background:var(--accent-soft)}
 .conf-b{padding:0 16px 16px}
 .conf-b b{display:block;font-size:16px}
 .conf-b small{color:var(--muted)}
@@ -97,7 +97,7 @@
 .cal-bar h2{font-size:18px;margin-right:auto}
 .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-bottom:12px}
 .legend i{display:inline-block;width:12px;height:12px;border-radius:4px;margin-right:6px;vertical-align:-2px}
-.cal{background:var(--card);border-radius:20px;box-shadow:var(--shadow);overflow-x:auto}
+.cal{background:var(--card);border-radius:16px;box-shadow:var(--shadow);border:1px solid var(--line);overflow-x:auto}
 .cal-grid{display:grid;grid-template-columns:52px repeat(7,minmax(108px,1fr));min-width:820px}
 .cal-h{padding:10px 6px;text-align:center;font-weight:700;font-size:12.5px;border-bottom:1px solid var(--line);text-transform:capitalize}
 .cal-h.today{color:var(--accent)}
@@ -110,7 +110,7 @@
 .off-l{position:absolute;top:8px;left:6px;right:6px;font-size:11px;font-weight:700;color:var(--muted);text-align:center;background:var(--card);border-radius:8px;padding:3px}
 .ev{position:absolute;left:4px;right:4px;border-radius:9px;padding:3px 7px;font-size:11px;line-height:1.25;text-align:left;overflow:hidden;border-left:3px solid var(--bar);z-index:1}
 .ev b{display:block;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ev.s-conf{--bar:#7a58ea;background:color-mix(in srgb,#7a58ea 16%,var(--card));color:var(--ink);z-index:2}
+.ev.s-conf{--bar:#9b4dca;background:color-mix(in srgb,#9b4dca 16%,var(--card));color:var(--ink);z-index:2}
 .ev.s-review{--bar:var(--calm);background:var(--calm-soft);color:var(--ink)} .ev.s-unpaid{--bar:var(--warn);background:var(--warn-soft);color:var(--ink)} .ev.s-confirmed{--bar:var(--ok);background:var(--ok-soft);color:var(--ink)}
 .now{position:absolute;left:0;right:0;height:2px;background:var(--bad);z-index:2}
 .cal-list{display:none;flex-direction:column;gap:12px}
@@ -132,7 +132,7 @@
   .content{padding-block:18px calc(96px + env(safe-area-inset-bottom,0px))}
   .tabbar{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;z-index:30;
     padding:6px max(6px,env(safe-area-inset-right,0px)) calc(8px + env(safe-area-inset-bottom,0px)) max(6px,env(safe-area-inset-left,0px));
-    background:color-mix(in srgb,var(--card) 92%,transparent);backdrop-filter:blur(16px);border-top:1px solid var(--line);box-shadow:0 -8px 24px -16px rgba(30,28,47,.35)}
+    background:color-mix(in srgb,var(--card) 92%,transparent);backdrop-filter:blur(16px);border-top:1px solid var(--line);box-shadow:0 -8px 24px -16px rgba(11,53,88,.18)}
   .tabbar a,.tabbar button{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 2px 5px;border-radius:14px;color:var(--muted);text-decoration:none;font-size:11px;font-weight:700}
   .tabbar a[aria-current="page"],.tabbar button[aria-current="page"]{color:var(--accent)}
   .tabbar a[aria-current="page"]::before,.tabbar button[aria-current="page"]::before{content:"";position:absolute;top:-6px;left:30%;right:30%;height:3px;border-radius:0 0 3px 3px;background:var(--accent)}
@@ -511,7 +511,7 @@ V.calendario = () => {
   const title = `${keyLabel(days[0], { day: 'numeric', month: 'short' })} – ${keyLabel(days[6], { day: 'numeric', month: 'short', year: 'numeric' })}`;
   return `<div class="title-row"><h1>Calendario</h1></div>
     <div class="cal-bar"><h2>${title}</h2><button class="btn neu sm" data-a="calMove" data-d="-7" aria-label="Semana anterior">‹ Anterior</button><button class="btn neu sm" data-a="calMove" data-d="0">Hoy</button><button class="btn neu sm" data-a="calMove" data-d="7" aria-label="Semana siguiente">Siguiente ›</button></div>
-    <div class="legend">${S.locations.map(l => `<span><i style="background:${locColor(l.id)};opacity:.5"></i>${esc(l.name)}</span>`).join('')}<span><i style="background:#7a58ea"></i>Conferencia</span><span><i style="background:var(--ok);"></i>Confirmada</span><span><i style="background:var(--calm)"></i>Pago por revisar</span><span><i style="background:var(--warn)"></i>Sin pago</span><span><i style="background:repeating-linear-gradient(135deg,var(--bg) 0 3px,var(--line) 3px 4px)"></i>Descanso</span></div>
+    <div class="legend">${S.locations.map(l => `<span><i style="background:${locColor(l.id)};opacity:.5"></i>${esc(l.name)}</span>`).join('')}<span><i style="background:#9b4dca"></i>Conferencia</span><span><i style="background:var(--ok);"></i>Confirmada</span><span><i style="background:var(--calm)"></i>Pago por revisar</span><span><i style="background:var(--warn)"></i>Sin pago</span><span><i style="background:repeating-linear-gradient(135deg,var(--bg) 0 3px,var(--line) 3px 4px)"></i>Descanso</span></div>
     <div class="cal"><div class="cal-grid" style="--hp:${HP}px">
       <div></div>${days.map(k => `<div class="cal-h ${k === today ? 'today' : ''}">${keyLabel(k, { weekday: 'short', day: 'numeric' })}</div>`).join('')}
       <div class="cal-times" style="height:${H}px">${[...Array(h1 - h0)].map((_, i) => `<span style="top:${i * HP + (i ? 0 : 8)}px">${String(h0 + i).padStart(2, '0')}:00</span>`).join('')}</div>
@@ -590,7 +590,7 @@ function weekState() {
   return S.week;
 }
 // Colores por ubicación para el horario y el calendario
-const LOC_COLORS = ['#1f9a70', '#5162e0', '#e8743b', '#c74f8e', '#b88a12', '#7a58ea'];
+const LOC_COLORS = ['#1f9a70', '#5162e0', '#e8743b', '#c74f8e', '#b88a12', '#9b4dca'];
 const locColor = id => { const i = S.locations.findIndex(l => l.id === id); return i < 0 ? '#8a88a3' : LOC_COLORS[i % LOC_COLORS.length]; };
 const locName = id => { const l = S.locations.find(x => x.id === id); return l ? l.name : 'sin ubicación'; };
 // Rangos que se cruzan en el mismo día, aunque sean de ubicaciones distintas
