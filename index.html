@@ -34,7 +34,42 @@ body.home{font-size:16px;overflow-x:clip}
 .top-links .ghost{color:var(--ink);font-weight:600;font-size:15px;text-decoration:none;padding:8px 10px}
 .wrap{max-width:1200px}
 
-/* hero */
+/* hero con degradado de malla animado: 6 manchas de color en la parte de arriba que se mueven despacio, con grano */
+@property --m1x{syntax:'<percentage>';inherits:false;initial-value:0%}
+@property --m1y{syntax:'<percentage>';inherits:false;initial-value:0%}
+@property --m2x{syntax:'<percentage>';inherits:false;initial-value:20%}
+@property --m2y{syntax:'<percentage>';inherits:false;initial-value:0%}
+@property --m3x{syntax:'<percentage>';inherits:false;initial-value:40%}
+@property --m3y{syntax:'<percentage>';inherits:false;initial-value:0%}
+@property --m4x{syntax:'<percentage>';inherits:false;initial-value:60%}
+@property --m4y{syntax:'<percentage>';inherits:false;initial-value:0%}
+@property --m5x{syntax:'<percentage>';inherits:false;initial-value:80%}
+@property --m5y{syntax:'<percentage>';inherits:false;initial-value:0%}
+@property --m6x{syntax:'<percentage>';inherits:false;initial-value:100%}
+@property --m6y{syntax:'<percentage>';inherits:false;initial-value:0%}
+.hero{position:relative;isolation:isolate}
+.hero::before{content:"";position:absolute;inset:0;z-index:-2;pointer-events:none;
+  --mesh-base:hsla(165,0%,100%,1); --mesh-a:.35;
+  background-color:var(--mesh-base);
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 962 962' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E"),
+    radial-gradient(circle at var(--m1x) var(--m1y),hsla(256,82%,77%,var(--mesh-a)) 3.12%,transparent 40%),
+    radial-gradient(circle at var(--m2x) var(--m2y),hsla(197,77%,74%,var(--mesh-a)) 3.12%,transparent 40%),
+    radial-gradient(circle at var(--m3x) var(--m3y),hsla(147,77%,74%,var(--mesh-a)) 3.12%,transparent 40%),
+    radial-gradient(circle at var(--m4x) var(--m4y),hsla(88,77%,74%,var(--mesh-a)) 3.12%,transparent 40%),
+    radial-gradient(circle at var(--m5x) var(--m5y),hsla(23,77%,74%,var(--mesh-a)) 3.12%,transparent 40%),
+    radial-gradient(circle at var(--m6x) var(--m6y),hsla(234,100%,50%,var(--mesh-a)) 3%,transparent 40%);
+  background-blend-mode:overlay,normal,normal,normal,normal,normal,normal;
+  animation:mesh 22s ease-in-out infinite alternate}
+/* se desvanece abajo para unirse con el resto de la página */
+.hero::after{content:"";position:absolute;inset:auto 0 0;height:120px;z-index:-1;pointer-events:none;background:linear-gradient(transparent,var(--bg))}
+@keyframes mesh{
+  0%{--m1x:0%;--m1y:0%;--m2x:20%;--m2y:0%;--m3x:40%;--m3y:0%;--m4x:60%;--m4y:0%;--m5x:80%;--m5y:0%;--m6x:100%;--m6y:0%}
+  33%{--m1x:12%;--m1y:14%;--m2x:32%;--m2y:4%;--m3x:26%;--m3y:18%;--m4x:74%;--m4y:10%;--m5x:66%;--m5y:2%;--m6x:90%;--m6y:20%}
+  66%{--m1x:-6%;--m1y:6%;--m2x:10%;--m2y:16%;--m3x:52%;--m3y:6%;--m4x:48%;--m4y:20%;--m5x:92%;--m5y:12%;--m6x:106%;--m6y:4%}
+  100%{--m1x:6%;--m1y:20%;--m2x:26%;--m2y:10%;--m3x:36%;--m3y:22%;--m4x:66%;--m4y:4%;--m5x:76%;--m5y:18%;--m6x:96%;--m6y:10%}
+}
+@media (prefers-color-scheme: dark){.hero::before{--mesh-base:var(--bg);--mesh-a:.22}}
+@media (prefers-reduced-motion: reduce){.hero::before{animation:none}}
 .hero{padding-block:72px 64px}
 .hero .wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.12fr);gap:48px;align-items:center}
 .pill{display:inline-flex;align-items:center;gap:6px;background:var(--accent-soft);color:var(--cobalt);font-weight:600;font-size:13px;padding:5px 12px;border-radius:999px}
