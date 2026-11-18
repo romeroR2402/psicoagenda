@@ -3,121 +3,278 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>MiConsulta · Psicólogos, médicos y dentistas</title>
-<meta name="description" content="Busca psicólogos, médicos y dentistas por tema, ciudad o en línea, mira sus horarios y agenda tu cita.">
+<title>MiConsulta · Agenda con tu especialista</title>
+<meta name="description" content="Busca psicólogos, psicoterapeutas, tanatólogos, médicos y dentistas por tema, ciudad o en línea, mira sus horarios y agenda tu cita.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
 <link rel="stylesheet" href="assets/app.css">
 <style>
-.hero{padding-block:48px 34px}
-.hero h1{font-size:clamp(30px,5vw,52px);line-height:1.04;max-width:16ch}
+/* Inicio: tinta azul marino sobre gris frío, un solo azul para las acciones */
+body.home{
+  --bg:#f8f9fb; --card:#ffffff; --ink:#0b3558; --muted:#476788; --mist:#a6bbd1; --line:#d4e0ed; --pebble:#f0f3f8;
+  --accent:#006bff; --accent-2:#0099ff; --accent-soft:#e6f0ff; --on-accent:#ffffff; --cobalt:#004eba;
+  --calm:#006bff; --calm-soft:#e6f0ff; --blob-a:#e55cff; --blob-b:#0099ff;
+  --ok:#0a7a52; --ok-soft:#ddf5ea;
+  --shadow:rgba(71,103,136,.04) 0 4px 5px, rgba(71,103,136,.03) 0 8px 15px, rgba(71,103,136,.08) 0 30px 50px;
+  --shadow-s:rgba(71,103,136,.04) 0 4px 5px, rgba(71,103,136,.03) 0 4px 10px, rgba(71,103,136,.05) 0 10px 20px;
+  --f-display:"Manrope",system-ui,sans-serif; --f-body:"Manrope",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  font-size:16px; overflow-x:clip;
+}
+@media (prefers-color-scheme: dark){body.home{
+  --bg:#081626; --card:#0f2238; --ink:#e7eef7; --muted:#9fb3c9; --mist:#5b7590; --line:#1f3a57; --pebble:#132b45;
+  --accent:#3d8bff; --accent-2:#38adff; --accent-soft:#11305a; --on-accent:#ffffff; --cobalt:#8fbaff;
+  --calm:#3d8bff; --calm-soft:#11305a; --blob-a:#a43dc0; --blob-b:#0a6fc4; --ok:#5fd3a2; --ok-soft:#0f3a2c;
+  --shadow:0 30px 50px -20px rgba(0,0,0,.55); --shadow-s:0 10px 24px -12px rgba(0,0,0,.5);
+}}
+.home main{overflow-x:clip}
+.home h1,.home h2,.home h3{letter-spacing:-.025em;font-weight:800;color:var(--ink)}
+.home .btn{border-radius:8px;font-weight:600}
+.home .btn.pri{background:var(--accent)}
+.home .btn.dark{background:var(--ink);color:var(--bg)}
+.home .btn.lg{padding:12px 22px;font-size:17px}
+.home .chip{border-radius:999px;padding:8px 15px;font-size:14px;color:var(--ink);background:var(--card)}
+.home .chip.on{background:var(--ink);color:var(--bg)}
+.home .tag{background:var(--accent-soft);color:var(--cobalt);border-radius:999px;font-weight:600;padding:4px 10px}
+
+/* barra superior */
+.home .topbar{background:color-mix(in srgb,var(--card) 92%,transparent)}
+.home .topbar .wrap{min-height:64px;padding-block:10px}
+.home .brand{font-family:var(--f-display);font-weight:800;color:var(--ink)}
+.home .brand i{background:var(--accent);border-radius:9px}
+.nav{display:flex;gap:28px;font-weight:600;font-size:15px}
+.nav a{color:var(--ink);text-decoration:none}
+.nav a:hover{color:var(--accent)}
+.top-links .ghost{color:var(--ink);font-weight:600;font-size:15px;text-decoration:none;padding:8px 10px}
+.wrap{max-width:1200px}
+
+/* hero */
+.hero{padding-block:72px 64px}
+.hero .wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.12fr);gap:48px;align-items:center}
+.pill{display:inline-flex;align-items:center;gap:6px;background:var(--accent-soft);color:var(--cobalt);font-weight:600;font-size:13px;padding:5px 12px;border-radius:999px}
+.hero h1{font-size:clamp(40px,6.4vw,72px);line-height:1.08;margin:18px 0 0;max-width:12ch}
 .hero h1 em{font-style:normal;color:var(--accent)}
-.hero p.lead{color:var(--muted);font-size:16.5px;max-width:52ch;margin:14px 0 24px}
-.kinds{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
-.kinds .chip small{font-weight:600;font-size:11px;opacity:.8}
-.searchbox{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) auto;gap:8px;background:var(--card);border-radius:22px;padding:8px;box-shadow:var(--shadow);border:1px solid var(--line);max-width:900px}
-.searchbox label{display:flex;align-items:center;gap:10px;padding:6px 12px;border-radius:14px;min-width:0}
+.hero p.lead{color:var(--muted);font-size:clamp(17px,1.6vw,20px);line-height:1.5;max-width:46ch;margin:20px 0 28px}
+.kinds{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.searchbox{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) auto;gap:6px;background:var(--card);border-radius:12px;padding:6px;box-shadow:var(--shadow-s);border:1px solid var(--line)}
+.searchbox label{display:flex;align-items:center;gap:10px;padding:4px 12px;border-radius:8px;min-width:0}
 .searchbox label+label{border-left:1px solid var(--line)}
 .searchbox label span{color:var(--muted);flex:none;display:flex}
-.searchbox input,.searchbox select{border:0;background:transparent;width:100%;padding:10px 0;font-size:15px;min-width:0}
+.searchbox input,.searchbox select{border:0;background:transparent;width:100%;padding:11px 0;font-size:15px;min-width:0;color:var(--ink)}
+.searchbox input::placeholder{color:var(--muted)}
 .searchbox input:focus,.searchbox select:focus{outline:none}
-.searchbox label:focus-within{background:var(--bg)}
-.searchbox .btn{padding:14px 24px;border-radius:16px;font-size:15px}
-.popular{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:16px;font-size:13px}
-.popular button{padding:6px 12px;border-radius:999px;background:color-mix(in srgb,var(--card) 70%,transparent);border:1px solid var(--line);font-weight:600;font-size:12.5px}
-.results{padding-block:8px 48px}
-.panel{background:var(--card);border-radius:26px;box-shadow:var(--shadow);border:1px solid var(--line);overflow:hidden}
-.tools{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line);flex-wrap:wrap}
-.tools .count{margin-right:auto;color:var(--muted);font-size:13px;font-weight:600}
-.tools .btn{border-radius:999px}
+.searchbox label:focus-within{background:var(--pebble)}
+.searchbox .btn{padding:12px 24px;font-size:16px}
+.popular{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:16px;font-size:14px}
+.popular button{padding:5px 12px;border-radius:999px;background:var(--pebble);color:var(--ink);font-weight:600;font-size:13px}
+.popular button:hover{background:var(--accent-soft);color:var(--cobalt)}
+
+/* tarjetas de producto con manchas de color detrás */
+.stage{position:relative;isolation:isolate}
+.stage::before,.stage::after{content:"";position:absolute;z-index:-1;border-radius:50%;filter:blur(46px);opacity:.55}
+.stage::before{width:58%;aspect-ratio:1;background:var(--blob-a);top:-8%;right:-6%}
+.stage::after{width:52%;aspect-ratio:1;background:var(--blob-b);bottom:-10%;left:-8%}
+.stage.flip::before{right:auto;left:-6%}.stage.flip::after{left:auto;right:-8%}
+.pcard{background:var(--card);border-radius:16px;box-shadow:var(--shadow);border:1px solid var(--line);overflow:hidden}
+
+/* vista previa de reserva */
+.bw{display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.45fr) minmax(0,.75fr);min-height:360px}
+.bw>div{padding:20px 16px;min-width:0}
+.bw-org{border-right:1px solid var(--line);display:flex;flex-direction:column;gap:12px}
+.bw-av{width:48px;height:48px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center}
+.bw-org small{color:var(--muted);font-weight:600;font-size:13px}
+.bw-org h3{font-size:19px;line-height:1.25}
+.bw-org li{display:flex;gap:8px;align-items:center;color:var(--muted);font-size:13.5px;font-weight:600}
+.bw-org ul{list-style:none;margin:4px 0 0;padding:0;display:flex;flex-direction:column;gap:9px}
+.bw-cal h4,.bw-times h4{margin:0 0 12px;font-size:15px;color:var(--ink)}
+.bw-cal .mh{display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:14px;margin-bottom:10px}
+.bw-cal .mh span{display:flex;gap:6px;color:var(--accent)}
+.bw-g{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px;text-align:center;font-size:12.5px}
+.bw-g b{font-size:10.5px;color:var(--muted);font-weight:700;padding-bottom:4px}
+.bw-g i{font-style:normal;aspect-ratio:1;min-width:0;font-size:12px;display:grid;place-items:center;border-radius:50%;color:var(--mist);font-weight:600}
+.bw-g i.av{background:var(--accent-soft);color:var(--accent);font-weight:700}
+.bw-g i.sel{background:var(--accent);color:#fff}
+.bw-times{border-left:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
+.bw-times span{border:1px solid color-mix(in srgb,var(--accent) 45%,var(--line));color:var(--accent);border-radius:8px;padding:9px 0;text-align:center;font-weight:700;font-size:14px}
+.bw-times span.sel{background:var(--ink);color:var(--bg);border-color:transparent;display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:0;overflow:hidden}
+.bw-times span.sel em{font-style:normal;padding:9px 0}
+.bw-times span.sel em+em{background:var(--accent);color:#fff}
+
+/* franja de especialidades */
+.strip{padding-block:8px 24px}
+.strip p{text-align:center;color:var(--muted);font-size:14px;font-weight:600;margin:0 0 18px}
+.strip ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;justify-content:center;gap:14px 44px}
+.strip li{display:flex;gap:10px;align-items:center;color:var(--mist);font-weight:800;font-size:19px;letter-spacing:-.01em}
+
+/* bloques de sección */
+.sec{padding-block:64px}
+.sec-h{text-align:center;max-width:720px;margin:0 auto 40px}
+.sec-h h2{font-size:clamp(32px,4.4vw,50px);line-height:1.15}
+.sec-h p{color:var(--muted);font-size:17px;line-height:1.55;margin:14px auto 0;max-width:600px}
+
+/* resultados */
+.panel{background:var(--card);border-radius:24px;box-shadow:var(--shadow-s);border:1px solid var(--line);overflow:hidden}
+.tools{display:flex;align-items:center;gap:10px;padding:16px 22px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.tools .count{margin-right:auto;color:var(--ink);font-size:15px;font-weight:700}
+.tools .btn{border-radius:8px}
 .tools .btn b{min-width:20px;height:20px;border-radius:10px;background:var(--accent);color:var(--on-accent);font-size:11px;display:grid;place-items:center;padding:0 6px}
-.doc{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:24px;padding:22px 20px;border-bottom:1px solid var(--line)}
+.doc{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:28px;padding:26px 24px;border-bottom:1px solid var(--line)}
 .doc:last-child{border-bottom:0}
 .doc-head{display:flex;gap:16px;align-items:flex-start}
-.doc-photo{width:112px;height:112px;border-radius:20px;flex:none;object-fit:cover;font-size:34px}
+.doc-photo{width:104px;height:104px;border-radius:16px;flex:none;object-fit:cover;font-size:32px}
 span.doc-photo{display:grid;place-items:center}
-.doc h3{font-size:18px;display:flex;align-items:center;gap:6px}
+.doc h3{font-size:20px;display:flex;align-items:center;gap:6px;font-weight:700}
 .doc h3 a{color:var(--ink);text-decoration:none}
-.doc h3 a:hover{text-decoration:underline}
-.badge-ok{color:var(--ok);display:inline-flex}
-.doc .sub{color:var(--muted);font-size:13.5px;margin-top:2px}
-.doc ul{list-style:none;padding:0;margin:16px 0 0;display:flex;flex-direction:column;gap:9px;font-size:13.5px}
+.doc h3 a:hover{color:var(--accent)}
+.badge-ok{color:var(--accent);display:inline-flex}
+.doc .sub{color:var(--muted);font-size:14px;margin-top:2px;font-weight:500}
+.doc ul{list-style:none;padding:0;margin:16px 0 0;display:flex;flex-direction:column;gap:9px;font-size:14px;color:var(--ink)}
 .doc li{display:flex;gap:8px;align-items:flex-start}
 .doc li svg{flex:none;margin-top:2px;color:var(--muted)}
-.doc li .link{font-size:13px;text-decoration:underline;margin-left:4px}
+.doc li .link{font-size:13px;color:var(--accent);margin-left:6px}
 .mini{min-width:0}
 .mini-h{display:grid;grid-template-columns:34px repeat(3,minmax(0,1fr)) 34px;align-items:center;text-align:center;gap:4px}
-.mini-h b{display:block;font-size:14px;text-transform:lowercase}
+.mini-h b{display:block;font-size:14px;text-transform:capitalize;color:var(--ink)}
 .mini-h small{color:var(--muted);font-size:12px}
-.mini-nav{width:34px;height:34px;border-radius:50%;background:var(--bg);color:var(--ink);display:flex;align-items:center;justify-content:center;padding:0;justify-self:center}
-.mini-nav:hover:not(:disabled){background:var(--accent);color:var(--on-accent)}
+.mini-nav{width:34px;height:34px;border-radius:50%;background:var(--pebble);color:var(--ink);display:flex;align-items:center;justify-content:center;padding:0;justify-self:center}
+.mini-nav:hover:not(:disabled){background:var(--accent);color:#fff}
 .mini-nav:disabled{opacity:.3}
 .mini-g{display:grid;grid-template-columns:34px repeat(3,minmax(0,1fr)) 34px;gap:8px 4px;margin-top:12px}
-.mini-col{grid-column:span 1;display:flex;flex-direction:column;gap:8px;align-items:center}
+.mini-col{display:flex;flex-direction:column;gap:8px;align-items:center}
 .mini-col:first-child{grid-column:2}
-.tslot{width:100%;max-width:92px;padding:9px 4px;border-radius:12px;background:var(--ok-soft);color:var(--ok);font-weight:700;font-size:13.5px;text-align:center;text-decoration:none;font-variant-numeric:tabular-nums}
-.tslot:hover{background:var(--ok);color:#fff}
-.dash{color:var(--muted);padding:9px 0}
+.tslot{width:100%;max-width:92px;padding:8px 4px;border-radius:8px;border:1px solid color-mix(in srgb,var(--accent) 45%,var(--line));color:var(--accent);font-weight:700;font-size:14px;text-align:center;text-decoration:none;font-variant-numeric:tabular-nums}
+.tslot:hover{background:var(--accent);color:#fff;border-color:transparent}
+.dash{color:var(--mist);padding:9px 0}
 .more{display:flex;justify-content:flex-end;margin-top:12px}
-.more button{font-weight:700;font-size:13px;color:var(--ink);display:inline-flex;gap:6px;align-items:center}
-.none-slots{grid-column:2/5;text-align:center;color:var(--muted);font-size:13px;padding:14px 0}
+.more button{font-weight:700;font-size:13px;color:var(--accent);display:inline-flex;gap:6px;align-items:center}
+.none-slots{grid-column:2/5;text-align:center;color:var(--muted);font-size:13.5px;padding:14px 0}
 .fsec{margin-bottom:16px}
 .fsec h4{margin:0 0 8px;font-size:13px;color:var(--muted)}
 .fchips{display:flex;gap:8px;flex-wrap:wrap}
 .fchips button{padding:9px 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);font-weight:600;font-size:13.5px}
 .fchips button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:transparent}
-.pro{border-radius:28px;padding:32px;background:linear-gradient(140deg,var(--calm),color-mix(in srgb,var(--calm) 55%,var(--accent-2)));color:#fff;display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:24px;align-items:center;margin-bottom:56px}
-.pro h2{font-size:clamp(24px,3.4vw,34px)}
-.pro p{opacity:.9;margin:10px 0 0;max-width:46ch}
-.pro ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
-.pro li{display:flex;gap:10px;align-items:center;background:rgba(255,255,255,.14);padding:10px 14px;border-radius:14px;font-weight:600;font-size:13.5px}
-.pro .btn{margin-top:18px;background:#fff;color:#2c2f7a}
-footer{padding-block:24px 40px;color:var(--muted);font-size:12.5px;border-top:1px solid var(--line)}
+
+/* cómo funciona */
+.feat{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:56px;align-items:center}
+.feat.rev{grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr)}
+.steps{display:flex;flex-direction:column}
+.step{display:grid;grid-template-columns:40px 1fr 20px;gap:14px;align-items:start;text-align:left;padding:20px 0;border-bottom:1px solid var(--line);color:var(--mist);width:100%}
+.step .n{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;background:var(--pebble);color:var(--mist);font-weight:800}
+.step .t{display:block;font-size:18px;font-weight:600;color:var(--mist);line-height:1.3;margin-top:8px}
+.step .d{display:none;margin:8px 0 0;color:var(--muted);font-size:15px;line-height:1.55}
+.step .chev{margin-top:10px;transition:transform .2s}
+.step[aria-expanded="true"]{color:var(--ink)}
+.step[aria-expanded="true"] .n{background:var(--accent);color:#fff}
+.step[aria-expanded="true"] .t{color:var(--ink);font-size:20px;font-weight:700}
+.step[aria-expanded="true"] .d{display:block}
+.step[aria-expanded="true"] .chev{transform:rotate(180deg);color:var(--accent)}
+.shot{padding:26px;display:flex;flex-direction:column;gap:12px;min-height:330px;justify-content:center}
+.shot .row{display:flex;gap:12px;align-items:center;padding:12px;border:1px solid var(--line);border-radius:12px}
+.shot .row b{display:block;font-size:15px;color:var(--ink)}
+.shot .row small{color:var(--muted);font-size:13px}
+.shot .ava{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:14px;flex:none}
+.shot .fake-in{display:flex;gap:10px;align-items:center;background:var(--pebble);border-radius:8px;padding:12px 14px;color:var(--muted);font-weight:600;font-size:14px}
+.shot .slots{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.shot .slots span{border:1px solid color-mix(in srgb,var(--accent) 45%,var(--line));color:var(--accent);border-radius:8px;padding:10px 0;text-align:center;font-weight:700;font-size:14px}
+.shot .slots span.sel{background:var(--accent);color:#fff;border-color:transparent}
+.shot .slots span.off{border-color:var(--line);color:var(--mist);text-decoration:line-through}
+.shot .ok{display:flex;gap:12px;align-items:center;background:var(--ok-soft);color:var(--ok);border-radius:12px;padding:14px;font-weight:700}
+.shot .st{margin-left:auto;font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;white-space:nowrap}
+
+/* para especialistas */
+.pro-copy h2{font-size:clamp(32px,4.4vw,50px);line-height:1.15}
+.pro-copy p{color:var(--muted);font-size:17px;line-height:1.55;margin:16px 0 0}
+.checks{list-style:none;margin:24px 0 28px;padding:0;display:flex;flex-direction:column;gap:14px}
+.checks li{display:flex;gap:12px;align-items:flex-start;font-weight:600;color:var(--ink)}
+.checks li span{width:24px;height:24px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;flex:none}
+.pro-copy .acts{display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+.pro-copy .acts a.ghost{color:var(--ink);font-weight:600;text-decoration:none}
+.pro-copy .acts a.ghost:hover{text-decoration:underline}
+
+/* pie */
+.foot{background:var(--bg);border-top:1px solid var(--line);padding-block:48px 40px;margin-top:32px}
+.foot .cols{display:grid;grid-template-columns:1.4fr repeat(3,1fr);gap:32px}
+.foot h4{margin:0 0 14px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.foot ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.foot a,.foot button{color:var(--ink);font-weight:500;font-size:14px;text-decoration:none;text-align:left}
+.foot a:hover,.foot button:hover{color:var(--accent)}
+.foot .brand{font-size:19px;font-weight:800}
+.foot .about{color:var(--muted);font-size:14px;line-height:1.55;margin:14px 0 0;max-width:34ch}
+.foot .legal{margin-top:36px;padding-top:20px;border-top:1px solid var(--line);color:var(--muted);font-size:13px;line-height:1.55}
+
+@media (max-width:980px){
+  .nav{display:none}
+  .hero{padding-block:44px 48px}
+  .hero .wrap,.feat,.feat.rev{grid-template-columns:minmax(0,1fr);gap:40px}
+  .feat.rev .stage{order:2}
+  .foot .cols{grid-template-columns:1fr 1fr}
+  .sec{padding-block:48px}
+}
 @media (max-width:860px){
   .doc{grid-template-columns:minmax(0,1fr)}
-  .doc-photo{width:84px;height:84px;border-radius:16px;font-size:26px}
+  .doc-photo{width:80px;height:80px;border-radius:14px;font-size:26px}
 }
-@media (max-width:760px){
-  .hero{padding-block:30px 26px}
-  .searchbox{grid-template-columns:1fr;border-radius:20px}
+@media (max-width:640px){
+  .bw{grid-template-columns:minmax(0,1.3fr) minmax(0,.8fr)}
+  .bw-org{grid-column:1/-1;border-right:0;border-bottom:1px solid var(--line);flex-direction:row;align-items:center;flex-wrap:wrap}
+  .bw-org ul{display:none}
+  .bw>div{padding:16px}
+  .searchbox{grid-template-columns:1fr}
   .searchbox label+label{border-left:0;border-top:1px solid var(--line)}
   .searchbox .btn{width:100%}
-  .pro{grid-template-columns:1fr;padding:24px}
+  .top-links .ghost{display:none}
+  .foot .cols{grid-template-columns:1fr}
+}
+@media (max-width:420px){
+  .bw{grid-template-columns:minmax(0,1fr)}
+  .bw-times{border-left:0;border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(3,1fr)}
+  .bw-times h4{grid-column:1/-1;margin:0}
+  .bw-times span.sel{grid-column:span 3}
 }
 </style>
 </head>
-<body>
+<body class="home">
 <header class="topbar"><div class="wrap gutter">
   <a class="brand" href="index.html"><i><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5.5v13M5.5 12h13"/></svg></i>MiConsulta</a>
-  <nav class="top-links"><a class="btn neu sm" href="panel.html">Soy especialista</a></nav>
+  <nav class="nav" aria-label="Secciones"><a href="#results">Buscar especialistas</a><a href="#como">Cómo funciona</a><a href="#pro">Para especialistas</a></nav>
+  <nav class="top-links"><a class="ghost" href="panel.html">Entrar</a><a class="btn dark" href="panel.html#registro">Soy especialista</a></nav>
 </div></header>
 
 <main>
-  <section class="hero wash"><div class="wrap gutter">
-    <h1>Encuentra a tu especialista y <em>agenda tu cita</em></h1>
-    <p class="lead">Psicólogos, psicoterapeutas, tanatólogos, médicos y dentistas. Busca por lo que necesitas, tu ciudad o consulta en línea, mira los horarios libres y aparta el tuyo en minutos.</p>
-    <div class="kinds" role="group" aria-label="Tipo de especialista">
-      <button class="chip on" data-spec="psicologia" aria-pressed="true">Psicólogos</button>
-      <button class="chip" data-spec="psicoterapia" aria-pressed="false">Psicoterapeutas</button>
-      <button class="chip" data-spec="tanatologia" aria-pressed="false">Tanatólogos</button>
-      <button class="chip" data-spec="medicina" aria-pressed="false">Médicos</button>
-      <button class="chip" data-spec="odontologia" aria-pressed="false">Dentistas</button>
+  <section class="hero"><div class="wrap gutter">
+    <div>
+      <span class="pill">Agenda en línea · Pago verificado</span>
+      <h1>Tu cita con el especialista <em>correcto</em>, en minutos</h1>
+      <p class="lead">Psicólogos, psicoterapeutas, tanatólogos, médicos y dentistas. Mira sus horarios libres reales, aparta el tuyo y confirma sin llamadas.</p>
+      <div class="kinds" role="group" aria-label="Tipo de especialista">
+        <button class="chip on" data-spec="psicologia" aria-pressed="true">Psicólogos</button>
+        <button class="chip" data-spec="psicoterapia" aria-pressed="false">Psicoterapeutas</button>
+        <button class="chip" data-spec="tanatologia" aria-pressed="false">Tanatólogos</button>
+        <button class="chip" data-spec="medicina" aria-pressed="false">Médicos</button>
+        <button class="chip" data-spec="odontologia" aria-pressed="false">Dentistas</button>
+      </div>
+      <form class="searchbox" id="f-search" role="search">
+        <label for="q"><span id="ic-q"></span><input id="q" name="q" placeholder="Ansiedad, pareja, duelo… o un nombre" autocomplete="off"></label>
+        <label for="c"><span id="ic-c"></span><select id="c" name="c" aria-label="Ciudad o modalidad"><option value="">Cualquier ciudad</option><option value="en_linea">En línea</option></select></label>
+        <button class="btn pri" type="submit">Buscar</button>
+      </form>
+      <div class="popular"><span class="muted">Frecuentes:</span>
+        <button type="button" data-q="Ansiedad">Ansiedad</button><button type="button" data-q="Depresión">Depresión</button>
+        <button type="button" data-q="Pareja">Pareja</button><button type="button" data-q="Duelo">Duelo</button>
+        <button type="button" data-q="Autoestima">Autoestima</button>
+      </div>
     </div>
-    <form class="searchbox" id="f-search" role="search">
-      <label for="q"><span id="ic-q"></span><input id="q" name="q" placeholder="Ansiedad, pareja, duelo… o un nombre" autocomplete="off"></label>
-      <label for="c"><span id="ic-c"></span><select id="c" name="c" aria-label="Ciudad o modalidad"><option value="">Cualquier ciudad</option><option value="en_linea">En línea</option></select></label>
-      <button class="btn pri" type="submit">Buscar</button>
-    </form>
-    <div class="popular"><span class="muted">Temas frecuentes:</span>
-      <button type="button" data-q="Ansiedad">Ansiedad</button><button type="button" data-q="Depresión">Depresión</button>
-      <button type="button" data-q="Pareja">Pareja</button><button type="button" data-q="Duelo">Duelo</button>
-      <button type="button" data-q="Autoestima">Autoestima</button><button type="button" data-q="Adolescentes">Adolescentes</button>
-    </div>
+    <div class="stage" aria-hidden="true"><div class="pcard bw" id="bw"></div></div>
   </div></section>
 
-  <section class="results" id="results"><div class="wrap gutter">
+  <section class="strip"><div class="wrap gutter">
+    <p>Especialistas de la salud en un solo lugar</p>
+    <ul id="strip"></ul>
+  </div></section>
+
+  <section class="sec" id="results"><div class="wrap gutter">
+    <div class="sec-h"><h2>Encuentra horario hoy mismo</h2><p>Elige un horario libre y apártalo. El especialista confirma tu cita cuando revisa tu pago.</p></div>
     <div class="panel">
       <div class="tools"><span class="count" id="r-count">Cargando…</span>
         <button class="btn neu" data-a="map"><span id="ic-map"></span>Mapa</button>
@@ -126,16 +283,38 @@ footer{padding-block:24px 40px;color:var(--muted);font-size:12.5px;border-top:1p
     </div>
   </div></section>
 
-  <section><div class="wrap gutter">
-    <div class="pro">
-      <div><h2>¿Eres psicólogo, psicoterapeuta, tanatólogo, médico o dentista?</h2>
-        <p>Crea tu perfil gratis, configura tus horarios, días de descanso y consultorios, y recibe citas con pago verificado.</p>
-        <a class="btn" href="panel.html#registro">Registrarme</a></div>
-      <ul><li>Agenda en línea con tus horarios reales</li><li>Apruebas cada cita al verificar el pago</li><li>Encuestas personalizadas para tus pacientes</li></ul>
+  <section class="sec" id="como"><div class="wrap gutter">
+    <div class="sec-h"><h2>Agendar es así de simple</h2><p>Sin llamadas ni mensajes de ida y vuelta. Todo queda en tu link personal de cita.</p></div>
+    <div class="feat">
+      <div class="steps" id="steps"></div>
+      <div class="stage"><div class="pcard shot" id="shot" aria-live="polite"></div></div>
+    </div>
+  </div></section>
+
+  <section class="sec" id="pro"><div class="wrap gutter">
+    <div class="feat rev">
+      <div class="stage flip" aria-hidden="true"><div class="pcard shot" id="pro-shot"></div></div>
+      <div class="pro-copy">
+        <span class="pill">Para especialistas</span>
+        <h2 style="margin-top:16px">Tu consulta, organizada en un solo panel</h2>
+        <p>Publica tu perfil gratis, define tus horarios por consultorio y recibe citas con el comprobante de pago ya subido.</p>
+        <ul class="checks" id="checks"></ul>
+        <div class="acts"><a class="btn pri lg" href="panel.html#registro">Crear mi perfil gratis</a><a class="ghost" href="panel.html">Ya tengo cuenta →</a></div>
+      </div>
     </div>
   </div></section>
 </main>
-<footer><div class="wrap gutter">MiConsulta · Te conectamos con psicólogos, médicos y dentistas. No damos diagnóstico ni atención de emergencias: si estás en crisis, llama al 911 o a la Línea de la Vida 800 911 2000.</div></footer>
+
+<footer class="foot"><div class="wrap gutter">
+  <div class="cols">
+    <div><a class="brand" href="index.html"><i><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5.5v13M5.5 12h13"/></svg></i>MiConsulta</a>
+      <p class="about">Te conectamos con especialistas de la salud y su agenda real.</p></div>
+    <div><h4>Pacientes</h4><ul><li><a href="#results">Buscar especialistas</a></li><li><a href="#como">Cómo funciona</a></li><li><a href="?c=en_linea#results">Consulta en línea</a></li></ul></div>
+    <div><h4>Especialidades</h4><ul id="foot-spec"></ul></div>
+    <div><h4>Especialistas</h4><ul><li><a href="panel.html#registro">Crear cuenta</a></li><li><a href="panel.html">Entrar a mi panel</a></li></ul></div>
+  </div>
+  <p class="legal">MiConsulta no da diagnóstico ni atención de emergencias. Si estás en crisis, llama al 911 o a la Línea de la Vida 800 911 2000.</p>
+</div></footer>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -149,6 +328,55 @@ $('ic-q').innerHTML = ic('search'); $('ic-c').innerHTML = ic('pin');
 $('ic-map').innerHTML = ic('pin', 17);
 $('ic-f').innerHTML = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>';
 const list = $('r-list'), qEl = $('q'), cEl = $('c');
+
+/* ---------- ilustraciones del inicio (decorativas) ---------- */
+const svg = (d, n = 18, w = 2) => `<svg viewBox="0 0 24 24" width="${n}" height="${n}" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const CHECK = svg('<path d="m5 12.5 4.5 4.5L19 7.5"/>', 14, 2.6), CHEV = svg('<path d="m6 9 6 6 6-6"/>', 20);
+function bookingWidget() {
+  const now = new Date(), y = now.getFullYear(), m = now.getMonth(), today = now.getDate();
+  const first = (new Date(y, m, 1).getDay() + 6) % 7, last = new Date(y, m + 1, 0).getDate();
+  const open = []; for (let d = today; d <= last && open.length < 9; d++) if (new Date(y, m, d).getDay() !== 0) open.push(d);
+  const sel = open[Math.min(2, open.length - 1)];
+  const cells = Array(first).fill('<i></i>').concat(Array.from({ length: last }, (_, i) => { const d = i + 1;
+    return `<i class="${d === sel ? 'sel' : open.includes(d) ? 'av' : ''}">${d}</i>`; })).join('');
+  const month = PA.cap(now.toLocaleDateString('es-MX', { month: 'long' })) + ' ' + y;
+  const selDay = PA.cap(new Date(y, m, sel).toLocaleDateString('es-MX', { weekday: 'short', day: 'numeric' }).replace('.', ''));
+  $('bw').innerHTML = `<div class="bw-org"><span class="bw-av">${ic('user', 24)}</span><div><small>Tu especialista</small><h3>Consulta de psicoterapia</h3></div>
+      <ul><li>${ic('clock', 16)} 50 min</li><li>${ic('video', 16)} En línea o presencial</li><li>${ic('pay', 16)} Pago verificado</li></ul></div>
+    <div class="bw-cal"><h4>Elige el día</h4><div class="mh">${month}<span>${svg('<path d="m15 6-6 6 6 6"/>', 16)}${svg('<path d="m9 6 6 6-6 6"/>', 16)}</span></div>
+      <div class="bw-g">${['L', 'M', 'M', 'J', 'V', 'S', 'D'].map(d => `<b>${d}</b>`).join('')}${cells}</div></div>
+    <div class="bw-times"><h4>${selDay}</h4><span>9:00</span><span>10:30</span><span class="sel"><em>12:00</em><em>Apartar</em></span><span>16:00</span><span>17:30</span></div>`;
+}
+const SPEC_UI = [['psicologia', 'Psicología', '<circle cx="12" cy="8" r="4"/><path d="M5 21a7 7 0 0 1 14 0"/>'], ['psicoterapia', 'Psicoterapia', '<path d="M4 6h16v10H9l-5 4z"/>'],
+  ['tanatologia', 'Tanatología', '<path d="M12 21s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.5-7 10-7 10z"/>'], ['medicina', 'Medicina general', '<path d="M12 5v14M5 12h14"/>'],
+  ['odontologia', 'Odontología', '<path d="M7 3c-2 0-3 2-3 4 0 4 2 5 2.5 9S8 21 9 21s1.5-4 3-4 2 4 3 4 2-1 2.5-5S20 11 20 7c0-2-1-4-3-4-2 0-3 1-5 1S9 3 7 3z"/>']];
+$('strip').innerHTML = SPEC_UI.map(([, t, d]) => `<li>${svg(d, 22)}${t}</li>`).join('');
+$('foot-spec').innerHTML = SPEC_UI.map(([k, t]) => `<li><button type="button" data-spec="${k}">${t}</button></li>`).join('');
+const STEPS = [
+  ['Busca por lo que necesitas', 'Filtra por especialidad, tema, ciudad, precio o consulta en línea. Ve en el mapa qué consultorio te queda cerca.',
+    `<div class="fake-in">${ic('search', 18)} Ansiedad · Guadalajara</div>
+     <div class="row"><span class="ava" style="background:#e6f0ff;color:#006bff">LM</span><div><b>Psicóloga clínica</b><small>Ansiedad · Pareja · $650</small></div><span class="st" style="background:#ddf5ea;color:#0a7a52">Hoy</span></div>
+     <div class="row"><span class="ava" style="background:#f9e3ff;color:#a43dc0">RS</span><div><b>Psicoterapeuta</b><small>Duelo · En línea · $500</small></div><span class="st" style="background:#e6f0ff;color:#004eba">Mañana</span></div>`],
+  ['Elige un horario libre', 'Solo ves los horarios que de verdad están disponibles. Al elegir uno, queda apartado para ti.',
+    `<div class="fake-in">${ic('cal', 18)} Jueves 20 de noviembre</div>
+     <div class="slots"><span>9:00</span><span class="off">10:00</span><span>11:00</span><span class="sel">12:00</span><span>16:00</span><span class="off">17:00</span></div>
+     <div class="row"><span class="ava" style="background:#e6f0ff;color:#006bff">${ic('pin', 18)}</span><div><b>Consultorio Providencia</b><small>Cómo llegar en Google Maps</small></div></div>`],
+  ['Sube tu pago y listo', 'Sube la foto de tu transferencia en tu link de cita. El especialista la revisa y confirma tu lugar.',
+    `<div class="row"><span class="ava" style="background:#f0f3f8;color:#476788">${ic('upload', 18)}</span><div><b>comprobante.jpg</b><small>Transferencia · $650</small></div><span class="st" style="background:#e6f0ff;color:#004eba">Subido</span></div>
+     <div class="ok">${ic('check', 20)} Pago verificado · Tu cita está confirmada</div>
+     <div class="row"><span class="ava" style="background:#ddf5ea;color:#0a7a52">${ic('phone', 18)}</span><div><b>Recordatorio un día antes</b><small>Por correo, con tu link de cita</small></div></div>`],
+];
+let stepOn = 0;
+function renderSteps() {
+  $('steps').innerHTML = STEPS.map(([t, p], i) => `<button class="step" data-a="step" data-i="${i}" aria-expanded="${i === stepOn}"><span class="n">${i + 1}</span><span><span class="t">${t}</span><span class="d">${p}</span></span><span class="chev">${CHEV}</span></button>`).join('');
+  $('shot').innerHTML = STEPS[stepOn][2];
+}
+$('pro-shot').innerHTML = `<div class="fake-in" style="justify-content:space-between"><span>${ic('cal', 18)} Hoy</span><span>3 citas</span></div>
+  ${[['AR', 'Ana R.', '10:00 · Presencial', 'Confirmada', '#ddf5ea', '#0a7a52'], ['JM', 'Jorge M.', '12:00 · En línea', 'Pago por revisar', '#fff0d6', '#9a5900'], ['CL', 'Carla L.', '17:30 · Presencial', 'Apartada', '#e6f0ff', '#004eba']]
+    .map(([a, n, t, s, bg, c]) => `<div class="row"><span class="ava" style="background:${bg};color:${c}">${a}</span><div><b>${n}</b><small>${t}</small></div><span class="st" style="background:${bg};color:${c}">${s}</span></div>`).join('')}`;
+$('checks').innerHTML = ['Horarios por consultorio, sin empalmes', 'Apruebas cada cita al revisar el comprobante', 'Expediente clínico, encuestas y conferencias']
+  .map(t => `<li><span>${CHECK}</span>${t}</li>`).join('');
+bookingWidget(); renderSteps();
 const FILTERS = [
   ['Disponibilidad', [['today', 'Disponibles hoy'], ['in3', 'Disponibles en 3 días']]],
   ['Precio', [['cheap', 'Menos de $600 MXN']]],
@@ -307,7 +535,7 @@ $('f-search').addEventListener('submit', e => { e.preventDefault(); sync(); show
 cEl.addEventListener('change', () => { sync(); show(); });
 document.addEventListener('click', async e => {
   const sp = e.target.closest('[data-spec]');
-  if (sp) { spec = sp.dataset.spec; document.querySelectorAll('[data-spec]').forEach(b => { b.classList.toggle('on', b === sp); b.setAttribute('aria-pressed', b === sp); }); qEl.placeholder = spec === 'psicologia' || spec === 'psicoterapia' ? 'Ansiedad, pareja, duelo… o un nombre' : spec === 'tanatologia' ? 'Duelo, pérdida, enfermedad terminal… o un nombre' : spec === 'medicina' ? 'Chequeo general, diabetes… o un nombre' : 'Limpieza, ortodoncia, caries… o un nombre'; show(); return; }
+  if (sp) { spec = sp.dataset.spec; document.querySelectorAll('[data-spec]').forEach(b => { b.classList.toggle('on', b === sp); b.setAttribute('aria-pressed', b === sp); }); qEl.placeholder = spec === 'psicologia' || spec === 'psicoterapia' ? 'Ansiedad, pareja, duelo… o un nombre' : spec === 'tanatologia' ? 'Duelo, pérdida, enfermedad terminal… o un nombre' : spec === 'medicina' ? 'Chequeo general, diabetes… o un nombre' : 'Limpieza, ortodoncia, caries… o un nombre'; show(); if (sp.closest('.foot')) toResults(); return; }
   const pop = e.target.closest('.popular [data-q]');
   if (pop) { qEl.value = pop.dataset.q; sync(); show(); toResults(); return; }
   const el = e.target.closest('[data-a]'); if (!el || el.disabled) return;
@@ -317,6 +545,7 @@ document.addEventListener('click', async e => {
     case 'more': v.more = !v.more; refreshCard(d.id); break;
     case 'jump': { const p = all.find(x => x.id === d.id), k = dayKey(nextSlot(p), tzOf(p)), today = PA.todayKey(tzOf(p));
       const diff = Math.round((new Date(k) - new Date(today)) / 864e5); v.off = Math.min(WINDOW - STEP, Math.floor(diff / STEP) * STEP); refreshCard(d.id); break; }
+    case 'step': stepOn = +d.i; renderSteps(); break;
     case 'filters': filtersModal(); break;
     case 'f': {
       const on = el.getAttribute('aria-pressed') !== 'true';
