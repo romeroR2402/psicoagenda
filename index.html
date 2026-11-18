@@ -71,21 +71,24 @@ body.home{font-size:16px;overflow-x:clip}
 @media (prefers-color-scheme: dark){.hero::before{--mesh-base:var(--bg);--mesh-a:.22}}
 @media (prefers-reduced-motion: reduce){.hero::before{animation:none}}
 .hero{padding-block:72px 64px}
-.hero .wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.12fr);gap:48px;align-items:center}
+.hero .wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.12fr);gap:40px 48px;align-items:center}
 .pill{display:inline-flex;align-items:center;gap:6px;background:var(--accent-soft);color:var(--cobalt);font-weight:600;font-size:13px;padding:5px 12px;border-radius:999px}
 .hero h1{font-size:clamp(40px,6.4vw,72px);line-height:1.08;margin:18px 0 0;max-width:12ch}
 .hero h1 em{font-style:normal;color:var(--accent)}
-.hero p.lead{color:var(--muted);font-size:clamp(17px,1.6vw,20px);line-height:1.5;max-width:46ch;margin:20px 0 28px}
+.hero p.lead{color:var(--muted);font-size:clamp(17px,1.6vw,20px);line-height:1.5;max-width:46ch;margin:20px 0 0}
 .kinds{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
-.searchbox{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) auto;gap:6px;background:var(--card);border-radius:12px;padding:6px;box-shadow:var(--shadow-s);border:1px solid var(--line)}
-.searchbox label{display:flex;align-items:center;gap:10px;padding:4px 12px;border-radius:8px;min-width:0}
+.hero-search{grid-column:1/-1;margin-top:-8px}
+.hero-search .searchbox{box-shadow:var(--shadow-l)}
+.searchbox{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr) auto;gap:8px;background:var(--card);border-radius:14px;padding:8px;box-shadow:var(--shadow-s);border:1px solid var(--line)}
+.searchbox label{display:flex;align-items:center;gap:12px;padding:6px 16px;border-radius:10px;min-width:0}
 .searchbox label+label{border-left:1px solid var(--line)}
 .searchbox label span{color:var(--muted);flex:none;display:flex}
-.searchbox input,.searchbox select{border:0;background:transparent;width:100%;padding:11px 0;font-size:15px;min-width:0;color:var(--ink)}
+.searchbox input,.searchbox select{border:0;background:transparent;width:100%;padding:14px 0;font-size:17px;font-weight:500;min-width:0;color:var(--ink)}
+.searchbox label span svg{width:22px;height:22px}
 .searchbox input::placeholder{color:var(--muted)}
 .searchbox input:focus,.searchbox select:focus{outline:none}
 .searchbox label:focus-within{background:var(--pebble)}
-.searchbox .btn{padding:12px 24px;font-size:16px}
+.searchbox .btn{padding:16px 32px;font-size:18px;border-radius:10px}
 .popular{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:16px;font-size:14px}
 .popular button{padding:5px 12px;border-radius:999px;background:var(--pebble);color:var(--ink);font-weight:600;font-size:13px}
 .popular button:hover{background:var(--accent-soft);color:var(--cobalt)}
@@ -231,6 +234,8 @@ span.doc-photo{display:grid;place-items:center}
   .nav{display:none}
   .hero{padding-block:44px 48px}
   .hero .wrap,.feat,.feat.rev{grid-template-columns:minmax(0,1fr);gap:40px}
+  .hero-search{order:1;margin-top:0}
+  .hero .stage{order:2}
   .feat.rev .stage{order:2}
   .foot .cols{grid-template-columns:1fr 1fr}
   .sec{padding-block:48px}
@@ -245,6 +250,7 @@ span.doc-photo{display:grid;place-items:center}
   .bw-org ul{display:none}
   .bw>div{padding:16px}
   .searchbox{grid-template-columns:1fr}
+  .searchbox input,.searchbox select{font-size:16px}
   .searchbox label+label{border-left:0;border-top:1px solid var(--line)}
   .searchbox .btn{width:100%}
   .top-links .ghost{display:none}
@@ -271,6 +277,9 @@ span.doc-photo{display:grid;place-items:center}
       <span class="pill">Agenda en línea · Pago verificado</span>
       <h1>Tu cita con el especialista <em>correcto</em>, en minutos</h1>
       <p class="lead">Psicólogos, psicoterapeutas, tanatólogos, médicos y dentistas. Mira sus horarios libres reales, aparta el tuyo y confirma sin llamadas.</p>
+    </div>
+    <div class="stage" aria-hidden="true"><div class="pcard bw" id="bw"></div></div>
+    <div class="hero-search">
       <div class="kinds" role="group" aria-label="Tipo de especialista">
         <button class="chip on" data-spec="psicologia" aria-pressed="true">Psicólogos</button>
         <button class="chip" data-spec="psicoterapia" aria-pressed="false">Psicoterapeutas</button>
@@ -289,7 +298,6 @@ span.doc-photo{display:grid;place-items:center}
         <button type="button" data-q="Autoestima">Autoestima</button>
       </div>
     </div>
-    <div class="stage" aria-hidden="true"><div class="pcard bw" id="bw"></div></div>
   </div></section>
 
   <section class="strip"><div class="wrap gutter">
