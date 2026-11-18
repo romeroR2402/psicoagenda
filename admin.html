@@ -198,23 +198,32 @@ function settingsView() {
 async function detail(id) {
   const u = userOf(id), p = u.profile;
   openModal(`<h3>${esc(p?.full_name || u.email)}</h3><p class="sub">Cargando información…</p>`, true);
-  const [loc, sch, off, ap, cl, sv, lk] = await Promise.all([
+  const [loc, sch, off, ap, cl, sv, lk, pv, rv] = await Promise.all([
     sb.from('locations').select('*').eq('owner_id', id), sb.from('schedules').select('*').eq('owner_id', id).order('weekday').order('start_time'),
     sb.from('time_off').select('*').eq('owner_id', id).order('date_from'), sb.from('appointments').select('*').eq('psychologist_id', id).order('starts_at', { ascending: false }).limit(30),
     sb.from('clients').select('*').eq('owner_id', id).order('full_name'), sb.from('surveys').select('*').eq('owner_id', id).order('created_at', { ascending: false }),
-    sb.from('survey_links').select('*').eq('owner_id', id)]);
+    sb.from('survey_links').select('*').eq('owner_id', id),
+    sb.from('profiles').select('license,license_verified').eq('id', id).maybeSingle(),
+    sb.from('reviews').select('*').eq('psychologist_id', id).order('created_at', { ascending: false })]);
+  const lv = pv.data || {}, reviews = rv.data || [];
   const tz = p?.timezone || PA.TZ, links = lk.data || [];
   const sched = [1, 2, 3, 4, 5, 6, 0].map(d => { const r = (sch.data || []).filter(s => s.weekday === d); return r.length ? `<li><b>${DOW[d]}:</b> ${r.map(s => s.start_time.slice(0, 5) + '–' + s.end_time.slice(0, 5)).join(', ')}</li>` : ''; }).join('');
   openModal(`<h3>${esc(p?.full_name || u.email)}</h3><p class="sub">${esc(u.email)} · registrado el ${date(u.created_at)}</p>
     <div class="note">Vista de solo lectura. Ves lo mismo que este especialista, pero no puedes modificar sus datos.</div>
     ${p ? `<div class="sec"><h4>Perfil</h4><dl class="kv"><dt>Título</dt><dd>${esc(p.title || '—')}</dd><dt>Cédula</dt><dd>${esc(p.license || '—')}</dd><dt>Precio</dt><dd>${money(p.price)}</dd><dt>Sesión</dt><dd>${p.session_minutes} min</dd>
       <dt>Perfil público</dt><dd><a href="perfil.html?p=${encodeURIComponent(p.slug)}" target="_blank" rel="noopener">${esc(p.slug)}</a></dd><dt>En buscador</dt><dd>${p.is_listed ? 'Sí' : 'No'}</dd></dl>
-      <div class="acts" style="margin-top:10px"><button class="btn ${p.is_active ? 'danger' : 'pri'} sm" data-a="toggleActive" data-id="${id}">${p.is_active ? 'Desactivar perfil' : 'Reactivar perfil'}</button></div></div>` : '<div class="sec"><p class="muted">Aún no crea su perfil.</p></div>'}
+      <dl class="kv" style="margin-top:8px"><dt>Cédula verificada</dt><dd>${lv.license_verified ? '<span class="pill p-ok">Sí</span>' : lv.license ? '<span class="pill p-warn">Pendiente</span>' : '<span class="pill p-mute">Sin cédula</span>'}</dd></dl>
+      <div class="acts" style="margin-top:10px">${lv.license ? `<button class="btn ${lv.license_verified ? 'neu' : 'calm'} sm" data-a="verify" data-id="${id}" data-v="${lv.license_verified ? 0 : 1}">${lv.license_verified ? 'Quitar verificación' : 'Marcar cédula como verificada'}</button>` : ''}<button class="btn ${p.is_active ? 'danger' : 'pri'} sm" data-a="toggleActive" data-id="${id}">${p.is_active ? 'Desactivar perfil' : 'Reactivar perfil'}</button></div></div>` : '<div class="sec"><p class="muted">Aún no crea su perfil.</p></div>'}
     <div class="sec"><h4>Ubicaciones</h4>${(loc.data || []).map(l => `<div class="small">• ${esc(l.name)} — ${l.kind === 'en_linea' ? 'En línea' : esc([l.address, l.city].filter(Boolean).join(', '))}</div>`).join('') || '<p class="muted small">Sin ubicaciones.</p>'}</div>
     <div class="sec"><h4>Horario</h4>${sched ? `<ul class="qlist">${sched}</ul>` : '<p class="muted small">Sin horario.</p>'}
       ${(off.data || []).length ? `<p class="small muted" style="margin-top:6px">Descansos: ${off.data.map(t => fmtShort(t.date_from + 'T12:00:00') + (t.date_to !== t.date_from ? ' – ' + fmtShort(t.date_to + 'T12:00:00') : '')).join(', ')}</p>` : ''}</div>
     <div class="sec"><h4>Últimas citas (${(ap.data || []).length})</h4>${(ap.data || []).map(a => `<div class="who" style="padding:6px 0">${av(a.patient_name, 'sm')}<div style="flex:1"><b>${esc(a.patient_name)}</b><small>${fmtDT(a.starts_at, tz)} · ${MODE[a.mode]} · ${esc(a.patient_phone)}</small></div>${pill(a.status)}</div>`).join('') || '<p class="muted small">Sin citas.</p>'}</div>
     <div class="sec"><h4>Pacientes (${(cl.data || []).length})</h4>${(cl.data || []).map(c => `<div class="small">• ${esc(c.full_name)} · ${esc(c.phone)}${c.email ? ' · ' + esc(c.email) : ''}</div>`).join('') || '<p class="muted small">Sin pacientes.</p>'}</div>
+    <div class="sec"><h4>Opiniones (${reviews.length})</h4>${reviews.map(r => `<div style="padding:8px 0;border-top:1px solid var(--line)">
+        <div class="who" style="justify-content:space-between"><b style="font-size:13.5px"><span style="color:#f5a623">${'★'.repeat(r.rating)}</span><span style="color:var(--line)">${'★'.repeat(5 - r.rating)}</span> ${esc(r.author)}</b>
+          <button class="btn ${r.hidden ? 'calm' : 'neu'} sm" data-a="hideRv" data-id="${r.id}" data-pid="${id}" data-h="${r.hidden ? 0 : 1}">${r.hidden ? 'Volver a mostrar' : 'Ocultar'}</button></div>
+        ${r.comment ? `<div class="small" style="margin-top:4px">${esc(r.comment)}</div>` : ''}${r.hidden ? `<div class="small muted">Oculta: ${esc(r.hidden_reason || '')}</div>` : ''}</div>`).join('') || '<p class="muted small">Sin opiniones.</p>'}
+      <p class="muted small" style="margin-top:6px">Oculta una opinión solo si es ofensiva, revela datos personales o no corresponde a la cita. Las calificaciones bajas no se ocultan.</p></div>
     <div class="sec"><h4>Encuestas (${(sv.data || []).length})</h4>${(sv.data || []).map(s => { const ls = links.filter(l => l.survey_id === s.id), done = ls.filter(l => l.status === 'done');
       return `<div class="card" style="box-shadow:none;margin-bottom:10px"><b>${esc(s.title)}</b><div class="muted small">${s.questions.length} preguntas · ${done.length} de ${ls.length} respondidas</div>
         <ol class="qlist">${s.questions.map(q => `<li>${esc(q.text)} <small>(${QTYPES[q.type]}${q.options ? ': ' + q.options.map(esc).join(', ') : ''})</small></li>`).join('')}</ol>
@@ -343,6 +352,20 @@ document.addEventListener('click', async e => {
       closeModal(); await load(); toast(d.k === 'u' ? 'Especialista eliminado' : 'Paciente eliminado'); break;
     }
     case 'closeModal': closeModal(); break;
+    case 'verify': {
+      el.disabled = true;
+      const { error } = await sb.from('profiles').update({ license_verified: d.v === '1' }).eq('id', d.id);
+      if (error) { el.disabled = false; return toast('No se pudo actualizar.'); }
+      detail(d.id); toast(d.v === '1' ? 'Cédula verificada: ya aparece el sello' : 'Verificación quitada'); break;
+    }
+    case 'hideRv': {
+      let reason = null;
+      if (d.h === '1') { reason = prompt('¿Por qué la ocultas? (ofensiva, datos personales, no corresponde…)'); if (!reason) return; }
+      el.disabled = true;
+      const { data, error } = await sb.rpc('admin_hide_review', { p_id: d.id, p_hidden: d.h === '1', p_reason: reason });
+      if (error || !data.ok) { el.disabled = false; return toast(data && data.error === 'reason' ? 'Escribe un motivo de al menos 5 letras.' : 'No se pudo actualizar.'); }
+      detail(d.pid); toast(d.h === '1' ? 'Opinión oculta' : 'Opinión visible de nuevo'); break;
+    }
     case 'toggleActive': {
       const u = userOf(d.id); el.disabled = true;
       const { error } = await sb.from('profiles').update({ is_active: !u.profile.is_active }).eq('id', d.id);

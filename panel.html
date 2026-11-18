@@ -170,7 +170,7 @@ const linkErr = (() => {
 const S = { linkErr, authKnown: false, user: null, recovery: false, authMode: location.hash === '#registro' ? 'signup' : 'login',
   loaded: false, isAdmin: false, profile: null, view: 'inicio', locations: [], schedules: [], timeOff: [], appts: [], clients: [], surveys: [], links: [], notes: [],
   apptTab: 'review', week: null, builder: null, sentIds: null };
-const VIEWS = { inicio: ['Inicio', 'home'], calendario: ['Calendario', 'week'], citas: ['Citas', 'cal'], horario: ['Horario', 'clock'], ubicaciones: ['Ubicaciones', 'pin'], perfil: ['Mi perfil', 'user'], pacientes: ['Pacientes', 'users'], conferencias: ['Conferencias', 'mic'], encuestas: ['Encuestas', 'form'] };
+const VIEWS = { inicio: ['Inicio', 'home'], calendario: ['Calendario', 'week'], citas: ['Citas', 'cal'], horario: ['Horario', 'clock'], ubicaciones: ['Ubicaciones', 'pin'], perfil: ['Mi perfil', 'user'], pacientes: ['Pacientes', 'users'], conferencias: ['Conferencias', 'mic'], encuestas: ['Encuestas', 'form'], opiniones: ['Opiniones', 'star'] };
 const TOPICS = ['Ansiedad', 'Depresión', 'Pareja', 'Duelo', 'Pérdida de un hijo', 'Enfermedad terminal', 'Cuidados paliativos', 'Duelo por suicidio', 'Autoestima', 'Estrés', 'Adolescentes', 'Niños', 'Familia', 'Adicciones', 'Trauma', 'Sexualidad', 'Orientación vocacional', 'TDAH'];
 const SPECS = { psicologia: 'Psicología', psicoterapia: 'Psicoterapia', tanatologia: 'Tanatología', medicina: 'Medicina general', odontologia: 'Odontología' };
 const LANGS = ['Español', 'Inglés', 'Francés', 'Portugués', 'Lengua de señas mexicana'];
@@ -199,7 +199,7 @@ async function loadAll() {
     sb.from('subscriptions').select('*').eq('user_id', uid).maybeSingle(), sb.from('platform_settings').select('admin_contact').maybeSingle()]);
   S.profile = pr.data || null; S.isAdmin = !!adm.data; S.sub = sub.data || null; S.contact = st.data?.admin_contact || '';
   if (S.profile) {
-    const [l, s, t, a, c, sv, lk, nt, ev, at, ps] = await Promise.all([
+    const [l, s, t, a, c, sv, lk, nt, ev, at, ps, rv] = await Promise.all([
       sb.from('locations').select('*').eq('owner_id', uid).order('created_at'),
       sb.from('schedules').select('*').eq('owner_id', uid).order('weekday').order('start_time'),
       sb.from('time_off').select('*').eq('owner_id', uid).order('date_from'),
@@ -211,10 +211,11 @@ async function loadAll() {
       sb.from('events').select('*').eq('owner_id', uid).order('starts_at'),
       sb.from('event_attendees').select('*').eq('owner_id', uid).order('created_at'),
       sb.from('professional_settings').select('*').eq('user_id', uid).maybeSingle(),
+      sb.from('reviews').select('*, appointments(patient_name, starts_at, mode)').eq('psychologist_id', uid).order('created_at', { ascending: false }),
     ]);
     S.locations = l.data || []; S.schedules = s.data || []; S.timeOff = t.data || []; S.appts = a.data || [];
     S.clients = c.data || []; S.surveys = sv.data || []; S.links = lk.data || []; S.notes = nt.data || [];
-    S.events = ev.data || []; S.attendees = at.data || []; S.psettings = ps.data || null;
+    S.events = ev.data || []; S.attendees = at.data || []; S.psettings = ps.data || null; S.reviews = rv.data || [];
     S.week = null;
   }
   S.loaded = true; lastLoad = Date.now();
@@ -256,7 +257,7 @@ function render() {
 /* ---------- menú inferior en celular ---------- */
 // Lo que más usa un especialista va abajo; lo demás, en "Más".
 const TABS = ['inicio', 'calendario', 'citas', 'pacientes'];
-const MORE = ['conferencias', 'horario', 'ubicaciones', 'perfil', 'encuestas'];
+const MORE = ['conferencias', 'opiniones', 'horario', 'ubicaciones', 'perfil', 'encuestas'];
 const DOTS = '<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>';
 function tabbar(badge) {
   const cur = S.view === 'paciente' ? 'pacientes' : S.view;
@@ -385,7 +386,7 @@ function profileForm(p, creating) {
       <small class="muted">Define en qué sección del buscador apareces y las preguntas del expediente clínico.</small></label>
     <div class="row2"><label class="field"><span>Nombre completo</span><input id="pf-name" value="${esc(p.full_name || '')}"></label>
       <label class="field"><span>Título</span><input id="pf-title" value="${esc(p.title || '')}" placeholder="Ej. Psicóloga clínica"></label></div>
-    <div class="row2"><label class="field"><span>Cédula profesional</span><input id="pf-license" value="${esc(p.license || '')}" maxlength="40"></label>
+    <div class="row2"><label class="field"><span>Cédula profesional</span><input id="pf-license" value="${esc(p.license || '')}" maxlength="40"><small class="muted">${p.license_verified ? '✓ Verificada por MiConsulta: aparece el sello en tu perfil.' : p.license ? 'Pendiente de verificar por MiConsulta. Si la cambias, se vuelve a revisar.' : 'Con tu cédula verificada aparece un sello de confianza en tu perfil.'}</small></label>
       <label class="field"><span>Precio por sesión (MXN)</span><input id="pf-price" type="number" min="0" step="50" value="${p.price ?? ''}"></label></div>
     <label class="field"><span>Sobre ti</span><textarea id="pf-bio" maxlength="1500" placeholder="Tu enfoque, experiencia y con quién trabajas">${esc(p.bio || '')}</textarea></label>
     <div class="field"><span>Temas que atiendes (aparecen en el buscador)</span>
@@ -396,6 +397,8 @@ function profileForm(p, creating) {
       <div class="field"><span>Idiomas en que atiendes</span><div class="sugg" id="pf-langs">${LANGS.map(l => `<button type="button" data-a="topic" data-t="${l}" aria-pressed="${(p.languages || ['Español']).includes(l)}">${l}</button>`).join('')}</div></div></div>
     <label class="field"><span>WhatsApp (se muestra a tus pacientes para que te avisen)</span><input id="pf-wa" type="tel" value="${esc(p.whatsapp || '')}" placeholder="Ej. 55 1234 5678"></label>
     <label class="field"><span>Datos para que te paguen</span><textarea id="pf-pay" maxlength="500" placeholder="Banco, titular, CLABE o número de tarjeta">${esc(p.payment_info || '')}</textarea></label>
+    <div class="row2"><label class="field"><span>Puedes cambiar o cancelar hasta</span><select id="pf-ch">${[[0, 'Sin límite'], [2, '2 horas antes'], [6, '6 horas antes'], [12, '12 horas antes'], [24, '24 horas antes'], [48, '48 horas antes'], [72, '72 horas antes']].map(([v, t]) => `<option value="${v}" ${(p.cancel_hours ?? 24) === v ? 'selected' : ''}>${t}</option>`).join('')}</select><small class="muted">Antes de ese plazo, el paciente puede cambiar de horario él solo desde su link de cita.</small></label>
+      <label class="field"><span>Política de cancelación (se muestra antes de agendar)</span><textarea id="pf-cp" maxlength="500" placeholder="Ej. Si cancelas con menos de 24 horas, el pago no es reembolsable, pero puedes cambiar de horario.">${esc(p.cancel_policy || '')}</textarea></label></div>
     <label class="field"><span>Dirección de tu perfil</span><input id="pf-slug" value="${esc(p.slug || '')}" maxlength="80"><small class="muted mono" id="pf-url"></small></label>
     ${creating ? '' : `<label class="check"><input type="checkbox" id="pf-listed" ${p.is_listed ? 'checked' : ''}> Mostrar mi perfil en el buscador</label>
     <label class="check"><input type="checkbox" id="pf-notify" ${p.notify_email !== false ? 'checked' : ''}> Recibir correos cuando me agenden, paguen o cancelen</label>`}
@@ -420,6 +423,7 @@ async function saveProfile(btn) {
     price: val('pf-price') === '' ? null : Math.round(Number(val('pf-price'))),
     topics: [...document.querySelectorAll('#pf-topics [aria-pressed="true"]')].map(b => b.dataset.t),
     whatsapp: val('pf-wa') || null,
+    cancel_hours: +val('pf-ch') || 0, cancel_policy: val('pf-cp') || null,
     specialty: val('pf-spec') || 'psicologia',
     gender: val('pf-gender') || null,
     languages: [...document.querySelectorAll('#pf-langs [aria-pressed="true"]')].map(b => b.dataset.t),
@@ -1143,6 +1147,23 @@ function testWa() {
 }
 
 /* Encuestas */
+/* ---------- opiniones ---------- */
+V.opiniones = () => {
+  const R = S.reviews.filter(r => !r.hidden), n = R.length, avg = n ? (R.reduce((t, r) => t + r.rating, 0) / n).toFixed(1) : '—';
+  const stars = r => `<span style="color:#f5a623;letter-spacing:1px">${'★'.repeat(r)}<span style="color:var(--line)">${'★'.repeat(5 - r)}</span></span>`;
+  return `<div class="title-row"><h1>Opiniones</h1><a class="btn neu sm" href="perfil.html?p=${encodeURIComponent(S.profile.slug)}#reviews" target="_blank" rel="noopener">${ic('eye', 15)} Ver en mi perfil</a></div>
+  <div class="stats" style="margin-bottom:16px"><div class="card stat"><b>${avg}</b><small>Calificación promedio</small></div><div class="card stat"><b>${n}</b><small>Opiniones publicadas</small></div>
+    <div class="card stat"><b>${R.filter(r => !r.reply).length}</b><small>Sin responder</small></div></div>
+  <div class="note-priv" style="margin-bottom:16px">${ic('shield', 16)} Solo opinan pacientes con una cita confirmada, una vez por cita, y se publican todas las calificaciones. No puedes borrarlas, pero sí responder públicamente. Al día siguiente de cada cita le pedimos su opinión al paciente por correo.</div>
+  ${S.reviews.length ? `<div class="stack">${S.reviews.map(r => `<article class="card">
+      <div class="who" style="justify-content:space-between;flex-wrap:wrap"><div><b>${stars(r.rating)} &nbsp;${esc(r.author)}</b><small>${r.appointments ? `Cita del ${fmtDay(r.appointments.starts_at, S.profile.timezone)} · ${r.appointments.mode === 'en_linea' ? 'En línea' : 'Presencial'}` : ''}</small></div>
+        <div class="chips">${r.showed_up ? '' : '<span class="pill p-bad">Reportó que no te presentaste</span>'}${r.hidden ? '<span class="pill p-mute">Oculta por el administrador</span>' : ''}</div></div>
+      ${r.comment ? `<p class="pre" style="margin:12px 0 0">${esc(r.comment)}</p>` : '<p class="muted small" style="margin:12px 0 0">Sin comentario.</p>'}
+      <label class="field" style="margin-top:12px"><span>${r.reply ? 'Tu respuesta pública' : 'Responder públicamente'}</span><textarea id="rp-${r.id}" maxlength="1000" placeholder="Agradece o aclara con respeto. Nunca compartas datos clínicos.">${esc(r.reply || '')}</textarea></label>
+      <div class="acts" style="margin-top:8px"><button class="btn pri sm" data-a="replyRv" data-id="${r.id}">${r.reply ? 'Actualizar respuesta' : 'Publicar respuesta'}</button></div></article>`).join('')}</div>`
+    : '<div class="empty">Aún no tienes opiniones. Cuando un paciente con cita confirmada opine, aparecerá aquí.</div>'}`;
+};
+
 V.encuestas = () => `<div class="title-row"><h1>Encuestas</h1><div class="acts"><button class="btn neu sm" data-a="reload">Actualizar</button><button class="btn pri" data-a="newSurvey">+ Nueva encuesta</button></div></div>
   <div class="grid">${S.surveys.map(s => { const ls = S.links.filter(l => l.survey_id === s.id), done = ls.filter(l => l.status === 'done').length;
     return `<article class="card stack" style="gap:10px"><div class="who"><span class="ic-box">${ic('form')}</span><div><b>${esc(s.title)}</b><small>${s.questions.length} pregunta${s.questions.length === 1 ? '' : 's'}${s.description ? ' · ' + esc(s.description) : ''}</small></div></div>
@@ -1343,6 +1364,11 @@ document.addEventListener('click', async e => {
     case 'reload': await loadAll(); toast('Datos actualizados'); break;
     case 'topic': el.setAttribute('aria-pressed', el.getAttribute('aria-pressed') !== 'true'); break;
     case 'saveProfile': saveProfile(el); break;
+    case 'replyRv': {
+      el.disabled = true; const { data, error } = await sb.rpc('reply_review', { p_id: d.id, p_reply: val('rp-' + d.id) }); el.disabled = false;
+      if (error || !data.ok) return toast('No se pudo guardar la respuesta.');
+      const r = S.reviews.find(x => x.id === d.id); r.reply = val('rp-' + d.id) || null; toast('Respuesta publicada'); render(); break;
+    }
     case 'delPhoto': setPhoto(null); break;
     case 'copy': PA.copy(d.u, document.getElementById(d.el)); break;
     case 'apptTab': S.apptTab = d.t; render(); break;

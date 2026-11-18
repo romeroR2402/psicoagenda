@@ -102,3 +102,16 @@ descripción, fecha, horario y cupo. Aparecen en su **Calendario** y, si son pú
   El acceso solo lo ven quienes confirmaron.
 - **Alertas por WhatsApp al especialista** un día y una hora antes, con CallMeBot (se activa en **Mi perfil**).
   La función `event-reminders` corre cada 15 minutos; si hay servicio de correo, también avisa por correo al especialista y a los asistentes.
+
+## Opiniones, cambios de horario y confianza
+Inspirado en lo que más le critican a Doctoralia (ver `investigacion/doctoralia.md`):
+- **Opiniones verificadas** (`reviews`): solo quien tuvo cita confirmada opina, desde su link de cita, una vez por cita.
+  Se publican todas las calificaciones; el especialista responde en **Opiniones** de su panel pero no puede borrarlas.
+  El administrador puede ocultar una opinión ofensiva dando el motivo. Al día siguiente de la cita se pide la opinión por correo.
+- **Cambiar de horario** desde `cita.html`, hasta el plazo que fije el especialista (Mi perfil → "Puedes cambiar o cancelar hasta"). El pago se conserva.
+- **Política de cancelación** visible antes de agendar y en la cita.
+- **Cédula verificada**: el administrador la marca en el detalle del especialista; si cambia la cédula, vuelve a revisión.
+- **Agregar al calendario** (Google Calendar o archivo .ics).
+- El buscador ordena por el horario libre más cercano; nadie paga por aparecer primero.
+
+El skill `.claude/skills/investigar-competencia` repite esta investigación con cualquier competidor.

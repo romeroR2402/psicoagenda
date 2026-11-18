@@ -24,15 +24,15 @@ function when(a: any, tz: string) {
 }
 
 function layout(title: string, intro: string, rows: [string, string][], button?: [string, string], foot = '') {
-  return `<!doctype html><html><body style="margin:0;background:#f7f6fb;font-family:Arial,Helvetica,sans-serif;color:#1e1c2f">
+  return `<!doctype html><html><body style="margin:0;background:#f8f9fb;font-family:Arial,Helvetica,sans-serif;color:#0b3558">
   <div style="max-width:560px;margin:0 auto;padding:28px 18px">
-    <div style="font-size:20px;font-weight:800;margin-bottom:18px"><span style="display:inline-block;width:30px;height:30px;line-height:30px;text-align:center;border-radius:9px;background:#f4621f;color:#fff;margin-right:8px">+</span>MiConsulta</div>
-    <div style="background:#fff;border-radius:18px;padding:24px">
+    <div style="font-size:20px;font-weight:800;margin-bottom:18px"><span style="display:inline-block;width:30px;height:30px;line-height:30px;text-align:center;border-radius:9px;background:#006bff;color:#fff;margin-right:8px">+</span>MiConsulta</div>
+    <div style="background:#fff;border-radius:16px;padding:24px;border:1px solid #d4e0ed">
       <h1 style="font-size:22px;margin:0 0 8px">${esc(title)}</h1>
-      <p style="color:#6f6d88;margin:0 0 18px;line-height:1.5">${intro}</p>
-      <table style="width:100%;border-collapse:collapse;font-size:14px">${rows.map(([k, v]) => `<tr><td style="padding:6px 0;color:#6f6d88">${esc(k)}</td><td style="padding:6px 0;text-align:right;font-weight:bold">${v}</td></tr>`).join('')}</table>
-      ${button ? `<a href="${esc(button[1])}" style="display:block;margin-top:20px;background:#f4621f;color:#fff;text-decoration:none;text-align:center;padding:14px;border-radius:14px;font-weight:bold">${esc(button[0])}</a>` : ''}
-      ${foot ? `<p style="color:#6f6d88;font-size:12px;margin:16px 0 0;line-height:1.5">${foot}</p>` : ''}
+      <p style="color:#476788;margin:0 0 18px;line-height:1.5">${intro}</p>
+      <table style="width:100%;border-collapse:collapse;font-size:14px">${rows.map(([k, v]) => `<tr><td style="padding:6px 0;color:#476788">${esc(k)}</td><td style="padding:6px 0;text-align:right;font-weight:bold">${v}</td></tr>`).join('')}</table>
+      ${button ? `<a href="${esc(button[1])}" style="display:block;margin-top:20px;background:#006bff;color:#fff;text-decoration:none;text-align:center;padding:14px;border-radius:8px;font-weight:bold">${esc(button[0])}</a>` : ''}
+      ${foot ? `<p style="color:#476788;font-size:12px;margin:16px 0 0;line-height:1.5">${foot}</p>` : ''}
     </div></div></body></html>`;
 }
 
@@ -68,7 +68,7 @@ async function handle(event: string, appointmentId: string) {
   const rows: [string, string][] = [
     ['Cuándo', esc(when(a, tz))], ['Modalidad', MODE[a.mode] || a.mode],
     ...(loc && loc.kind !== 'en_linea' ? [['Lugar', esc([loc.name, loc.address, loc.city].filter(Boolean).join(', '))] as [string, string],
-      ['Cómo llegar', `<a href="${esc(gdir(loc))}" style="color:#4f63e8">Abrir en Google Maps</a>`] as [string, string]] : []),
+      ['Cómo llegar', `<a href="${esc(gdir(loc))}" style="color:#006bff">Abrir en Google Maps</a>`] as [string, string]] : []),
     ['Especialista', esc(p.full_name)],
   ];
   const psyRows: [string, string][] = [['Paciente', esc(a.patient_name)], ['Teléfono', esc(a.patient_phone)], ['Cuándo', esc(when(a, tz))], ['Modalidad', MODE[a.mode] || a.mode]];
@@ -88,6 +88,11 @@ async function handle(event: string, appointmentId: string) {
   } else if (event === 'cancelled') {
     if (a.cancelled_by === 'patient') toPsy(`${a.patient_name} canceló su cita`, layout('Una cita fue cancelada', `${esc(a.patient_name)} canceló su cita. El horario quedó libre en tu agenda.`, psyRows, ['Abrir mi panel', panelUrl]));
     else toPatient('Tu cita fue cancelada', layout('Tu cita fue cancelada', `${esc(p.full_name)} canceló tu cita. Si quieres, elige otro horario.`, rows, ['Buscar otro horario', `${SITE}perfil.html?p=${p.slug}`]));
+  } else if (event === 'rescheduled') {
+    toPatient('Tu cita cambió de horario', layout(`Listo, ${first}. Tu cita cambió de horario`, 'Este es tu nuevo horario. Tu pago y tu comprobante se conservan.', rows, ['Ver mi cita', citaUrl]));
+    toPsy(`${a.patient_name} reagendó su cita`, layout('Una cita cambió de horario', `${esc(a.patient_name)} movió su cita a un nuevo horario. Su pago se conserva.`, psyRows, ['Abrir mi panel', panelUrl]));
+  } else if (event === 'review_request') {
+    toPatient(`¿Cómo te fue con ${p.full_name}?`, layout(`Hola ${first}, ¿cómo te fue?`, `Tu opinión ayuda a otras personas a elegir. Solo quienes tuvieron cita pueden opinar, y se publican todas las calificaciones.`, rows, ['Dejar mi opinión', citaUrl + '#opinar']));
   } else if (event === 'reminder') {
     toPatient('Recordatorio: tu cita es mañana', layout(`Hola ${first}, tu cita es mañana`, 'Te recordamos tu cita. Si no puedes asistir, cancélala para liberar el horario.', rows, ['Ver mi cita', citaUrl]));
   }
@@ -113,7 +118,14 @@ Deno.serve(async (req) => {
         await db.from('appointments').update({ reminder_sent_at: new Date().toISOString() }).eq('id', a.id);
         await handle('reminder', a.id);
       }
-      return json({ ok: true, reminders: (due || []).length });
+      // Un día después de la cita confirmada, pedimos su opinión al paciente (una sola vez)
+      const { data: done } = await db.from('appointments').select('id').eq('status', 'confirmed').is('review_requested_at', null)
+        .not('patient_email', 'is', null).lte('ends_at', new Date(now - 2 * 3600e3).toISOString()).gte('ends_at', new Date(now - 72 * 3600e3).toISOString());
+      for (const a of done || []) {
+        await db.from('appointments').update({ review_requested_at: new Date().toISOString() }).eq('id', a.id);
+        await handle('review_request', a.id);
+      }
+      return json({ ok: true, reminders: (due || []).length, reviews: (done || []).length });
     }
     if (typeof body.appointment_id !== 'string') return json({ ok: false, error: 'appointment_id' }, 400);
     await handle(String(body.event), body.appointment_id);

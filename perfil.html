@@ -35,6 +35,28 @@
 .layout>*{min-width:0}
 .head{flex-wrap:wrap}
 .head>div{min-width:0}
+/* opiniones */
+.rv-top{display:grid;grid-template-columns:auto minmax(0,1fr);gap:24px;align-items:center;margin:14px 0 6px}
+.rv-avg{text-align:center}
+.rv-avg b{display:block;font-size:44px;font-weight:800;line-height:1}
+.rv-avg small{color:var(--muted);font-weight:600}
+.stars-i{display:inline-flex;gap:2px;color:#f5a623;vertical-align:-3px}
+.stars-i .off{color:var(--line)}
+.dist{display:flex;flex-direction:column;gap:6px}
+.dist div{display:grid;grid-template-columns:28px minmax(0,1fr) 28px;gap:8px;align-items:center;font-size:12.5px;color:var(--muted);font-weight:600}
+.dist i{display:block;height:8px;border-radius:4px;background:var(--pebble);overflow:hidden}
+.dist i span{display:block;height:100%;background:#f5a623;border-radius:4px}
+.rv{border-top:1px solid var(--line);padding:16px 0}
+.rv-h{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center}
+.rv-h b{font-size:14.5px}
+.rv-h small{color:var(--muted)}
+.vbadge{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--ok);background:var(--ok-soft);padding:3px 9px;border-radius:999px}
+.vbadge.warn{color:var(--bad);background:var(--bad-soft)}
+.rv-reply{margin-top:10px;background:var(--pebble);border-radius:10px;padding:10px 12px;font-size:13.5px}
+.rating-l{display:inline-flex;align-items:center;gap:6px;font-weight:700;color:var(--ink);text-decoration:none}
+.policy{display:flex;gap:10px;align-items:flex-start;background:var(--pebble);border-radius:10px;padding:10px 12px;font-size:12.5px;color:var(--muted);margin-top:12px}
+.policy svg{flex:none;color:var(--accent);margin-top:1px}
+@media (max-width:520px){.rv-top{grid-template-columns:1fr}}
 @media (max-width:860px){.layout{grid-template-columns:minmax(0,1fr)}.sticky{position:static}}
 </style>
 </head>
@@ -54,7 +76,10 @@
 const { sb, esc, av, ic, money, MODE, fmtDay, fmtTime, dayKey } = PA;
 const root = document.getElementById('root');
 const slug = new URLSearchParams(location.search).get('p') || '';
-let P = null, slots = [], byDay = {}, B = { loc: null, day: null, slot: null };
+let P = null, slots = [], byDay = {}, B = { loc: null, day: null, slot: null }, RV = null, rvAll = false;
+const STAR = n => `<svg viewBox="0 0 24 24" width="${n}" height="${n}" fill="currentColor" aria-hidden="true"><path d="M12 2.8l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17.2l-5.7 3.1 1.2-6.4-4.7-4.4 6.4-.8z"/></svg>`;
+const starsI = (r, n = 16) => `<span class="stars-i" aria-label="${r} de 5">${[1, 2, 3, 4, 5].map(i => `<span class="${i <= Math.round(r) ? '' : 'off'}">${STAR(n)}</span>`).join('')}</span>`;
+const hoursTxt = h => h >= 24 && h % 24 === 0 ? `${h / 24} día${h / 24 > 1 ? 's' : ''}` : `${h} hora${h === 1 ? '' : 's'}`;
 const DOW3 = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 const locOf = id => (P.locations || []).find(l => l.id === id);
 
@@ -62,12 +87,13 @@ function fail(msg) { root.innerHTML = `<a class="back" href="index.html">← Vol
 
 async function load() {
   if (!sb) return fail('No se pudo cargar la conexión.');
-  const { data, error } = await sb.from('profiles').select('id,full_name,slug,title,license,bio,topics,price,session_minutes,timezone,photo_url,whatsapp,languages,locations(id,kind,name,address,city,lat,lng,maps_url),schedules(weekday,start_time,end_time,location_id)')
+  const { data, error } = await sb.from('profiles').select('id,full_name,slug,title,license,license_verified,cancel_policy,cancel_hours,bio,topics,price,session_minutes,timezone,photo_url,whatsapp,languages,locations(id,kind,name,address,city,lat,lng,maps_url),schedules(weekday,start_time,end_time,location_id)')
     .eq('slug', slug).eq('is_listed', true).eq('is_active', true).maybeSingle();
   if (error || !data) return fail('Puede que el link esté mal escrito o que el especialista ya no esté disponible.');
   P = data; document.title = `${P.full_name} · MiConsulta`;
   render();
   sb.rpc('public_events', { p_psych: P.id }).then(({ data }) => { if (data && data.length) renderEvents(data); });
+  sb.rpc('public_reviews', { p_psych: P.id }).then(({ data }) => { RV = data; renderReviews(); });
   await loadSlots();
 }
 
@@ -102,6 +128,23 @@ function hoursOf(l) {
   return rs.map(r => `${DOW3[r.weekday]} ${r.start_time.slice(0, 5)}–${r.end_time.slice(0, 5)}`).join(' · ');
 }
 
+function renderReviews() {
+  const el = document.getElementById('reviews'), top = document.getElementById('rating-top'); if (!el || !RV) return;
+  if (top) top.innerHTML = RV.count ? `<a class="rating-l" href="#reviews">${starsI(RV.avg, 15)} ${RV.avg} · ${RV.count} ${RV.count === 1 ? 'opinión' : 'opiniones'}</a>` : '<span class="muted small">Aún sin opiniones</span>';
+  const first = P.full_name.split(' ')[0];
+  if (!RV.count) { el.innerHTML = `<h3>Opiniones</h3><p class="muted" style="margin:8px 0 0">${esc(first)} aún no tiene opiniones. Solo pueden opinar pacientes que tuvieron una cita confirmada.</p>`; return; }
+  const items = rvAll ? RV.items : RV.items.slice(0, 5);
+  el.innerHTML = `<h3>Opiniones de pacientes</h3>
+    <div class="rv-top"><div class="rv-avg"><b>${RV.avg}</b>${starsI(RV.avg, 18)}<small style="display:block;margin-top:4px">${RV.count} ${RV.count === 1 ? 'opinión' : 'opiniones'}</small></div>
+      <div class="dist">${[5, 4, 3, 2, 1].map(n => `<div><span>${n} ★</span><i><span style="width:${Math.round(100 * RV.dist[n] / RV.count)}%"></span></i><span>${RV.dist[n]}</span></div>`).join('')}</div></div>
+    <p class="muted small" style="margin:8px 0 0">${ic('shield', 13)} Todas son de pacientes con cita confirmada. Publicamos todas las calificaciones y ${esc(first)} no puede borrarlas.${RV.no_show ? ` En ${RV.no_show} cita${RV.no_show === 1 ? '' : 's'} el paciente reportó que el especialista no se presentó.` : ''}</p>
+    ${items.map(r => `<div class="rv"><div class="rv-h"><div>${starsI(r.rating, 15)} <b style="margin-left:6px">${esc(r.author)}</b></div><small>${new Date(r.created_at).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}</small></div>
+      <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap"><span class="vbadge">${ic('check', 12)} Cita verificada · ${r.mode === 'en_linea' ? 'en línea' : 'presencial'}</span>${r.showed_up ? '' : '<span class="vbadge warn">El especialista no se presentó</span>'}</div>
+      ${r.comment ? `<p class="pre" style="margin:10px 0 0">${esc(r.comment)}</p>` : ''}
+      ${r.reply ? `<div class="rv-reply"><b>Respuesta de ${esc(first)}:</b> ${esc(r.reply)}</div>` : ''}</div>`).join('')}
+    ${RV.items.length > 5 ? `<button class="btn neu" data-a="rvmore" style="margin-top:6px">${rvAll ? 'Ver menos' : `Ver las ${RV.items.length} opiniones`}</button>` : ''}`;
+}
+
 function renderEvents(list) {
   const el = document.getElementById('events'); if (!el) return;
   el.hidden = false;
@@ -115,7 +158,9 @@ function render() {
   <div class="layout">
     <div class="stack">
       <section class="card"><div class="head">${av(P.full_name, 'xl', P.photo_url)}<div>
-        <h1>${esc(P.full_name)}</h1><div class="muted">${esc(P.title || 'Psicólogo')}${P.license ? ' · Cédula profesional ' + esc(P.license) : ''}</div>
+        <h1>${esc(P.full_name)}</h1><div class="muted">${esc(P.title || 'Especialista')}${P.license ? ' · Cédula profesional ' + esc(P.license) : ''}</div>
+        ${P.license_verified ? `<span class="vbadge" style="margin-top:8px">${ic('shield', 13)} Cédula verificada por MiConsulta</span>` : ''}
+        <div id="rating-top" style="margin-top:8px"></div>
         <div class="meta" style="margin-top:8px"><span class="price">${money(P.price)}</span><span>${ic('clock', 14)}Sesión de ${P.session_minutes} min</span></div></div></div>
         ${(P.topics || []).length ? `<div class="tags" style="margin-top:16px">${P.topics.map(t => `<span class="tag">${esc(t)}</span>`).join('')}</div>` : ''}
         ${(P.languages || []).length ? `<div class="muted small" style="margin-top:10px">Idiomas: ${P.languages.map(esc).join(', ')}</div>` : ''}
@@ -125,6 +170,7 @@ function render() {
           ${hoursOf(l) ? `<div class="small" style="margin-top:4px">${ic('clock', 13)} ${hoursOf(l)}</div>` : ''}
           ${l.kind === 'presencial' ? `<div class="chips" style="margin-top:8px"><a class="btn sec sm" href="${esc(PA.gdir(l))}" target="_blank" rel="noopener">${ic('pin', 14)} Cómo llegar</a><a class="btn neu sm" href="${esc(PA.gmaps(l))}" target="_blank" rel="noopener">Ver en Google Maps</a></div>` : ''}</div></div>`).join('') : '<p class="muted">Aún no hay ubicaciones registradas.</p>'}</div>
         ${locs.some(l => l.lat != null) ? '<div class="locmap" id="locmap"></div>' : ''}</section>
+      <section class="card" id="reviews"><h3>Opiniones</h3><p class="muted small">Cargando…</p></section>
       <section class="card" id="events" hidden></section>
     </div>
     <div class="sticky" id="agendar"><section class="card" id="booking"></section></div>
@@ -164,6 +210,7 @@ function renderBooking(err = '') {
       <label class="field"><span>Correo (recomendado)</span><input id="bk-email" type="email" autocomplete="email" placeholder="Para enviarte la confirmación y el recordatorio"></label>
       <label class="field"><span>Motivo de consulta (opcional)</span><textarea id="bk-note" maxlength="500" placeholder="Cuéntale brevemente qué te gustaría trabajar"></textarea></label>
       <p class="err" id="bk-err">${err && days.length ? esc(err) : ''}</p>
+      <div class="policy" style="margin-top:0">${ic('shield', 16)}<span><b style="color:var(--ink)">Cancelación y cambios:</b> ${P.cancel_policy ? esc(P.cancel_policy) + ' ' : ''}Puedes cambiar de horario desde tu link de cita hasta ${hoursTxt(P.cancel_hours ?? 24)} antes, y tu pago se conserva.</span></div>
       <button class="btn pri big" id="bk-go" ${B.slot ? '' : 'disabled'}>${B.slot ? `Solicitar cita · ${fmtTime(B.slot, P.timezone)}` : 'Elige un horario'}</button>
     </form>`;
   [['bk-name', keep.n], ['bk-phone', keep.ph], ['bk-email', keep.em], ['bk-note', keep.no]].forEach(([id, v]) => { if (v) document.getElementById(id).value = v; });
@@ -185,6 +232,7 @@ const val = id => (document.getElementById(id)?.value || '').trim();
 
 document.addEventListener('click', e => {
   const m = e.target.closest('[data-mode]'), d = e.target.closest('[data-day]'), s = e.target.closest('[data-slot]'), sc = e.target.closest('[data-scroll]');
+  if (e.target.closest('[data-a="rvmore"]')) { rvAll = !rvAll; renderReviews(); return; }
   if (sc) { const row = document.getElementById('days'); row.scrollBy({ left: +sc.dataset.scroll * row.clientWidth * 0.8 }); return; }
   const pl = e.target.closest('[data-place]');
   if (pl) { B.loc = pl.dataset.place; B.slot = null; B.day = null; regroup(); renderBooking(); return; }
