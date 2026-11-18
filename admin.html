@@ -21,12 +21,30 @@
 table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:860px}
 th{text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:12px 14px;border-bottom:1px solid var(--line);font-weight:700}
 td{padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:middle}
+tbody tr{transition:background .15s}
+tbody tr:hover td{background:var(--pebble)}
+td.date{white-space:nowrap;color:var(--muted)}
+td .who b{font-size:14px;white-space:nowrap}
+td .who .ttl{font-weight:500;color:var(--muted)}
+td .who small{white-space:nowrap}
+td.act{white-space:nowrap;color:var(--muted);font-variant-numeric:tabular-nums}
+td.act span{display:inline-flex;align-items:center;gap:4px;margin-right:12px;font-weight:600;color:var(--ink)}
+td.act svg{color:var(--mist)}
+td .pill{white-space:nowrap}
+th.right,td.right{text-align:right}
+/* acciones de la tabla: botones finos de 32 px */
+td .acts{flex-wrap:nowrap;justify-content:flex-end;align-items:center;gap:6px}
+.abtn{height:32px;padding:0 12px;border-radius:8px;border:1px solid color-mix(in srgb,var(--accent) 40%,var(--line));background:var(--card);color:var(--accent);font-weight:600;font-size:13px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.abtn:hover{background:var(--accent);color:#fff;border-color:transparent}
+.ibtn{width:32px;height:32px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--muted);display:inline-grid;place-items:center;flex:none}
+.ibtn:hover{color:var(--accent);background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent) 35%,var(--line))}
+.ibtn.del:hover{color:var(--bad);background:var(--bad-soft);border-color:color-mix(in srgb,var(--bad) 35%,var(--line))}
+.ibtn.ph{visibility:hidden}
 tr:last-child td{border-bottom:0}
 td.num{font-variant-numeric:tabular-nums;text-align:center}
 .acts{display:flex;gap:6px;flex-wrap:wrap}
-td .acts{flex-wrap:nowrap}
-.sec{margin-top:18px}
-.sec h4{margin:0 0 8px;font-size:15px}
+.modal .sec{margin-top:18px}
+.modal .sec h4{margin:0 0 8px;font-size:15px}
 .ans{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:6px;font-size:13px}
 .ans li{display:flex;justify-content:space-between;gap:12px}
 .ans li span{color:var(--muted)}
@@ -105,13 +123,12 @@ function render() {
       <div class="card stat"><b>${U.reduce((n, u) => n + u.appointments, 0)}</b><small>Citas totales</small></div>
     </div>
     <label class="field" style="max-width:420px;margin-bottom:14px"><span>Buscar</span><input id="q" type="search" placeholder="Nombre o correo" value="${esc(S.q)}"></label>
-    <div class="tbl-wrap"><table><thead><tr><th>Especialista</th><th>Usuario (correo)</th><th>Acceso</th><th>Perfil</th><th>Último acceso</th><th>Citas</th><th>Pacientes</th><th>Encuestas</th><th>Acciones</th></tr></thead><tbody>
+    <div class="tbl-wrap"><table><thead><tr><th>Especialista</th><th>Acceso</th><th>Perfil</th><th>Último acceso</th><th>Actividad</th><th class="right">Acciones</th></tr></thead><tbody>
       ${rows.map(u => { const p = u.profile;
         const st = !u.confirmed ? '<span class="pill p-warn">Correo sin confirmar</span>' : !p ? '<span class="pill p-mute">Sin perfil</span>' : !p.is_active ? '<span class="pill p-bad">Desactivado</span>' : p.is_listed ? '<span class="pill p-ok">Publicado</span>' : '<span class="pill p-mute">No publicado</span>';
-        return `<tr><td><div class="who">${av(p?.full_name || u.email, 'sm', p?.photo_url)}<div><b>${esc(p?.full_name || '—')}</b><small>${esc(p?.title || '')}${u.is_admin ? ' · Admin' : ''}</small></div></div></td>
-          <td>${esc(u.email)}<small class="muted" style="display:block">Desde ${date(u.created_at)}</small></td><td>${accPill(u)}</td><td>${st}</td><td>${date(u.last_sign_in_at)}</td>
-          <td class="num">${u.appointments}</td><td class="num">${u.clients}</td><td class="num">${u.surveys}</td>
-          <td><div class="acts">${u.is_admin ? '' : `<button class="btn pri sm" data-a="access" data-id="${u.id}">Acceso</button>`}<button class="btn neu sm" data-a="detail" data-id="${u.id}">Ver</button><button class="btn sec sm" data-a="pass" data-id="${u.id}">Contraseña</button>${u.is_admin || u.id === S.user.id ? '' : `<button class="btn danger sm" data-a="delUser" data-id="${u.id}" aria-label="Eliminar cuenta">${ic('trash', 15)}</button>`}</div></td></tr>`; }).join('') || '<tr><td colspan="9"><div class="empty">Sin resultados.</div></td></tr>'}
+        return `<tr><td><div class="who">${av(p?.full_name || u.email, 'sm', p?.photo_url)}<div><b>${esc(p?.full_name || 'Sin nombre')}${p?.title ? ` <span class="ttl">· ${esc(p.title)}</span>` : ''}</b><small>${esc(u.email)} · desde ${date(u.created_at)}</small></div></div></td><td>${accPill(u)}</td><td>${st}</td><td class="date">${date(u.last_sign_in_at)}</td>
+          <td class="act"><span title="Citas">${ic('cal', 14)} ${u.appointments}</span><span title="Pacientes">${ic('users', 14)} ${u.clients}</span><span title="Encuestas">${ic('form', 14)} ${u.surveys}</span></td>
+          <td class="right"><div class="acts">${u.is_admin ? '' : `<button class="abtn" data-a="access" data-id="${u.id}">Acceso</button>`}<button class="ibtn" data-a="detail" data-id="${u.id}" title="Ver detalle" aria-label="Ver detalle">${ic('eye', 16)}</button><button class="ibtn" data-a="pass" data-id="${u.id}" title="Contraseña" aria-label="Contraseña">${ic('key', 16)}</button>${u.is_admin || u.id === S.user.id ? '<span class="ibtn ph" aria-hidden="true"></span>' : `<button class="ibtn del" data-a="delUser" data-id="${u.id}" title="Eliminar cuenta" aria-label="Eliminar cuenta">${ic('trash', 16)}</button>`}</div></td></tr>`; }).join('') || '<tr><td colspan="6"><div class="empty">Sin resultados.</div></td></tr>'}
     </tbody></table></div>`;
 }
 
@@ -165,7 +182,7 @@ function clientsView() {
     <label class="field" style="max-width:420px;margin-bottom:14px"><span>Buscar</span><input id="cq" type="search" placeholder="Nombre, teléfono, correo o especialista" value="${esc(S.cq)}"></label>
     <div class="tbl-wrap"><table style="min-width:720px"><thead><tr><th>Paciente</th><th>Teléfono</th><th>Correo</th><th>Especialista</th><th>Registrado</th><th></th></tr></thead><tbody>
       ${list.slice(0, 500).map(c => { const o = owner(c.owner_id); return `<tr><td><div class="who">${av(c.full_name, 'sm')}<b>${esc(c.full_name)}</b></div></td><td>${esc(c.phone)}</td><td>${esc(c.email || '—')}</td>
-        <td>${o ? `<button class="link" data-a="detail" data-id="${o.id}">${esc(o.profile?.full_name || o.email)}</button>` : '—'}</td><td>${date(c.created_at)}</td><td><button class="btn danger sm" data-a="delClient" data-id="${c.id}" aria-label="Eliminar paciente">${ic('trash', 15)}</button></td></tr>`; }).join('') || '<tr><td colspan="6"><div class="empty">Sin pacientes.</div></td></tr>'}
+        <td>${o ? `<button class="link" data-a="detail" data-id="${o.id}">${esc(o.profile?.full_name || o.email)}</button>` : '—'}</td><td class="date">${date(c.created_at)}</td><td class="right"><button class="ibtn del" data-a="delClient" data-id="${c.id}" title="Eliminar paciente" aria-label="Eliminar paciente">${ic('trash', 16)}</button></td></tr>`; }).join('') || '<tr><td colspan="6"><div class="empty">Sin pacientes.</div></td></tr>'}
     </tbody></table></div>${list.length > 500 ? '<p class="muted small">Mostrando los primeros 500. Usa el buscador para encontrar a alguien.</p>' : ''}`;
 }
 
