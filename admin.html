@@ -99,7 +99,14 @@ async function load() {
 }
 
 function render() {
-  document.getElementById('top-user').innerHTML = S.user ? `<a class="btn neu sm" href="panel.html">Mi panel</a><button class="btn neu sm" data-a="logout">${ic('out', 15)} Salir</button>` : '';
+  const top = document.getElementById('top-user'), sig = S.user ? S.user.id + '|' + S.isAdmin : '';
+  if (sig !== top.dataset.sig) {
+    top.dataset.sig = sig;
+    if (!S.user) top.innerHTML = '';
+    else PA.accountMenu(top, { name: S.user.user_metadata?.full_name || 'Administrador', email: S.user.email, items: [
+      { text: 'Mi panel de especialista', icon: 'home', href: 'panel.html' },
+      { text: 'Ir al buscador', icon: 'search', href: 'index.html' }], onLogout: () => sb.auth.signOut() });
+  }
   if (!S.authKnown) return;
   if (!S.user) {
     root.innerHTML = `<div class="auth"><div class="card form"><div><h1 style="font-size:26px">Administración</h1><p class="muted" style="margin:0">Entra con tu cuenta de super administrador.</p></div>

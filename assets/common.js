@@ -76,6 +76,40 @@ window.PA = (() => {
   document.addEventListener('click', e => { if (e.target.closest('[data-close]')) closeModal(); });
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 
+  // Menú de cuenta: la foto y el nombre abren un menú con acciones; "Cerrar sesión" va al final, separado.
+  // En pantallas angostas se abre como hoja desde abajo.
+  // opts: { name, email, photo, items: [{ text, icon, href?, target?, action? }], onLogout }
+  function accountMenu(el, opts) {
+    const chev = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
+    const list = () => `<div class="acc-head">${av(opts.name, 'lg', opts.photo)}<div><b>${esc(opts.name)}</b><small>${esc(opts.email || '')}</small></div></div>
+      <div class="acc-items">${opts.items.map((it, i) => it.href ? `<a class="acc-it" role="menuitem" href="${esc(it.href)}" ${it.target ? `target="${it.target}" rel="noopener"` : ''} data-acc-close>${ic(it.icon, 18)}<span>${esc(it.text)}</span></a>`
+        : `<button class="acc-it" role="menuitem" data-acc-i="${i}">${ic(it.icon, 18)}<span>${esc(it.text)}</span></button>`).join('')}</div>
+      <div class="acc-sep"></div><button class="acc-it out" role="menuitem" data-acc-out>${ic('out', 18)}<span>Cerrar sesión</span></button>`;
+    el.innerHTML = `<div class="acc"><button class="acc-btn" aria-haspopup="menu" aria-expanded="false" aria-label="Mi cuenta">${av(opts.name, 'sm', opts.photo)}<b>${esc(opts.name.split(' ')[0])}</b>${chev}</button><div class="acc-menu" role="menu" hidden></div></div>`;
+    const btn = el.querySelector('.acc-btn'), menu = el.querySelector('.acc-menu');
+    const close = () => { menu.hidden = true; btn.setAttribute('aria-expanded', 'false'); };
+    const run = async t => {
+      if (t.closest('[data-acc-out]')) { close(); closeModal(); return opts.onLogout(); }
+      const i = t.closest('[data-acc-i]'); if (i) { close(); closeModal(); return opts.items[+i.dataset.accI].action(); }
+      if (t.closest('[data-acc-close]')) { close(); closeModal(); }
+    };
+    btn.onclick = e => {
+      e.stopPropagation();
+      if (matchMedia('(max-width:700px)').matches) { openModal(`<div class="acc-sheet">${list()}</div>`); document.querySelector('.acc-sheet').onclick = e => run(e.target); return; }
+      if (!menu.hidden) return close();
+      menu.innerHTML = list(); menu.hidden = false; btn.setAttribute('aria-expanded', 'true');
+      menu.querySelector('.acc-it')?.focus();
+    };
+    menu.onclick = e => run(e.target);
+    menu.onkeydown = e => {
+      const its = [...menu.querySelectorAll('.acc-it')], k = its.indexOf(document.activeElement);
+      if (e.key === 'ArrowDown') { e.preventDefault(); its[(k + 1) % its.length].focus(); }
+      if (e.key === 'ArrowUp') { e.preventDefault(); its[(k - 1 + its.length) % its.length].focus(); }
+      if (e.key === 'Escape') { close(); btn.focus(); }
+    };
+    if (!accountMenu.bound) { accountMenu.bound = true; document.addEventListener('click', e => { if (!e.target.closest('.acc')) document.querySelectorAll('.acc-menu').forEach(m => { m.hidden = true; m.previousElementSibling.setAttribute('aria-expanded', 'false'); }); }); }
+  }
+
   function copy(text, el) {
     const ok = () => toast('Copiado');
     const fallback = () => { if (el) { const r = document.createRange(); r.selectNodeContents(el); const s = getSelection(); s.removeAllRanges(); s.addRange(r); } toast('Texto seleccionado: cópialo con Ctrl+C o manteniendo presionado'); };
@@ -104,5 +138,5 @@ window.PA = (() => {
   const waLink = (phone, text) => { const d = String(phone).replace(/\D/g, ''); return `https://wa.me/${d.length === 10 ? '52' + d : d}?text=${encodeURIComponent(text)}`; };
   const pageUrl = p => new URL(p, location.href).href;
 
-  return { sb, TZ, gmaps, gdir, MAPS_RE, esc, av, avc, ini, cap, norm, slugify, fmtDay, fmtShort, fmtTime, fmtDT, dayKey, todayKey, money, STATUS, pill, MODE, DOW, ic, toast, openModal, closeModal, copy, compress, waLink, pageUrl };
+  return { sb, TZ, gmaps, gdir, MAPS_RE, esc, av, avc, ini, cap, norm, slugify, fmtDay, fmtShort, fmtTime, fmtDT, dayKey, todayKey, money, STATUS, pill, MODE, DOW, ic, toast, openModal, closeModal, accountMenu, copy, compress, waLink, pageUrl };
 })();

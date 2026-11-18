@@ -132,7 +132,6 @@
 .more-it.out{color:var(--bad);margin-top:6px}
 @media (max-width:900px){
   .app{grid-template-columns:minmax(0,1fr);align-content:start}
-  #top-user .who b,#top-user [data-a="logout"]{display:none}
   .side{display:none}
   .content{padding-block:18px calc(96px + env(safe-area-inset-bottom,0px))}
   .tabbar{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;z-index:30;
@@ -240,10 +239,29 @@ setInterval(refresh, 60000);
 
 window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (VIEWS[h] && S.profile) { S.view = h; S.clientId = null; render(); scrollTo(0, 0); } });
 
-function render() {
+// Menú de cuenta arriba a la derecha (solo se vuelve a dibujar si cambian los datos)
+let topSig = '';
+function renderTop() {
   const top = document.getElementById('top-user');
-  const name = S.profile ? S.profile.full_name.split(' ')[0] : 'Mi cuenta';
-  top.innerHTML = S.user ? `<${S.profile ? 'button data-a="more" aria-label="Más opciones"' : 'span'} class="who small">${av(S.profile?.full_name || 'Mi cuenta', 'sm', S.profile?.photo_url)}<b>${esc(name)}</b></${S.profile ? 'button' : 'span'}><button class="btn neu sm" data-a="logout">${ic('out', 15)} Salir</button>` : `<a class="btn neu sm" href="index.html">Ir al buscador</a>`;
+  const sig = [S.user?.id, S.profile?.full_name, S.profile?.photo_url, S.profile?.slug, S.isAdmin].join('|');
+  if (sig === topSig && top.innerHTML) return; topSig = sig;
+  if (!S.user) { top.innerHTML = '<a class="btn neu sm" href="index.html">Ir al buscador</a>'; return; }
+  const items = [];
+  if (S.profile) items.push({ text: 'Mi perfil', icon: 'user', action: () => { location.hash = '#perfil'; } },
+    { text: 'Ver mi perfil público', icon: 'eye', href: 'perfil.html?p=' + encodeURIComponent(S.profile.slug), target: '_blank' },
+    { text: 'Mis opiniones', icon: 'star', action: () => { location.hash = '#opiniones'; } });
+  items.push({ text: 'Cambiar contraseña', icon: 'lock', action: async () => {
+    const { error } = await sb.auth.resetPasswordForEmail(S.user.email, { redirectTo: pageUrl('panel.html') });
+    toast(error ? 'No se pudo enviar el correo. Intenta más tarde.' : `Te enviamos un enlace a ${S.user.email} para crear tu nueva contraseña.`);
+  } });
+  if (S.isAdmin) items.push({ text: 'Administración', icon: 'shield', href: 'admin.html' });
+  items.push({ text: 'Ir al buscador', icon: 'search', href: 'index.html' });
+  PA.accountMenu(top, { name: S.profile?.full_name || 'Mi cuenta', email: S.user.email, photo: S.profile?.photo_url, items,
+    onLogout: async () => { await sb.auth.signOut(); S.recovery = false; location.hash = ''; } });
+}
+
+function render() {
+  renderTop();
   if (!S.authKnown) return;
   if (S.recovery) return renderRecovery();
   if (!S.user) return renderAuth();
@@ -274,8 +292,8 @@ function moreSheet() {
   openModal(`<h3>Más opciones</h3><p class="sub">${esc(S.profile.full_name)}</p><div class="more-list">
     ${MORE.map(k => item('#' + k, VIEWS[k][1], VIEWS[k][0], `data-close ${S.view === k ? 'aria-current="page"' : ''}`)).join('')}
     ${item('perfil.html?p=' + encodeURIComponent(S.profile.slug), 'eye', 'Ver mi perfil público', 'target="_blank" rel="noopener"')}
-    ${S.isAdmin ? item('admin.html', 'shield', 'Administración') : ''}
-    <button class="more-it out" data-a="logout">${ic('out', 20)}<span>Cerrar sesión</span></button></div>`);
+    ${S.isAdmin ? item('admin.html', 'shield', 'Administración') : ''}</div>
+    <p class="muted small" style="margin:14px 0 0">Para cerrar sesión, toca tu foto arriba a la derecha.</p>`);
 }
 
 /* ---------- acceso a la plataforma ---------- */
