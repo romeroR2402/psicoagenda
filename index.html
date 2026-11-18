@@ -80,14 +80,27 @@ body.home{font-size:16px;overflow-x:clip}
 .hero-search{grid-column:1/-1;margin-top:-8px}
 .hero-search .searchbox{box-shadow:var(--shadow-l)}
 .searchbox{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr) auto;gap:8px;background:var(--card);border-radius:14px;padding:8px;box-shadow:var(--shadow-s);border:1px solid var(--line)}
-.searchbox label{display:flex;align-items:center;gap:12px;padding:6px 16px;border-radius:10px;min-width:0}
-.searchbox label+label{border-left:1px solid var(--line)}
-.searchbox label span{color:var(--muted);flex:none;display:flex}
+.searchbox .fld{position:relative;display:flex;align-items:center;gap:12px;padding:6px 16px;border-radius:10px;min-width:0}
+.searchbox .fld+.fld{border-left:1px solid var(--line)}
+.searchbox .fld>span{color:var(--muted);flex:none;display:flex}
 .searchbox input,.searchbox select{border:0;background:transparent;width:100%;padding:14px 0;font-size:17px;font-weight:500;min-width:0;color:var(--ink)}
-.searchbox label span svg{width:22px;height:22px}
+.searchbox .fld>span svg{width:22px;height:22px}
 .searchbox input::placeholder{color:var(--muted)}
 .searchbox input:focus,.searchbox select:focus{outline:none}
-.searchbox label:focus-within{background:var(--pebble)}
+.searchbox .fld:focus-within{background:var(--pebble)}
+/* lista desplegable propia: mismo ancho que el campo, esquinas redondeadas, textos largos con puntitos */
+.dd-btn{flex:1;min-width:0;display:flex;align-items:center;gap:10px;padding:14px 0;font-size:17px;font-weight:500;color:var(--ink);text-align:left}
+.dd-btn:focus-visible{outline:none}
+.dd-val{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dd-btn .chev{flex:none;color:var(--muted);transition:transform .15s}
+.dd-btn[aria-expanded="true"] .chev{transform:rotate(180deg)}
+.dd-list{position:absolute;left:0;right:0;top:calc(100% + 10px);z-index:30;margin:0;padding:6px;list-style:none;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow-l);max-height:280px;overflow-y:auto}
+.dd-list li{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:8px;cursor:pointer;font-size:15px;font-weight:500;color:var(--ink)}
+.dd-list li span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dd-list li svg{flex:none;color:var(--accent);visibility:hidden}
+.dd-list li:hover,.dd-list li.act{background:var(--pebble)}
+.dd-list li[aria-selected="true"]{color:var(--accent);font-weight:700}
+.dd-list li[aria-selected="true"] svg{visibility:visible}
 .searchbox .btn{padding:16px 32px;font-size:18px;border-radius:10px}
 .popular{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:16px;font-size:14px}
 .popular button{padding:5px 12px;border-radius:999px;background:var(--pebble);color:var(--ink);font-weight:600;font-size:13px}
@@ -251,7 +264,7 @@ span.doc-photo{display:grid;place-items:center}
   .bw>div{padding:16px}
   .searchbox{grid-template-columns:1fr}
   .searchbox input,.searchbox select{font-size:16px}
-  .searchbox label+label{border-left:0;border-top:1px solid var(--line)}
+  .searchbox .fld+.fld{border-left:0;border-top:1px solid var(--line)}
   .searchbox .btn{width:100%}
   .top-links .ghost{display:none}
   .foot .cols{grid-template-columns:1fr}
@@ -288,8 +301,11 @@ span.doc-photo{display:grid;place-items:center}
         <button class="chip" data-spec="odontologia" aria-pressed="false">Dentistas</button>
       </div>
       <form class="searchbox" id="f-search" role="search">
-        <label for="q"><span id="ic-q"></span><input id="q" name="q" placeholder="Ansiedad, pareja, duelo… o un nombre" autocomplete="off"></label>
-        <label for="c"><span id="ic-c"></span><select id="c" name="c" aria-label="Ciudad o modalidad"><option value="">Cualquier ciudad</option><option value="en_linea">En línea</option></select></label>
+        <label class="fld" for="q"><span id="ic-q"></span><input id="q" name="q" placeholder="Ansiedad, pareja, duelo… o un nombre" autocomplete="off"></label>
+        <div class="fld" id="c-dd"><span id="ic-c"></span>
+          <button type="button" class="dd-btn" id="c-btn" aria-haspopup="listbox" aria-expanded="false" aria-label="Ciudad o modalidad"><span class="dd-val" id="c-val">Cualquier ciudad</span><svg class="chev" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+          <ul class="dd-list" id="c-list" role="listbox" aria-label="Ciudad o modalidad" hidden></ul>
+          <select id="c" name="c" hidden><option value="">Cualquier ciudad</option><option value="en_linea">En línea</option></select></div>
         <button class="btn pri" type="submit">Buscar</button>
       </form>
       <div class="popular"><span class="muted">Frecuentes:</span>
@@ -539,6 +555,7 @@ async function load() {
   const qp = new URLSearchParams(location.search);
   if (qp.get('q')) qEl.value = qp.get('q');
   if (qp.get('c')) cEl.value = qp.get('c');
+  ddLabel();
   show();
   if (all.length) sb.rpc('public_ratings', { p_ids: all.map(p => p.id) }).then(({ data }) => { (data || []).forEach(r => rates[r.psychologist_id] = { avg: r.avg, n: r.n }); if (data && data.length) show(); });
   if (all.length) {
@@ -569,6 +586,39 @@ function locate() {
 
 $('f-search').addEventListener('submit', e => { e.preventDefault(); sync(); show(); toResults(); });
 cEl.addEventListener('change', () => { sync(); show(); });
+
+/* ---------- lista de ciudad (reemplaza la del navegador) ---------- */
+const dd = { btn: $('c-btn'), list: $('c-list'), val: $('c-val'), act: -1 };
+const CHECK_I = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>';
+// Si el texto no cabe, se ve con puntitos y el texto completo aparece al pasar el cursor
+const tipIfCut = el => { const t = el.firstElementChild || el; el.title = t.scrollWidth > t.clientWidth ? t.textContent : ''; };
+function ddLabel() { dd.val.textContent = cEl.selectedOptions[0]?.textContent || 'Cualquier ciudad'; dd.btn.title = dd.val.scrollWidth > dd.val.clientWidth ? dd.val.textContent : ''; }
+function ddOpen() {
+  const opts = [...cEl.options];
+  dd.list.innerHTML = opts.map((o, i) => `<li role="option" id="c-o${i}" data-v="${esc(o.value)}" aria-selected="${o.value === cEl.value}"><span>${esc(o.textContent)}</span>${CHECK_I}</li>`).join('');
+  dd.list.hidden = false; dd.btn.setAttribute('aria-expanded', 'true');
+  dd.act = Math.max(0, opts.findIndex(o => o.value === cEl.value)); ddMark();
+  dd.list.querySelectorAll('li').forEach(tipIfCut);
+}
+function ddClose() { dd.list.hidden = true; dd.btn.setAttribute('aria-expanded', 'false'); }
+function ddMark() {
+  dd.list.querySelectorAll('li').forEach((li, i) => li.classList.toggle('act', i === dd.act));
+  const li = dd.list.children[dd.act]; if (li) { li.scrollIntoView({ block: 'nearest' }); dd.btn.setAttribute('aria-activedescendant', li.id); }
+}
+function ddPick(v) { cEl.value = v; ddLabel(); ddClose(); dd.btn.focus(); cEl.dispatchEvent(new Event('change')); }
+dd.btn.addEventListener('click', () => dd.list.hidden ? ddOpen() : ddClose());
+dd.list.addEventListener('click', e => { const li = e.target.closest('li'); if (li) ddPick(li.dataset.v); });
+dd.btn.addEventListener('keydown', e => {
+  const n = cEl.options.length;
+  if (dd.list.hidden && ['ArrowDown', 'ArrowUp', 'Enter', ' '].includes(e.key)) { e.preventDefault(); ddOpen(); return; }
+  if (dd.list.hidden) return;
+  if (e.key === 'ArrowDown') { e.preventDefault(); dd.act = (dd.act + 1) % n; ddMark(); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); dd.act = (dd.act - 1 + n) % n; ddMark(); }
+  else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); ddPick(cEl.options[dd.act].value); }
+  else if (e.key === 'Escape' || e.key === 'Tab') ddClose();
+});
+document.addEventListener('click', e => { if (!e.target.closest('#c-dd')) ddClose(); });
+addEventListener('resize', ddLabel);
 document.addEventListener('click', async e => {
   const sp = e.target.closest('[data-spec]');
   if (sp) { spec = sp.dataset.spec; document.querySelectorAll('[data-spec]').forEach(b => { b.classList.toggle('on', b === sp); b.setAttribute('aria-pressed', b === sp); }); qEl.placeholder = spec === 'psicologia' || spec === 'psicoterapia' ? 'Ansiedad, pareja, duelo… o un nombre' : spec === 'tanatologia' ? 'Duelo, pérdida, enfermedad terminal… o un nombre' : spec === 'medicina' ? 'Chequeo general, diabetes… o un nombre' : 'Limpieza, ortodoncia, caries… o un nombre'; show(); if (sp.closest('.foot')) toResults(); return; }
