@@ -36,10 +36,10 @@ async function email(to: string, subject: string, html: string) {
   return r.ok;
 }
 
-const card = (title: string, body: string, btn: [string, string]) => `<!doctype html><html><body style="margin:0;background:#f7f6fb;font-family:Arial,Helvetica,sans-serif;color:#1e1c2f">
-  <div style="max-width:560px;margin:0 auto;padding:28px 18px"><div style="font-size:20px;font-weight:800;margin-bottom:18px"><span style="display:inline-block;width:30px;height:30px;line-height:30px;text-align:center;border-radius:9px;background:#f4621f;color:#fff;margin-right:8px">+</span>MiConsulta</div>
-  <div style="background:#fff;border-radius:18px;padding:24px"><h1 style="font-size:22px;margin:0 0 10px">${esc(title)}</h1><p style="color:#6f6d88;line-height:1.5;margin:0">${body}</p>
-  <a href="${esc(btn[1])}" style="display:block;margin-top:20px;background:#f4621f;color:#fff;text-decoration:none;text-align:center;padding:14px;border-radius:14px;font-weight:bold">${esc(btn[0])}</a></div></div></body></html>`;
+const card = (title: string, body: string, btn: [string, string]) => `<!doctype html><html><body style="margin:0;background:#f8f9fb;font-family:Arial,Helvetica,sans-serif;color:#0b3558">
+  <div style="max-width:560px;margin:0 auto;padding:28px 18px"><div style="font-size:20px;font-weight:800;margin-bottom:18px"><img src="${SITE}assets/logo-64.png" width="30" height="30" alt="" style="vertical-align:middle;border-radius:8px;margin-right:8px">MiConsulta</div>
+  <div style="background:#fff;border-radius:18px;padding:24px"><h1 style="font-size:22px;margin:0 0 10px">${esc(title)}</h1><p style="color:#476788;line-height:1.5;margin:0">${body}</p>
+  <a href="${esc(btn[1])}" style="display:block;margin-top:20px;background:#006bff;color:#fff;text-decoration:none;text-align:center;padding:14px;border-radius:8px;font-weight:bold">${esc(btn[0])}</a></div></div></body></html>`;
 
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return json({ ok: false }, 405);

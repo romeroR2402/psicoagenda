@@ -26,7 +26,7 @@ function when(a: any, tz: string) {
 function layout(title: string, intro: string, rows: [string, string][], button?: [string, string], foot = '') {
   return `<!doctype html><html><body style="margin:0;background:#f8f9fb;font-family:Arial,Helvetica,sans-serif;color:#0b3558">
   <div style="max-width:560px;margin:0 auto;padding:28px 18px">
-    <div style="font-size:20px;font-weight:800;margin-bottom:18px"><span style="display:inline-block;width:30px;height:30px;line-height:30px;text-align:center;border-radius:9px;background:#006bff;color:#fff;margin-right:8px">+</span>MiConsulta</div>
+    <div style="font-size:20px;font-weight:800;margin-bottom:18px"><img src="${SITE}assets/logo-64.png" width="30" height="30" alt="" style="vertical-align:middle;border-radius:8px;margin-right:8px">MiConsulta</div>
     <div style="background:#fff;border-radius:16px;padding:24px;border:1px solid #d4e0ed">
       <h1 style="font-size:22px;margin:0 0 8px">${esc(title)}</h1>
       <p style="color:#476788;margin:0 0 18px;line-height:1.5">${intro}</p>

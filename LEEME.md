@@ -15,6 +15,8 @@ Plataforma tipo directorio para encontrar psicólogos, psicoterapeutas, tanatól
 
 Archivos compartidos: `assets/app.css`, `assets/common.js` y `config.js` (conexión pública a Supabase).
 
+**Logotipo y favicon:** un corazón con un brote (salud y bienestar), en `assets/favicon.svg`; versiones PNG en `assets/` (32, 64 para correos, 180 para iPhone, 192 y 512) y `site.webmanifest` para instalarla en el celular.
+
 **Estilo visual:** texto azul marino (`#0b3558`) sobre gris frío (`#f8f9fb`), un solo azul vivo (`#006bff`) para las acciones,
 tarjetas blancas con borde fino y sombras azuladas, botones con esquinas de 8 px y letra Manrope. Los colores están en `assets/app.css`
 (con modo oscuro); `responder.html` tiene su propia copia porque no carga ese archivo.
