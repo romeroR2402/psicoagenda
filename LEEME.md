@@ -117,3 +117,9 @@ Inspirado en lo que más le critican a Doctoralia (ver `investigacion/doctoralia
 - El buscador ordena por el horario libre más cercano; nadie paga por aparecer primero.
 
 El skill `.claude/skills/investigar-competencia` repite esta investigación con cualquier competidor.
+
+## Búsqueda por zona
+En el buscador, el campo de lugar tiene dos niveles: **estado** (por ejemplo Ciudad de México) y luego **alcaldía o municipio** (por ejemplo Iztacalco),
+con cuántos especialistas hay en cada uno. Al elegir una zona aparece un mapa con el precio de cada consultorio; al tocarlo se abre el perfil para agendar.
+El estado y la alcaldía de cada consultorio (`locations.state`, `locations.district`) se calculan solos con la función `geocode`
+a partir de su punto en el mapa, y el especialista puede corregirlos en **Ubicaciones**.

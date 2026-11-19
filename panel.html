@@ -751,11 +751,15 @@ function fillZone(lat, lng, auto) {
   if (auto) return; clearTimeout(zoneT);
   zoneT = setTimeout(async () => {
     try {
-      const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=14&accept-language=es&lat=${lat}&lon=${lng}`);
-      const a = (await r.json()).address || {};
-      const d = (a.borough || a.city_district || a.municipality || a.county || a.city || a.town || a.village || '').replace(/^(Alcaldía|Municipio( de)?|Delegación)\s+/i, '');
-      const st = document.getElementById('lc-state'), di = document.getElementById('lc-district');
-      if (st && a.state) st.value = a.state; if (di && d) di.value = d;
+      const rev = async z => (await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=${z}&addressdetails=1&accept-language=es&lat=${lat}&lon=${lng}`)).json();
+      const j = await rev(18), a = j.address || {}, st = a.state || '';
+      let d = a.borough || a.city_district || a.municipality || a.county || '';
+      // En la Ciudad de México a veces la dirección no trae la alcaldía: se pregunta a nivel de alcaldía
+      if (!d || d === st) { await new Promise(r => setTimeout(r, 1100)); const k = await rev(10), b = k.address || {}; d = b.borough || b.city_district || b.municipality || b.county || (k.name !== st ? k.name : '') || a.city || a.town || ''; }
+      if (d === st) d = '';
+      d = d.replace(/^(Alcaldía|Municipio( de)?|Delegación)\s+/i, '');
+      const se = document.getElementById('lc-state'), di = document.getElementById('lc-district');
+      if (se && st) se.value = st; if (di && d) di.value = d;
     } catch (e) { /* si falla, se calcula al guardar */ }
   }, 600);
 }

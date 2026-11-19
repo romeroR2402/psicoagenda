@@ -33,22 +33,32 @@ async function photon(q: string) {
 
 // Estado y alcaldía/municipio de un punto (búsqueda inversa en OpenStreetMap)
 const plainName = (t: string) => String(t || '').replace(/^(Alcaldía|Municipio( de)?|Delegación)\s+/i, '').trim();
+async function rev(lat: number, lng: number, zoom: number) {
+  const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=${zoom}&addressdetails=1&accept-language=es&lat=${lat}&lon=${lng}`;
+  const r = await fetch(url, { headers: { 'User-Agent': UA, Referer: 'https://romeror2402.github.io/psicoagenda/' }, signal: AbortSignal.timeout(8000) });
+  console.log('reverse', zoom, r.status);
+  return r.ok ? await r.json() : null;
+}
 async function zone(lat: number, lng: number) {
   try {
-    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=14&accept-language=es&lat=${lat}&lon=${lng}`;
-    const r = await fetch(url, { headers: { 'User-Agent': UA, Referer: 'https://romeror2402.github.io/psicoagenda/' }, signal: AbortSignal.timeout(8000) });
-    if (r.ok) {
-      const a = (await r.json()).address || {};
-      const district = a.borough || a.city_district || a.municipality || a.county || a.city || a.town || a.village || null;
-      if (a.state || district) return { state: a.state || null, district: district ? plainName(district) : null };
+    const j = await rev(lat, lng, 18), a = j?.address || {};
+    const state = a.state || null;
+    let district = a.borough || a.city_district || a.municipality || a.county || null;
+    // En la Ciudad de México a veces la dirección no trae la alcaldía: se pregunta a nivel de alcaldía/municipio
+    if (!district || district === state) {
+      await wait(1100);
+      const k = await rev(lat, lng, 10), b = k?.address || {};
+      district = b.borough || b.city_district || b.municipality || b.county || (k?.name && k.name !== state ? k.name : null) || a.city || a.town || a.village || null;
     }
+    if (district === state) district = null;
+    if (state || district) return { state, district: district ? plainName(district) : null };
   } catch (e) { console.log('reverse error', String(e)); }
   try {
     const r = await fetch(`https://photon.komoot.io/reverse?lat=${lat}&lon=${lng}&lang=default`, { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(8000) });
     if (r.ok) {
       const p = ((await r.json()).features || [])[0]?.properties || {};
-      const district = p.district || p.county || p.city || null;
-      if (p.state || district) return { state: p.state || null, district: district ? plainName(district) : null };
+      const district = p.district || p.county || null;
+      if (p.state || district) return { state: p.state || null, district: district && district !== p.state ? plainName(district) : null };
     }
   } catch (e) { console.log('photon reverse error', String(e)); }
   return null;

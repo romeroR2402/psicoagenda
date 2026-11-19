@@ -486,7 +486,8 @@ function mini(p) {
 
 function card(p) {
   const locs = p.locations || [], pres = locs.filter(l => l.kind === 'presencial'), online = locs.some(l => l.kind === 'en_linea');
-  const main = pres.find(l => l.lat != null) || pres[0], d = dist(p);
+  // Si hay zona elegida, se muestra el consultorio de esa zona
+  const main = pres.find(l => inZone(l) && l.lat != null) || pres.find(inZone) || pres.find(l => l.lat != null) || pres[0], d = dist(p);
   const url = `perfil.html?p=${encodeURIComponent(p.slug)}`;
   return `<article class="doc" id="doc-${p.id}"><div>
     <div class="doc-head"><a href="${url}">${av(p.full_name, 'doc-photo', p.photo_url)}</a>
@@ -495,7 +496,7 @@ function card(p) {
         ${rates[p.id] ? `<a class="rate" href="${url}#reviews"><span class="star">★</span> ${rates[p.id].avg} <span>· ${rates[p.id].n} ${rates[p.id].n == 1 ? 'opinión' : 'opiniones'}</span></a>` : ''}
         <div class="tags" style="margin-top:8px">${(p.topics || []).slice(0, 4).map(t => `<span class="tag">${esc(t)}</span>`).join('')}</div></div></div>
     <ul>
-      ${main ? `<li>${ic('pin', 16)}<span>${esc([main.address, main.city].filter(Boolean).join(' · ') || main.name)}${d != null ? ` · <b>${d < 1 ? '<1' : Math.round(d)} km</b>` : ''}${main.lat != null ? `<button class="link" data-a="map" data-id="${p.id}">Mapa</button>` : ''}<a class="link" href="${esc(PA.gdir(main))}" target="_blank" rel="noopener">Cómo llegar</a></span></li>` : ''}
+      ${main ? `<li>${ic('pin', 16)}<span>${esc([main.address, [zDist(main), zState(main)].filter(Boolean).join(', ')].filter(Boolean).join(' · ') || main.name)}${d != null ? ` · <b>${d < 1 ? '<1' : Math.round(d)} km</b>` : ''}${main.lat != null ? `<button class="link" data-a="map" data-id="${p.id}">Mapa</button>` : ''}<a class="link" href="${esc(PA.gdir(main))}" target="_blank" rel="noopener">Cómo llegar</a></span></li>` : ''}
       ${online ? `<li>${ic('video', 16)}<span>También en línea por videollamada</span></li>` : ''}
       <li>${ic('pay', 16)}<span>Sesión de ${p.session_minutes} min · <b>${money(p.price)}</b></span></li>
       ${p.bio ? `<li>${ic('user', 16)}<span>${esc(p.bio.length > 150 ? p.bio.slice(0, 150).trim() + '…' : p.bio)}</span></li>` : ''}
