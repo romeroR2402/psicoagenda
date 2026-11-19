@@ -59,6 +59,56 @@ td.num{font-variant-numeric:tabular-nums;text-align:center}
 .ans li span{color:var(--muted)}
 .qlist{margin:8px 0 0;padding-left:20px;font-size:13.5px;display:flex;flex-direction:column;gap:4px}
 .qlist small{color:var(--muted)}
+.sec-t{font-size:18px;margin:26px 0 12px}
+.kpis{grid-template-columns:repeat(auto-fit,minmax(180px,1fr));margin-bottom:14px}
+.kpi small{display:block;color:var(--muted);font-weight:600;font-size:13px}
+.kpi b{display:block;font-size:28px;font-weight:800;margin:4px 0 2px;font-variant-numeric:tabular-nums}
+.kpi span{display:block;color:var(--muted);font-size:12.5px}
+.kpi.down span{color:var(--bad)}
+.kpi.warn b{color:var(--warn)}
+.dash-grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:14px}
+@media (max-width:900px){.dash-grid{grid-template-columns:minmax(0,1fr)}}
+.chart{width:100%;height:auto;display:block;overflow:visible}
+.ch-grid{stroke:var(--line);stroke-width:1}
+.ch-ax{fill:var(--muted);font-size:11px;font-family:var(--f-body)}
+.ch-mark{fill:var(--accent)}
+.ch-hit{fill:transparent}
+.ch-bar:hover .ch-hit,.ch-bar:focus .ch-hit{fill:var(--pebble)}
+.ch-bar:focus{outline:none}
+.tbl-alt{margin-top:10px;font-size:13px}
+.tbl-alt summary{cursor:pointer;color:var(--accent);font-weight:600}
+.tbl-alt table{min-width:0;margin-top:8px}
+.hbars{display:flex;flex-direction:column;gap:10px;margin-top:10px}
+.hb{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1.6fr) auto;gap:10px;align-items:center;font-size:13.5px}
+.hb>span{font-weight:600;min-width:0}
+.hb span small{display:block;color:var(--muted);font-weight:500;font-size:12px}
+.hb i{height:10px;border-radius:5px;background:var(--pebble);overflow:hidden}
+.hb i b{display:block;height:100%;background:var(--accent);border-radius:5px}
+.hb em{font-style:normal;font-weight:700;font-variant-numeric:tabular-nums}
+.ren{display:flex;justify-content:space-between;width:100%;padding:9px 10px;border-radius:8px;font-weight:600;font-size:13.5px;text-align:left}
+.ren:hover{background:var(--pebble)}
+.ren small{color:var(--muted)}
+.health{display:flex;flex-direction:column;gap:4px;margin-top:8px}
+.hc{display:flex;gap:10px;align-items:flex-start;padding:9px 6px;border-bottom:1px solid var(--line)}
+.hc:last-child{border-bottom:0}
+.hc-i{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;flex:none}
+.hc.ok .hc-i{background:var(--ok-soft);color:var(--ok)}
+.hc.warn .hc-i{background:var(--warn-soft);color:var(--warn)}
+.hc.bad .hc-i{background:var(--bad-soft);color:var(--bad)}
+.hc b{display:block;font-size:13.5px}
+.hc b em{font-style:normal;font-size:11.5px;font-weight:700;margin-left:6px}
+.hc.ok b em{color:var(--ok)} .hc.warn b em{color:var(--warn)} .hc.bad b em{color:var(--bad)}
+.hc small{display:block;color:var(--muted);font-size:12.5px;line-height:1.4}
+.log-d{font-size:14px;color:var(--muted);margin:18px 0 8px;font-weight:700}
+.log{padding:4px 14px}
+.log-it{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.log-it:last-child{border-bottom:0}
+.log-it>div>b{display:block;font-size:14px}
+.log-it small b{color:var(--ink);font-weight:700}
+.log-it small{display:block;color:var(--muted);font-size:13px;overflow-wrap:anywhere}
+.log-it time{color:var(--muted);font-size:12.5px;white-space:nowrap}
+.log-it.err .ic-box{background:var(--bad-soft);color:var(--bad)}
+.log-it.adm .ic-box{background:var(--warn-soft);color:var(--warn)}
 .note{background:var(--calm-soft);color:var(--calm);border-radius:14px;padding:12px 14px;font-size:13px;font-weight:600}
 </style>
 </head>
@@ -76,7 +126,7 @@ td.num{font-variant-numeric:tabular-nums;text-align:center}
 (() => {
 const { sb, esc, av, ic, money, MODE, DOW, fmtDT, fmtShort, pill, toast, openModal, closeModal, copy, norm } = PA;
 const root = document.getElementById('root');
-const S = { authKnown: false, user: null, isAdmin: null, users: [], q: '', tab: location.hash === '#pacientes' ? 'clients' : location.hash === '#ajustes' ? 'settings' : 'pros', settings: null, clients: [], cq: '' };
+const S = { authKnown: false, user: null, isAdmin: null, users: [], q: '', tab: { '#pacientes': 'clients', '#ajustes': 'settings', '#especialistas': 'pros', '#bitacora': 'log' }[location.hash] || 'dash', dash: null, act: [], logF: 'todo', logDemo: false, settings: null, clients: [], cq: '' };
 const QTYPES = { single: 'Una opción', multi: 'Varias opciones', scale: 'Escala 1 a 5', freq: 'Frecuencia', text: 'Respuesta abierta' };
 const FREQ = ['Nunca', 'Varios días', 'Más de la mitad de los días', 'Casi todos los días'];
 const val = id => (document.getElementById(id)?.value || '').trim();
@@ -95,9 +145,11 @@ async function load() {
   const { data } = await sb.rpc('is_admin');
   S.isAdmin = !!data;
   if (S.isAdmin) {
-    const [r, st, cl] = await Promise.all([sb.rpc('admin_list_psychologists'), sb.from('platform_settings').select('*').maybeSingle(),
-      sb.from('clients').select('id,full_name,email,phone,created_at,owner_id').order('created_at', { ascending: false }).limit(2000)]);
+    const [r, st, cl, db, ac] = await Promise.all([sb.rpc('admin_list_psychologists'), sb.from('platform_settings').select('*').maybeSingle(),
+      sb.from('clients').select('id,full_name,email,phone,created_at,owner_id').order('created_at', { ascending: false }).limit(2000),
+      sb.rpc('admin_dashboard'), sb.rpc('admin_activity', { p_limit: 300 })]);
     S.users = r.error ? [] : r.data; S.settings = st.data; S.clients = cl.data || [];
+    S.dash = db.error ? null : db.data; S.act = ac.error ? [] : ac.data; S.loadedAt = new Date();
   }
   render();
 }
@@ -120,7 +172,9 @@ function render() {
   }
   if (S.isAdmin === null) { root.innerHTML = '<div class="empty">Verificando permisos…</div>'; return; }
   if (!S.isAdmin) { root.innerHTML = '<div class="auth"><div class="card"><h2>Sin permisos</h2><p class="muted">Esta cuenta no es de administrador. Entra con la cuenta de super administrador.</p></div></div>'; return; }
-  const tabs = `<div class="seg" role="tablist" style="margin-bottom:18px">${[['pros', 'Especialistas'], ['clients', 'Pacientes'], ['settings', 'Ajustes']].map(([k, t]) => `<button data-a="tab" data-t="${k}" aria-pressed="${S.tab === k}">${t}</button>`).join('')}</div>`;
+  const tabs = `<div class="seg" role="tablist" style="margin-bottom:18px">${[['dash', 'Resumen'], ['pros', 'Especialistas'], ['clients', 'Pacientes'], ['log', 'Bitácora'], ['settings', 'Ajustes']].map(([k, t]) => `<button data-a="tab" data-t="${k}" aria-pressed="${S.tab === k}">${t}</button>`).join('')}</div>`;
+  if (S.tab === 'dash') { root.innerHTML = tabs + dashView(); return; }
+  if (S.tab === 'log') { root.innerHTML = tabs + logView(); return; }
   if (S.tab === 'clients') { root.innerHTML = tabs + clientsView(); return; }
   if (S.tab === 'settings') { root.innerHTML = tabs + settingsView(); return; }
   const U = S.users, pros = U.filter(u => u.profile);
@@ -199,6 +253,121 @@ function clientsView() {
       ${list.slice(0, 500).map(c => { const o = owner(c.owner_id); return `<tr><td><div class="who">${av(c.full_name, 'sm')}<b>${esc(c.full_name)}</b></div></td><td>${esc(c.phone)}</td><td>${esc(c.email || '—')}</td>
         <td>${o ? `<button class="link" data-a="detail" data-id="${o.id}">${esc(o.profile?.full_name || o.email)}</button>` : '—'}</td><td class="date">${date(c.created_at)}</td><td class="right"><button class="ibtn del" data-a="delClient" data-id="${c.id}" title="Eliminar paciente" aria-label="Eliminar paciente">${ic('trash', 16)}</button></td></tr>`; }).join('') || '<tr><td colspan="6"><div class="empty">Sin pacientes.</div></td></tr>'}
     </tbody></table></div>${list.length > 500 ? '<p class="muted small">Mostrando los primeros 500. Usa el buscador para encontrar a alguien.</p>' : ''}`;
+}
+
+/* ---------- Resumen: dinero, clientes, actividad y salud de la plataforma ---------- */
+const logAdmin = (action, target, detail = {}) => sb.rpc('admin_log_add', { p_action: action, p_target: target || null, p_detail: detail }).then(() => {}, () => {});
+const MON = m => { const [y, mm] = m.split('-'); return new Date(+y, +mm - 1, 1).toLocaleDateString('es-MX', { month: 'short' }).replace('.', ''); };
+const SPN = { psicologia: 'Psicología', psicoterapia: 'Psicoterapia', tanatologia: 'Tanatología', medicina: 'Medicina general', odontologia: 'Odontología' };
+const ago = d => { const s = (Date.now() - new Date(d)) / 1000; return s < 60 ? 'hace un momento' : s < 3600 ? `hace ${Math.round(s / 60)} min` : s < 86400 ? `hace ${Math.round(s / 3600)} h` : `hace ${Math.round(s / 86400)} días`; };
+const nameOf = id => { const u = S.users.find(x => x.id === id); return u ? (u.profile?.full_name || u.email) : null; };
+const isDemo = id => !!S.users.find(x => x.id === id)?.profile?.is_demo;
+// Gráfica de barras de una sola serie (sin leyenda: el título la nombra). Tooltip al pasar el cursor.
+function barChart(rows, fmt, label) {
+  const W = 640, H = 200, padL = 46, padB = 26, padT = 12, max = Math.max(1, ...rows.map(r => +r.v)), step = (W - padL - 8) / rows.length, bw = Math.min(34, step - 8);
+  const nice = v => { const p = 10 ** Math.floor(Math.log10(v)), f = v / p; return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * p; }, top = nice(max);
+  const y = v => padT + (H - padT - padB) * (1 - v / top);
+  const grid = [0, .5, 1].map(f => `<line x1="${padL}" x2="${W - 4}" y1="${y(top * f)}" y2="${y(top * f)}" class="ch-grid"/><text x="${padL - 8}" y="${y(top * f) + 4}" class="ch-ax" text-anchor="end">${fmt(top * f, true)}</text>`).join('');
+  const bars = rows.map((r, i) => { const x = padL + i * step + (step - bw) / 2, h = Math.max(0, H - padB - y(+r.v));
+    return `<g class="ch-bar" tabindex="0" aria-label="${esc(MON(r.m))}: ${esc(fmt(+r.v))}"><rect class="ch-hit" x="${padL + i * step}" y="${padT}" width="${step}" height="${H - padT - padB}"/>
+      ${+r.v ? `<path class="ch-mark" d="M${x},${H - padB} v${-Math.max(0, h - 4)} q0,-4 4,-4 h${bw - 8} q4,0 4,4 v${Math.max(0, h - 4)} z"/>` : ''}
+      <text x="${x + bw / 2}" y="${H - 8}" class="ch-ax" text-anchor="middle">${esc(MON(r.m))}</text><title>${esc(MON(r.m))}: ${esc(fmt(+r.v))}</title></g>`; }).join('');
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(label)}">${grid}${bars}</svg>`;
+}
+const kpi = (v, t, sub, tone) => `<div class="card stat kpi ${tone || ''}"><small>${t}</small><b>${v}</b>${sub ? `<span>${sub}</span>` : ''}</div>`;
+const pct = (a, b) => b ? Math.round((a - b) / b * 100) : null;
+function dashView() {
+  const D = S.dash; if (!D) return '<div class="empty">No se pudieron cargar los números. Toca Actualizar.</div>';
+  const R = D.revenue, P = D.specialists, A = D.activity, H = D.health, M = v => money(Math.round(+v));
+  const ch = pct(+R.this_month, +R.last_month);
+  const st = A.by_status || {}, stT = Object.values(st).reduce((a, b) => a + b, 0) || 1;
+  const STL = { confirmed: 'Confirmadas', review: 'Pago por revisar', unpaid: 'Sin pago', cancelled: 'Canceladas', rejected: 'No aprobadas' };
+  // Salud: cada revisión con su estado (ícono + texto, nunca solo color)
+  const checks = [
+    ...H.cron.map(j => { const ok = j.active && j.last && j.last.status === 'succeeded' && !j.failed_24h;
+      return [ok ? 'ok' : 'bad', { 'psicoagenda-recordatorios': 'Recordatorios de citas', 'miconsulta-conferencias': 'Recordatorios de talleres' }[j.name] || j.name,
+        j.last ? `Última vez ${ago(j.last.at)}${j.failed_24h ? ` · ${j.failed_24h} fallas en 24 h` : ''}` : 'Aún no ha corrido']; }),
+    [(H.calls_24h.error || Object.keys(H.calls_24h).some(k => k.startsWith('http_'))) ? 'bad' : 'ok', 'Funciones del servidor', `${H.calls_24h.ok || 0} llamadas correctas en 24 h${H.calls_24h.error ? ` · ${H.calls_24h.error} con error` : ''}${H.last_call_error ? ` · último error ${ago(H.last_call_error.at)}` : ''}`],
+    [H.email_ready ? 'ok' : 'warn', 'Correos automáticos', H.email_ready ? `Enviando · últimos 7 días: ${Object.entries(H.emails_7d).map(([k, v]) => `${{ sent: 'enviados', failed: 'fallidos', skipped: 'sin enviar' }[k] || k} ${v}`).join(', ') || '0'}` : `No se están enviando: ${H.email_missing || 'falta conectar el servicio de correo'}. Configura BREVO_API_KEY y EMAIL_FROM en Supabase.`],
+    [H.pending_payments ? 'warn' : 'ok', 'Pagos sin revisar por más de 48 h', H.pending_payments ? `${H.pending_payments} cita${H.pending_payments === 1 ? '' : 's'} esperando que el especialista apruebe` : 'Ninguno'],
+    [H.pending_licenses ? 'warn' : 'ok', 'Cédulas por verificar', H.pending_licenses ? `${H.pending_licenses} especialista${H.pending_licenses === 1 ? '' : 's'} esperando tu revisión` : 'Todas revisadas'],
+    [H.unlocated ? 'warn' : 'ok', 'Consultorios sin ubicar en el mapa', H.unlocated ? `${H.unlocated} sin ubicación` : 'Todos ubicados'],
+    [H.listed_no_schedule ? 'warn' : 'ok', 'Publicados sin horario', H.listed_no_schedule ? `${H.listed_no_schedule} perfil(es) visibles sin horario` : 'Ninguno'],
+  ];
+  const ICON = { ok: ['check', 'Bien'], warn: ['clock', 'Revisar'], bad: ['shield', 'Falla'] };
+  return `<div class="title-row"><h1>Resumen</h1><div class="acts"><small class="muted">Actualizado ${S.loadedAt ? S.loadedAt.toLocaleTimeString('es-MX', { hour: 'numeric', minute: '2-digit' }) : ''}</small><button class="btn neu sm" data-a="reload">Actualizar</button></div></div>
+    <p class="muted small" style="margin:-8px 0 16px">No cuenta tu cuenta de administrador ni la cuenta demo.</p>
+    <h2 class="sec-t">Ingresos</h2>
+    <div class="stats kpis">
+      ${kpi(M(R.total), 'Total ganado', `${R.payments} pago${R.payments == 1 ? '' : 's'} registrados`)}
+      ${kpi(M(R.this_month), 'Este mes', ch == null ? 'Primer mes con ingresos' : `${ch >= 0 ? '▲' : '▼'} ${Math.abs(ch)}% vs. mes pasado (${M(R.last_month)})`, ch != null && ch < 0 ? 'down' : '')}
+      ${kpi(M(R.mrr), 'Ingreso mensual estimado', 'Lo que pagan al mes las suscripciones vigentes')}
+      ${kpi(M(R.payments ? R.total / R.payments : 0), 'Pago promedio', 'Por cada pago registrado')}
+    </div>
+    <div class="dash-grid">
+      <section class="card"><h3>Ingresos por mes</h3><p class="muted small" style="margin:2px 0 8px">Últimos 12 meses</p>${barChart(R.by_month, (v, ax) => ax ? (v >= 1000 ? '$' + (v / 1000).toFixed(v % 1000 ? 1 : 0) + 'k' : '$' + Math.round(v)) : M(v), 'Ingresos por mes')}
+        <details class="tbl-alt"><summary>Ver como tabla</summary><table><thead><tr><th>Mes</th><th class="right">Ingresos</th></tr></thead><tbody>${R.by_month.map(r => `<tr><td>${MON(r.m)} ${r.m.slice(0, 4)}</td><td class="right">${M(r.v)}</td></tr>`).join('')}</tbody></table></details></section>
+      <section class="card"><h3>Cómo te pagan</h3>${R.by_method.length ? `<div class="hbars">${R.by_method.map(m => `<div class="hb"><span>${esc(m.k)}<small>${m.n} pago${m.n == 1 ? '' : 's'}</small></span><i><b style="width:${Math.round(100 * m.v / R.total)}%"></b></i><em>${M(m.v)}</em></div>`).join('')}</div>` : '<p class="muted small">Aún no hay pagos.</p>'}
+        <h3 style="margin-top:18px">Renovaciones próximas</h3><p class="muted small" style="margin:2px 0 8px">Accesos que vencen en 15 días</p>
+        ${R.renewals.length ? R.renewals.map(r => `<button class="ren" data-a="goPro" data-id="${r.id}"><span>${esc(nameOf(r.id) || 'Especialista')}</span><small>${new Date(r.until).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })} · ${esc(r.plan)}</small></button>`).join('') : '<p class="muted small">Ninguna en los próximos 15 días.</p>'}</section>
+    </div>
+    <h2 class="sec-t">Clientes (especialistas)</h2>
+    <div class="stats kpis">
+      ${kpi(P.total, 'Especialistas registrados', `${P.new_30} nuevo${P.new_30 == 1 ? '' : 's'} en 30 días`)}
+      ${kpi(P.paying, 'Pagando', 'Con plan pagado vigente')}
+      ${kpi(P.trial, 'En prueba', 'Prueba gratis vigente')}
+      ${kpi(P.expired, 'Sin acceso o vencidos', 'Oportunidad para renovar', P.expired ? 'warn' : '')}
+      ${kpi(P.listed, 'Publicados en el buscador', `${P.with_profile} con perfil creado`)}
+    </div>
+    <div class="dash-grid">
+      <section class="card"><h3>Registros por mes</h3><p class="muted small" style="margin:2px 0 8px">Especialistas nuevos, últimos 12 meses</p>${barChart(P.signups_by_month, v => String(Math.round(v)), 'Registros por mes')}</section>
+      <section class="card"><h3>Por especialidad</h3>${P.by_specialty.length ? `<div class="hbars">${P.by_specialty.map(x => `<div class="hb"><span>${esc(SPN[x.k] || x.k || 'Sin especialidad')}</span><i><b style="width:${Math.round(100 * x.v / Math.max(...P.by_specialty.map(z => z.v)))}%"></b></i><em>${x.v}</em></div>`).join('')}</div>` : '<p class="muted small">Sin perfiles todavía.</p>'}
+        ${P.unconfirmed ? `<p class="muted small" style="margin-top:12px">${P.unconfirmed} cuenta(s) sin confirmar su correo.</p>` : ''}</section>
+    </div>
+    <h2 class="sec-t">Uso de la plataforma</h2>
+    <div class="stats kpis">
+      ${kpi(A.patients, 'Pacientes', `${A.patients_30} nuevos en 30 días`)}
+      ${kpi(A.appointments, 'Citas', `${A.appointments_30} en 30 días · ${A.upcoming} próximas`)}
+      ${kpi(M(A.booked_value), 'Valor de citas confirmadas', 'Lo que cobraron tus especialistas')}
+      ${kpi(A.rating ? A.rating + ' ★' : '—', 'Calificación promedio', `${A.reviews} opinion${A.reviews == 1 ? '' : 'es'}`)}
+      ${kpi(A.surveys_done, 'Encuestas respondidas', `${A.events} eventos · ${A.attendees} asistentes`)}
+    </div>
+    <div class="dash-grid">
+      <section class="card"><h3>Citas por estado</h3>${Object.keys(st).length ? `<div class="hbars">${Object.entries(STL).filter(([k]) => st[k]).map(([k, t]) => `<div class="hb"><span>${t}</span><i><b style="width:${Math.round(100 * st[k] / stT)}%"></b></i><em>${st[k]}</em></div>`).join('')}</div>` : '<p class="muted small">Aún no hay citas.</p>'}</section>
+      <section class="card"><h3>¿Todo funciona bien?</h3><div class="health">${checks.map(([k, t, d]) => `<div class="hc ${k}"><span class="hc-i" aria-label="${ICON[k][1]}">${ic(ICON[k][0], 16)}</span><div><b>${esc(t)} <em>${ICON[k][1]}</em></b><small>${esc(d)}</small></div></div>`).join('')}</div></section>
+    </div>`;
+}
+
+/* ---------- Bitácora: todo lo que pasa en la plataforma ---------- */
+const ACTN = { pago: 'Registraste un pago', acceso: 'Diste acceso', prueba: 'Diste una prueba gratis', acceso_quitado: 'Quitaste el acceso', paciente_eliminado: 'Eliminaste un paciente',
+  especialista_eliminado: 'Eliminaste un especialista', opinion_oculta: 'Ocultaste una opinión', opinion_visible: 'Volviste a mostrar una opinión', contrasena_asignada: 'Asignaste una contraseña',
+  correo_restablecer: 'Enviaste correo para restablecer contraseña', correo_confirmado: 'Confirmaste un correo', cedula_verificada: 'Verificaste una cédula', cedula_sin_verificar: 'Quitaste la verificación de cédula',
+  perfil_desactivado: 'Desactivaste un perfil', perfil_reactivado: 'Reactivaste un perfil' };
+const STN = { unpaid: 'pago pendiente', review: 'pago por revisar', confirmed: 'confirmada', cancelled: 'cancelada', rejected: 'no aprobada' };
+const KINDS = { todo: 'Todo', admin: 'Mis acciones', registro: 'Registros', pago: 'Pagos', cita: 'Citas', opinion: 'Opiniones', evento: 'Talleres', error: 'Errores' };
+function logLine(e) {
+  const i = e.info || {}, who = nameOf(e.who), w = who ? `<b>${esc(who)}</b>` : '';
+  switch (e.kind) {
+    case 'registro': return ['user', 'Nuevo registro', `${esc(i.email)}${i.confirmado ? '' : ' · correo sin confirmar'}`];
+    case 'pago': return ['pay', 'Pago recibido', `${money(+i.monto)} de ${w || 'un especialista'} por ${esc(i.metodo || '—')} · acceso hasta ${new Date(i.hasta).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}`];
+    case 'cita': return ['cal', 'Nueva cita', `${esc(i.paciente)} con ${w || 'un especialista'} · ${STN[i.estado] || esc(i.estado)} · para el ${new Date(i.cuando).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}`];
+    case 'opinion': return ['star', 'Nueva opinión', `${'★'.repeat(i.estrellas)} de ${esc(i.autor)} para ${w || 'un especialista'}${i.oculta ? ' · oculta' : ''}`];
+    case 'evento': return ['mic', 'Nuevo evento', `${esc(i.titulo)} · ${w || 'un especialista'}`];
+    case 'admin': return ['shield', ACTN[i.accion] || i.accion, `${w ? w + ' · ' : ''}${i.monto ? money(+i.monto) + ' · ' : ''}${i.motivo ? 'Motivo: ' + esc(i.motivo) + ' · ' : ''}${i.email ? esc(i.email) + ' · ' : ''}por ${esc(i.por || 'administrador')}`];
+    case 'correo_error': return ['out', 'Correo con error', `${esc(i.evento)} a ${esc(i.para)} · ${esc(i.detalle || '')}`];
+    case 'tarea_error': return ['clock', 'Tarea automática con error', `${esc(i.tarea)} · ${esc(i.detalle || '')}`];
+  }
+  return ['form', e.kind, ''];
+}
+function logView() {
+  const f = S.logF, list = S.act.filter(e => (S.logDemo || !isDemo(e.who)) && (f === 'todo' || (f === 'error' ? /error/.test(e.kind) : e.kind === f)));
+  const days = {}; list.forEach(e => { const k = new Date(e.at).toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' }); (days[k] = days[k] || []).push(e); });
+  return `<div class="title-row"><h1>Bitácora</h1><button class="btn neu sm" data-a="reload">Actualizar</button></div>
+    <div class="chips" style="margin-bottom:14px">${Object.entries(KINDS).map(([k, t]) => `<button class="chip ${f === k ? 'on' : ''}" data-a="logF" data-f="${k}" aria-pressed="${f === k}">${t}</button>`).join('')}
+      <label class="check" style="margin-left:6px"><input type="checkbox" data-a="logDemo" ${S.logDemo ? 'checked' : ''}> Incluir la cuenta demo</label></div>
+    ${Object.keys(days).length ? Object.entries(days).map(([d, es]) => `<h3 class="log-d">${PA.cap(d)}</h3><div class="card log">${es.map(e => { const [icn, t, txt] = logLine(e);
+      return `<div class="log-it ${/error/.test(e.kind) ? 'err' : e.kind === 'admin' ? 'adm' : ''}"><span class="ic-box">${ic(icn, 16)}</span><div><b>${esc(t)}</b><small>${txt}</small></div><time title="${new Date(e.at).toLocaleString('es-MX')}">${new Date(e.at).toLocaleTimeString('es-MX', { hour: 'numeric', minute: '2-digit' })}</time></div>`; }).join('')}</div>`).join('')
+      : '<div class="empty">No hay movimientos con este filtro.</div>'}`;
 }
 
 function settingsView() {
@@ -309,7 +478,10 @@ document.addEventListener('click', async e => {
     case 'demoEnter': await sb.auth.signOut(); location.href = 'panel.html?correo=' + encodeURIComponent(d.e); break;
     case 'reload': await load(); toast('Lista actualizada'); break;
     case 'detail': detail(d.id); break;
-    case 'tab': S.tab = d.t; history.replaceState(null, '', d.t === 'pros' ? location.pathname : '#' + { clients: 'pacientes', settings: 'ajustes' }[d.t]); render(); break;
+    case 'tab': S.tab = d.t; history.replaceState(null, '', d.t === 'dash' ? location.pathname : '#' + { pros: 'especialistas', clients: 'pacientes', settings: 'ajustes', log: 'bitacora' }[d.t]); render(); break;
+    case 'logF': S.logF = d.f; render(); break;
+    case 'logDemo': S.logDemo = !S.logDemo; render(); break;
+    case 'goPro': S.tab = 'pros'; render(); detail(d.id); break;
     case 'access': accessModal(d.id); break;
     case 'pay': {
       const amount = Number(val('ac-amount')), [plan, n] = val('ac-period').split('|'), days = +n || Math.round(Number(val('ac-days')));
@@ -349,16 +521,19 @@ document.addEventListener('click', async e => {
       const pw = val('np'); if (pw.length < 8) return setErr('np-err', 'Debe tener al menos 8 caracteres.');
       el.disabled = true; const r = await callAdmin({ action: 'set_password', user_id: d.id, password: pw }); el.disabled = false;
       if (!r.ok) return setErr('np-err', 'No se pudo cambiar: ' + r.error);
+      logAdmin('contrasena_asignada', d.id);
       setErr('np-err', ''); setErr('np-ok', `Listo. Compártele al especialista su usuario y esta contraseña: ${pw}. Puede cambiarla después desde “Olvidé mi contraseña”.`); break;
     }
     case 'sendReset': {
       el.disabled = true; const u = userOf(d.id);
       const r = await sb.auth.resetPasswordForEmail(u.email, { redirectTo: PA.pageUrl('panel.html') }); el.disabled = false;
+      if (!r.error) logAdmin('correo_restablecer', d.id);
       r.error ? setErr('np-err', 'No se pudo enviar el correo. Intenta más tarde.') : setErr('np-ok', `Correo enviado a ${u.email}.`); break;
     }
     case 'confirm': {
       el.disabled = true; const r = await callAdmin({ action: 'confirm_email', user_id: d.id });
       if (!r.ok) { el.disabled = false; return setErr('np-err', 'No se pudo confirmar: ' + r.error); }
+      logAdmin('correo_confirmado', d.id);
       setErr('np-ok', 'Correo confirmado. Ya puede entrar.'); el.remove(); load(); break;
     }
     case 'delUser': case 'delClient': {
@@ -380,6 +555,7 @@ document.addEventListener('click', async e => {
       if (d.k === 'u') { const r = await callAdmin({ action: 'delete_user', user_id: d.id }); if (!r.ok) msg = r.error === 'is_admin' ? 'No se puede eliminar a otro administrador.' : r.error === 'self' ? 'No puedes eliminar tu propia cuenta.' : r.error; }
       else { const { data, error } = await sb.rpc('admin_delete_client', { p_id: d.id }); if (error || !data) msg = error ? error.message : 'Ya no existe.'; }
       if (msg) { el.disabled = false; el.textContent = 'Eliminar definitivamente'; return setErr('del-err', 'No se pudo eliminar: ' + msg); }
+      if (d.k === 'u') { const gone = userOf(d.id); logAdmin('especialista_eliminado', d.id, { email: gone?.email, nombre: gone?.profile?.full_name }); }
       closeModal(); await load(); toast(d.k === 'u' ? 'Especialista eliminado' : 'Paciente eliminado'); break;
     }
     case 'closeModal': closeModal(); break;
@@ -387,6 +563,7 @@ document.addEventListener('click', async e => {
       el.disabled = true;
       const { error } = await sb.from('profiles').update({ license_verified: d.v === '1' }).eq('id', d.id);
       if (error) { el.disabled = false; return toast('No se pudo actualizar.'); }
+      logAdmin(d.v === '1' ? 'cedula_verificada' : 'cedula_sin_verificar', d.id);
       detail(d.id); toast(d.v === '1' ? 'Cédula verificada: ya aparece el sello' : 'Verificación quitada'); break;
     }
     case 'hideRv': {
@@ -401,6 +578,7 @@ document.addEventListener('click', async e => {
       const u = userOf(d.id); el.disabled = true;
       const { error } = await sb.from('profiles').update({ is_active: !u.profile.is_active }).eq('id', d.id);
       if (error) { el.disabled = false; return toast('No se pudo actualizar.'); }
+      logAdmin(u.profile.is_active ? 'perfil_desactivado' : 'perfil_reactivado', d.id);
       await load(); detail(d.id); toast(u.profile.is_active ? 'Perfil desactivado: ya no aparece en el buscador' : 'Perfil reactivado'); break;
     }
   }

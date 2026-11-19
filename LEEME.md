@@ -158,3 +158,14 @@ Los textos de cada sección están en `HELP` dentro de `panel.html`.
 - **Cuenta demo** (`profiles.is_demo`): "Mariana López", un especialista de ejemplo con citas en todos los estados, pacientes con expediente y notas,
   encuestas respondidas, talleres con asistentes y opiniones. No aparece en el buscador ni en la cartelera; su perfil muestra el aviso
   "Perfil de demostración". Se entra desde Administración → Ajustes → Cuenta demo. Solo un administrador puede marcar una cuenta como demo.
+
+## Panel de administración
+`admin.html` abre en **Resumen** (función `admin_dashboard`), sin contar administradores ni la cuenta demo:
+- **Ingresos:** total ganado, este mes contra el anterior, ingreso mensual estimado de las suscripciones vigentes, pago promedio,
+  gráfica de los últimos 12 meses (con vista de tabla), por método de pago y renovaciones de los próximos 15 días.
+- **Clientes (especialistas):** registrados, pagando, en prueba, vencidos, publicados, registros por mes y por especialidad.
+- **Uso:** pacientes, citas y su estado, valor de las citas confirmadas, calificación promedio, encuestas y talleres.
+- **¿Todo funciona bien?:** tareas automáticas (recordatorios), llamadas a las funciones del servidor, correos, pagos sin revisar,
+  cédulas por verificar, consultorios sin ubicar y perfiles publicados sin horario.
+**Bitácora** (función `admin_activity`): registros, pagos, citas, opiniones, talleres, errores y las acciones del administrador
+(tabla `admin_log`: pagos, accesos, contraseñas, correos confirmados, cédulas, perfiles, eliminaciones, opiniones ocultas).
