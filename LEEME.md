@@ -146,3 +146,9 @@ Para publicar cambios en las páginas guardadas, sube el número en `const C = '
 sin enlaces al buscador ni a otros especialistas. Al agendar (`cita.html`) y al abrir un taller (`evento.html`) se conserva su marca
 (`&sitio=` en el enlace o recordado en la pestaña). En el panel, **Mi perfil → Tu página propia** tiene el enlace para copiar o
 compartir por WhatsApp y un código QR descargable para imprimir. El perfil normal (`?p=`) sigue mostrando MiConsulta.
+
+## Bienvenida para especialistas
+La primera vez que un especialista entra a su panel aparece un **recorrido guiado**: ilumina cada sección del menú y explica para qué sirve
+(en celular, las pestañas de abajo y "Más"), y termina llevándolo a completar su perfil. Se guarda en su cuenta para no repetirse en otros dispositivos.
+Desde su foto (arriba a la derecha) puede volver a verlo en **Recorrido por el panel**, o abrir la **Guía de cada sección**.
+Los textos de cada sección están en `HELP` dentro de `panel.html`.

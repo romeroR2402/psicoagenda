@@ -88,6 +88,24 @@
 .back-link{display:inline-block;color:var(--muted);text-decoration:none;font-weight:600;font-size:13px;margin-bottom:12px}
 .pat-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap}
 .pat-head small{display:block;color:var(--muted)}
+.tour-shade{position:fixed;z-index:70;border-radius:12px;box-shadow:0 0 0 9999px rgba(11,53,88,.55),0 0 0 3px var(--accent);pointer-events:none;transition:all .25s ease}
+.tour-shade.full{inset:0;border-radius:0;box-shadow:none;background:rgba(11,53,88,.55)}
+.tour-card{position:fixed;z-index:71;width:min(340px,calc(100vw - 24px));background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px;box-shadow:var(--shadow-l);animation:up .2s ease-out}
+.tour-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.tour-n{font-size:12px;font-weight:700;color:var(--accent)}
+.tour-x{width:28px;height:28px;border-radius:8px;color:var(--muted)}
+.tour-x:hover{background:var(--pebble)}
+.tour-card h3{font-size:18px}
+.tour-card p{margin:6px 0 12px;color:var(--muted);font-size:14px;line-height:1.5}
+.tour-dots{display:flex;gap:5px;margin-bottom:12px;flex-wrap:wrap}
+.tour-dots i{width:6px;height:6px;border-radius:50%;background:var(--line)}
+.tour-dots i.on{background:var(--accent);width:16px;border-radius:3px}
+.tour-acts{display:flex;justify-content:space-between;gap:8px}
+.guide{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr));gap:10px}
+.guide-it{display:flex;gap:12px;align-items:flex-start;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);text-decoration:none}
+a.guide-it:hover{border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+.guide-it b{display:block;font-size:14.5px}
+.guide-it small{display:block;color:var(--muted);font-size:12.5px;line-height:1.45;margin-top:2px}
 .site-grid{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:20px;align-items:center}
 .site-qr{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}
 .site-qr #site-qr{padding:8px;background:#fff;border:1px solid var(--line);border-radius:12px;min-width:166px;min-height:166px;display:grid;place-items:center}
@@ -255,7 +273,7 @@ async function loadAll() {
 // Mantiene el panel al día: al volver a la pestaña y cada minuto, sin interrumpir formularios abiertos.
 let lastLoad = 0;
 async function refresh() {
-  if (!S.user || !S.profile || document.hidden || document.getElementById('modal')?.hidden === false) return;
+  if (!S.user || !S.profile || document.hidden || TOUR.on || document.getElementById('modal')?.hidden === false) return;
   if (document.activeElement && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return;
   if (['horario', 'perfil', 'paciente'].includes(S.view) || Date.now() - lastLoad < 30000) return;
   lastLoad = Date.now(); await loadAll();
@@ -281,6 +299,7 @@ function renderTop() {
     toast(error ? 'No se pudo enviar el correo. Intenta más tarde.' : `Te enviamos un enlace a ${S.user.email} para crear tu nueva contraseña.`);
   } });
   if (S.isAdmin) items.push({ text: 'Administración', icon: 'shield', href: 'admin.html' });
+  if (S.profile) items.push({ text: 'Recorrido por el panel', icon: 'eye', action: () => startTour(true) }, { text: 'Guía de cada sección', icon: 'form', action: guideModal });
   items.push({ text: 'Ir al buscador', icon: 'search', href: 'index.html' });
   PA.accountMenu(top, { name: S.profile?.full_name || 'Mi cuenta', email: S.user.email, photo: S.profile?.photo_url, items,
     onLogout: async () => { await sb.auth.signOut(); S.recovery = false; location.hash = ''; } });
@@ -301,6 +320,90 @@ function render() {
       ${S.isAdmin ? `<a href="admin.html">${ic('shield', 18)}Administración</a>` : ''}
     </nav><main class="content gutter"><div class="wrap">${trialBanner()}${V[S.view]()}</div></main></div>${tabbar(badge)}`;
   if (S.view === 'pacientes') filterClients();
+  if (!TOUR.checked) { TOUR.checked = true; if (!tourDone()) setTimeout(() => startTour(false), 700); }
+}
+
+/* ---------- recorrido de bienvenida y guía del panel ---------- */
+// Qué es cada sección del panel (se usa en el recorrido y en la guía)
+const HELP = {
+  inicio: ['Tu resumen del día: pagos por revisar, citas sin pagar y próximas confirmadas. Aquí también está la lista de pasos para empezar a recibir citas.'],
+  calendario: ['Tu semana completa: horarios disponibles por consultorio, citas según su estado, días de descanso y tus talleres. Muévete con Anterior y Siguiente.'],
+  citas: ['Las solicitudes de tus pacientes. Cuando suben su comprobante, revísalo y toca Aprobar para confirmar la cita, o Rechazar para liberar el horario.'],
+  pacientes: ['Tu lista de pacientes. Cada uno tiene su expediente: datos, expediente clínico, notas de evolución, encuestas y citas. Quien agenda contigo se agrega solo.'],
+  conferencias: ['Crea conferencias, talleres y grupos de apoyo, presenciales o en línea, con o sin costo. Invita a tus pacientes por WhatsApp y mira quién confirmó.'],
+  opiniones: ['Lo que opinan tus pacientes después de una cita confirmada. No puedes borrarlas, pero sí responder públicamente con respeto.'],
+  horario: ['Los días y horas en que atiendes en cada consultorio, cuánto dura la sesión, con cuánta anticipación te pueden agendar y tus días de descanso.'],
+  ubicaciones: ['Tus consultorios y la consulta en línea. Márcalos en el mapa para que te encuentren por alcaldía o municipio y para el botón "Cómo llegar".'],
+  perfil: ['Tu foto, especialidad, título, precio, servicios, formación, datos de pago y política de cancelación. Arriba está el enlace de tu página propia y su código QR.'],
+  encuestas: ['Crea encuestas y envía a cada paciente su link personal, o comparte un link abierto. Las respuestas quedan en su expediente.'],
+};
+const TOUR = { on: false, i: 0, steps: [], checked: false };
+const tourKey = () => 'mc_tour_' + S.user.id;
+const tourDone = () => S.user?.user_metadata?.tour_done || (() => { try { return localStorage.getItem(tourKey()); } catch (e) { return null; } })();
+function tourSteps() {
+  const mobile = matchMedia('(max-width:900px)').matches, first = S.profile.full_name.split(' ')[0];
+  const nav = k => mobile ? `.tabbar a[href="#${k}"]` : `.side a[href="#${k}"]`;
+  const st = [{ title: `¡Bienvenido a tu panel, ${first}!`, text: 'Te mostramos en un minuto para qué sirve cada sección. Puedes saltarlo y volver a verlo cuando quieras desde tu foto, arriba a la derecha.' }];
+  (mobile ? TABS : Object.keys(VIEWS)).forEach(k => st.push({ sel: nav(k), title: VIEWS[k][0], text: HELP[k][0] }));
+  if (mobile) st.push({ sel: '.tabbar [data-a="more"]', title: 'Más', text: 'Aquí están el resto de las secciones: ' + MORE.map(k => VIEWS[k][0]).join(', ') + '. En "Guía de cada sección" (en tu foto) se explica cada una.' });
+  else st.push({ sel: '.side a[href^="perfil.html"]', title: 'Ver perfil público', text: 'Abre tu perfil tal como lo ven tus pacientes en el buscador.' });
+  st.push({ sel: '.acc-btn', title: 'Tu cuenta', text: 'Toca tu foto para ver tu perfil público, cambiar tu contraseña, repetir este recorrido, ver la guía de cada sección o cerrar sesión.' });
+  st.push({ title: 'Listo para empezar', text: 'Tu primer paso: completa tu perfil, agrega tu consultorio y tu horario. Después activa "Mostrar mi perfil en el buscador" y empezarás a recibir citas.', end: true });
+  return st;
+}
+function startTour(manual) {
+  if (!S.profile) return;
+  closeModal(); TOUR.on = true; TOUR.i = 0; TOUR.steps = tourSteps(); TOUR.manual = manual;
+  if (!document.getElementById('tour')) { const t = document.createElement('div'); t.id = 'tour'; document.body.appendChild(t); }
+  tourDraw();
+}
+function endTour(goPerfil) {
+  TOUR.on = false; document.getElementById('tour')?.remove();
+  try { localStorage.setItem(tourKey(), '1'); } catch (e) {}
+  if (!S.user.user_metadata?.tour_done) sb.auth.updateUser({ data: { tour_done: true } }).catch(() => {});
+  if (goPerfil) location.hash = '#perfil';
+}
+function tourDraw() {
+  const box = document.getElementById('tour'); if (!box) return;
+  const s = TOUR.steps[TOUR.i], n = TOUR.steps.length, el = s.sel ? document.querySelector(s.sel) : null;
+  if (s.sel && (!el || !el.getClientRects().length)) { TOUR.i = Math.min(n - 1, TOUR.i + 1); return tourDraw(); }
+  el?.scrollIntoView({ block: 'nearest' });
+  const r = el ? el.getBoundingClientRect() : null, pad = 6;
+  box.innerHTML = `<div class="tour-shade ${r ? '' : 'full'}" ${r ? `style="top:${r.top - pad}px;left:${r.left - pad}px;width:${r.width + pad * 2}px;height:${r.height + pad * 2}px"` : ''}></div>
+    <div class="tour-card" role="dialog" aria-modal="true" aria-labelledby="tour-t">
+      <div class="tour-top"><span class="tour-n">${TOUR.i + 1} de ${n}</span><button class="tour-x" data-tour="skip" aria-label="Cerrar recorrido">✕</button></div>
+      <h3 id="tour-t">${esc(s.title)}</h3><p>${esc(s.text)}</p>
+      <div class="tour-dots">${TOUR.steps.map((_, i) => `<i class="${i === TOUR.i ? 'on' : ''}"></i>`).join('')}</div>
+      <div class="tour-acts">${TOUR.i ? '<button class="btn neu sm" data-tour="prev">Atrás</button>' : '<button class="btn neu sm" data-tour="skip">Saltar</button>'}
+        ${s.end ? '<button class="btn pri sm" data-tour="perfil">Completar mi perfil</button>' : '<button class="btn pri sm" data-tour="next">Siguiente</button>'}</div></div>`;
+  const card = box.querySelector('.tour-card'), cw = card.offsetWidth, ch = card.offsetHeight, W = innerWidth, H = innerHeight;
+  let x, y;
+  if (!r) { x = (W - cw) / 2; y = (H - ch) / 2; }
+  else if (r.right + 16 + cw < W && r.width < W / 3) { x = r.right + 16; y = Math.min(Math.max(12, r.top + r.height / 2 - ch / 2), H - ch - 12); }
+  else { x = Math.min(Math.max(12, r.left + r.width / 2 - cw / 2), W - cw - 12); y = r.top - ch - 16 > 12 ? r.top - ch - 16 : Math.min(r.bottom + 16, H - ch - 12); }
+  card.style.left = x + 'px'; card.style.top = y + 'px';
+  card.querySelector('[data-tour="next"],[data-tour="perfil"]')?.focus();
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-tour]'); if (!b) return;
+  const a = b.dataset.tour;
+  if (a === 'next') { TOUR.i++; tourDraw(); }
+  else if (a === 'prev') { TOUR.i = Math.max(0, TOUR.i - 1); tourDraw(); }
+  else endTour(a === 'perfil');
+});
+document.addEventListener('keydown', e => {
+  if (!TOUR.on) return;
+  if (e.key === 'Escape') endTour(false);
+  else if (e.key === 'ArrowRight' && TOUR.i < TOUR.steps.length - 1) { TOUR.i++; tourDraw(); }
+  else if (e.key === 'ArrowLeft' && TOUR.i) { TOUR.i--; tourDraw(); }
+});
+addEventListener('resize', () => TOUR.on && tourDraw());
+function guideModal() {
+  openModal(`<h3>Guía de cada sección</h3><p class="sub">Qué encuentras en cada parte de tu panel.</p><div class="guide">
+    ${Object.entries(VIEWS).map(([k, [t, i]]) => `<a class="guide-it" href="#${k}" data-close><span class="ic-box">${ic(i, 18)}</span><span><b>${t}</b><small>${HELP[k][0]}</small></span></a>`).join('')}
+    <div class="guide-it"><span class="ic-box">${ic('eye', 18)}</span><span><b>Tu página propia</b><small>Un enlace con tu nombre arriba y sin el buscador, para compartir en redes y WhatsApp. Está en Mi perfil, con su código QR.</small></span></div>
+    <div class="guide-it"><span class="ic-box">${ic('user', 18)}</span><span><b>Tu cuenta (tu foto)</b><small>Ver tu perfil público, cambiar contraseña, repetir el recorrido o cerrar sesión.</small></span></div></div>
+    <div class="acts" style="margin-top:14px"><button class="btn pri" data-a="tourAgain">Ver el recorrido</button></div>`, true);
 }
 
 /* ---------- menú inferior en celular ---------- */
@@ -1505,6 +1608,7 @@ document.addEventListener('click', async e => {
     case 'reload': await loadAll(); toast('Datos actualizados'); break;
     case 'topic': el.setAttribute('aria-pressed', el.getAttribute('aria-pressed') !== 'true'); if (el.closest('#pf-extra')) refreshTopics(); break;
     case 'saveProfile': saveProfile(el); break;
+    case 'tourAgain': startTour(true); break;
     case 'svcAdd': document.getElementById('pf-svcs').insertAdjacentHTML('beforeend', svcRow()); document.querySelector('#pf-svcs .svc:last-child input').focus(); break;
     case 'credAdd': document.getElementById('pf-creds').insertAdjacentHTML('beforeend', credRow()); document.querySelector('#pf-creds .cred:last-child input').focus(); break;
     case 'rowDel': el.closest('.erow').remove(); break;
