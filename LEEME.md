@@ -123,3 +123,12 @@ En el buscador, el campo de lugar tiene dos niveles: **estado** (por ejemplo Ciu
 con cuántos especialistas hay en cada uno. Al elegir una zona aparece un mapa con el precio de cada consultorio; al tocarlo se abre el perfil para agendar.
 El estado y la alcaldía de cada consultorio (`locations.state`, `locations.district`) se calculan solos con la función `geocode`
 a partir de su punto en el mapa, y el especialista puede corregirlos en **Ubicaciones**.
+
+## Perfil completo y talleres
+- **Especialidad principal y adicionales:** en Mi perfil, "También atiendo como" (ej. tanatóloga y psicoterapeuta) hace que aparezca en varias secciones del buscador.
+- **Temas por especialidad:** en tanatología se sugieren tipos de duelo (padre, madre, hijo, gestacional y perinatal, divorcio, mascota, suicidio…),
+  tanatología infantil, logoterapia y prevención del suicidio. Al elegir Tanatólogos en el buscador, los temas frecuentes son de duelo.
+- **Servicios con precio** (`profiles.services`): nombre, precio, duración y descripción; se muestran en el perfil.
+- **Formación y certificaciones** (`profiles.credentials`): nombre, institución, año, folio y enlace de verificación (botón "Verificar" en el perfil).
+- **Talleres y conferencias** (`events.kind`: conferencia, taller o grupo de apoyo; `events.price` opcional). Los públicos aparecen en el perfil
+  y en la cartelera `eventos.html` (función `public_upcoming_events`).

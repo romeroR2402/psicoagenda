@@ -58,6 +58,13 @@
 .vbadge{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--ok);background:var(--ok-soft);padding:3px 9px;border-radius:999px}
 .vbadge.warn{color:var(--bad);background:var(--bad-soft)}
 .rv-reply{margin-top:10px;background:var(--pebble);border-radius:10px;padding:10px 12px;font-size:13.5px}
+.svc-list{display:flex;flex-direction:column;margin-top:6px}
+.svc-it{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:12px 0;border-top:1px solid var(--line)}
+.svc-it:first-child{border-top:0}
+.svc-it>div{min-width:0}
+.svc-it b{display:block;font-size:14.5px}
+.svc-it small{display:block;color:var(--muted);font-size:12.5px;margin-top:2px}
+.svc-p{text-align:right;flex:none}
 .rating-l{display:inline-flex;align-items:center;gap:6px;font-weight:700;color:var(--ink);text-decoration:none}
 .policy{display:flex;gap:10px;align-items:flex-start;background:var(--pebble);border-radius:10px;padding:10px 12px;font-size:12.5px;color:var(--muted);margin-top:12px}
 .policy svg{flex:none;color:var(--accent);margin-top:1px}
@@ -92,7 +99,7 @@ function fail(msg) { root.innerHTML = `<a class="back" href="index.html">← Vol
 
 async function load() {
   if (!sb) return fail('No se pudo cargar la conexión.');
-  const { data, error } = await sb.from('profiles').select('id,full_name,slug,title,license,license_verified,cancel_policy,cancel_hours,bio,topics,price,session_minutes,timezone,photo_url,whatsapp,languages,locations(id,kind,name,address,city,lat,lng,maps_url),schedules(weekday,start_time,end_time,location_id)')
+  const { data, error } = await sb.from('profiles').select('id,full_name,slug,specialty,specialties,services,credentials,title,license,license_verified,cancel_policy,cancel_hours,bio,topics,price,session_minutes,timezone,photo_url,whatsapp,languages,locations(id,kind,name,address,city,lat,lng,maps_url),schedules(weekday,start_time,end_time,location_id)')
     .eq('slug', slug).eq('is_listed', true).eq('is_active', true).maybeSingle();
   if (error || !data) return fail('Puede que el link esté mal escrito o que el especialista ya no esté disponible.');
   P = data; document.title = `${P.full_name} · MiConsulta`;
@@ -153,8 +160,9 @@ function renderReviews() {
 function renderEvents(list) {
   const el = document.getElementById('events'); if (!el) return;
   el.hidden = false;
-  el.innerHTML = `<h3>Próximas conferencias</h3><div class="stack" style="margin-top:12px;gap:10px">${list.map(e => `<a class="ev-row" href="evento.html?e=${e.public_token}">
-    ${e.image_url ? `<img src="${esc(e.image_url)}" alt="">` : `<span class="ic-box">${ic('mic')}</span>`}<div><b>${esc(e.title)}</b><small>${fmtDay(e.starts_at, P.timezone)} · ${fmtTime(e.starts_at, P.timezone)} · ${e.mode === 'en_linea' ? 'En línea' : esc(e.place || 'Presencial')}</small></div><span class="btn sec sm">Asistir</span></a>`).join('')}</div>`;
+  const EVK = { conferencia: 'Conferencia', taller: 'Taller', grupo: 'Grupo de apoyo' };
+  el.innerHTML = `<h3>Próximos talleres y conferencias</h3><div class="stack" style="margin-top:12px;gap:10px">${list.map(e => `<a class="ev-row" href="evento.html?e=${e.public_token}">
+    ${e.image_url ? `<img src="${esc(e.image_url)}" alt="">` : `<span class="ic-box">${ic('mic')}</span>`}<div><span class="tag" style="font-size:11px">${EVK[e.kind] || 'Conferencia'}${e.price ? ' · ' + money(e.price) : ' · Gratis'}</span><b>${esc(e.title)}</b><small>${fmtDay(e.starts_at, P.timezone)} · ${fmtTime(e.starts_at, P.timezone)} · ${e.mode === 'en_linea' ? 'En línea' : esc(e.place || 'Presencial')}</small></div><span class="btn sec sm">Asistir</span></a>`).join('')}</div>`;
 }
 
 function render() {
@@ -171,6 +179,10 @@ function render() {
         ${(P.languages || []).length ? `<div class="muted small" style="margin-top:10px">Idiomas: ${P.languages.map(esc).join(', ')}</div>` : ''}
       </section>
       ${P.bio ? `<section class="card"><h3>Sobre mí</h3><p class="pre" style="margin:8px 0 0">${esc(P.bio)}</p></section>` : ''}
+      ${(P.services || []).length ? `<section class="card"><h3>Servicios</h3><div class="svc-list">${P.services.map(v => `<div class="svc-it"><div><b>${esc(v.name)}</b>${v.desc ? `<small>${esc(v.desc)}</small>` : ''}</div>
+        <div class="svc-p">${v.price != null ? `<b>${money(v.price)}</b>` : '<span class="muted small">Consultar</span>'}${v.minutes ? `<small>${v.minutes} min</small>` : ''}</div></div>`).join('')}</div></section>` : ''}
+      ${(P.credentials || []).length ? `<section class="card"><h3>Formación y certificaciones</h3><div class="svc-list">${P.credentials.map(c => `<div class="svc-it"><div><b>${esc(c.name)}</b><small>${esc([c.org, c.year].filter(Boolean).join(' · '))}${c.id ? ` · Folio ${esc(c.id)}` : ''}</small></div>
+        ${c.url && /^https:\/\//.test(c.url) ? `<a class="btn neu sm" href="${esc(c.url)}" target="_blank" rel="noopener nofollow">${ic('shield', 14)} Verificar</a>` : ''}</div>`).join('')}</div></section>` : ''}
       <section class="card"><h3>Dónde atiende</h3><div style="margin-top:6px">${locs.length ? locs.map(l => `<div class="loc"><span class="ic-box">${ic(l.kind === 'en_linea' ? 'video' : 'pin')}</span><div><b>${esc(l.name)}</b><div class="muted small">${l.kind === 'en_linea' ? 'Consulta en línea por videollamada' : esc([l.address, l.city].filter(Boolean).join(', '))}</div>
           ${hoursOf(l) ? `<div class="small" style="margin-top:4px">${ic('clock', 13)} ${hoursOf(l)}</div>` : ''}
           ${l.kind === 'presencial' ? `<div class="chips" style="margin-top:8px"><a class="btn sec sm" href="${esc(PA.gdir(l))}" target="_blank" rel="noopener">${ic('pin', 14)} Cómo llegar</a><a class="btn neu sm" href="${esc(PA.gmaps(l))}" target="_blank" rel="noopener">Ver en Google Maps</a></div>` : ''}</div></div>`).join('') : '<p class="muted">Aún no hay ubicaciones registradas.</p>'}</div>

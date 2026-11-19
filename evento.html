@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Conferencia · MiConsulta</title>
+<title>Evento · MiConsulta</title>
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
@@ -31,7 +31,7 @@
 <header class="topbar"><div class="wrap gutter">
   <a class="brand" href="index.html"><i><svg viewBox="6 8 20 20" width="22" height="22" aria-hidden="true"><path d="M16 26c-6-3.8-9.6-7.8-9.6-12.3A5.2 5.2 0 0 1 16 10.6a5.2 5.2 0 0 1 9.6 3.1C25.6 18.2 22 22.2 16 26z" fill="currentColor"/><path d="M16 22.2v-5" stroke="var(--accent)" stroke-width="1.7" stroke-linecap="round"/><path d="M16 18.4c0-2.5 1.7-4 4.1-4 0 2.5-1.7 4-4.1 4zM16 19.6c0-2.1-1.5-3.4-3.5-3.4 0 2.1 1.5 3.4 3.5 3.4z" fill="var(--accent)"/></svg></i>MiConsulta</a>
 </div></header>
-<main class="page gutter"><div class="stack" id="root"><div class="empty">Cargando conferencia…</div></div></main>
+<main class="page gutter"><div class="stack" id="root"><div class="empty">Cargando evento…</div></div></main>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="config.js"></script>
@@ -75,7 +75,8 @@ function render() {
         <p class="err" id="rg-err"></p><button class="btn pri big">Apartar mi lugar</button></form>`;
   root.innerHTML = `<article class="ev">
     ${E.image_url ? `<img class="cover" src="${esc(E.image_url)}" alt="">` : `<div class="cover cover-ph">${ic('users', 48)}</div>`}
-    <h1>${esc(E.title)}</h1>
+    <span class="tag" style="margin-top:18px;display:inline-block">${{ conferencia: 'Conferencia', taller: 'Taller', grupo: 'Grupo de apoyo' }[E.kind] || 'Conferencia'} · ${E.price ? PA.money(E.price) : 'Gratis'}</span>
+    <h1 style="margin-top:8px">${esc(E.title)}</h1>
     <div class="who">${av(pr.name, 'sm', pr.photo_url)}<div><b>${esc(pr.name || '')}</b><small>${esc(pr.title || '')}</small></div></div>
     <div class="facts">
       <div>${ic('cal', 20)}<span>${fmtDay(E.starts_at, tz)}<small>${fmtTime(E.starts_at, tz)} – ${fmtTime(E.ends_at, tz)}</small></span></div>

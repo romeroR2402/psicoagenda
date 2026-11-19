@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Talleres y conferencias · MiConsulta</title>
+<meta name="description" content="Talleres, conferencias y grupos de apoyo de especialistas de la salud: duelo, tanatología, psicoterapia y más.">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="manifest" href="site.webmanifest">
+<meta name="theme-color" content="#006bff">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="assets/app.css">
+<style>
+.page{padding-block:32px 64px}
+.head h1{font-size:clamp(28px,4.4vw,44px);line-height:1.1}
+.head p{color:var(--muted);font-size:16.5px;max-width:60ch;margin:12px 0 0}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin:22px 0 20px}
+.evs{display:grid;gap:18px;grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr))}
+.ev{display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:var(--shadow);text-decoration:none;color:var(--ink);transition:transform .15s,box-shadow .15s}
+.ev:hover{transform:translateY(-2px);box-shadow:var(--shadow-l)}
+.ev-img{width:100%;aspect-ratio:16/8;object-fit:cover;display:block;background:var(--accent-soft)}
+.ev-ph{display:grid;place-items:center;color:var(--accent)}
+.ev-b{padding:16px;display:flex;flex-direction:column;gap:8px;flex:1}
+.ev-b h3{font-size:18px;line-height:1.3}
+.ev-meta{display:flex;flex-direction:column;gap:5px;font-size:13.5px;color:var(--muted)}
+.ev-meta span{display:flex;gap:8px;align-items:center}
+.ev-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:auto;padding-top:10px;border-top:1px solid var(--line)}
+.ev-foot .who b{font-size:13.5px}
+.price{font-weight:800;font-size:15px;white-space:nowrap}
+</style>
+</head>
+<body>
+<header class="topbar"><div class="wrap gutter">
+  <a class="brand" href="index.html"><i><svg viewBox="6 8 20 20" width="22" height="22" aria-hidden="true"><path d="M16 26c-6-3.8-9.6-7.8-9.6-12.3A5.2 5.2 0 0 1 16 10.6a5.2 5.2 0 0 1 9.6 3.1C25.6 18.2 22 22.2 16 26z" fill="currentColor"/><path d="M16 22.2v-5" stroke="var(--accent)" stroke-width="1.7" stroke-linecap="round"/><path d="M16 18.4c0-2.5 1.7-4 4.1-4 0 2.5-1.7 4-4.1 4zM16 19.6c0-2.1-1.5-3.4-3.5-3.4 0 2.1 1.5 3.4 3.5 3.4z" fill="var(--accent)"/></svg></i>MiConsulta</a>
+  <nav class="top-links"><a class="btn neu sm" href="index.html">Buscar especialistas</a></nav>
+</div></header>
+<main class="page"><div class="wrap gutter">
+  <div class="head"><h1>Talleres y conferencias</h1><p>Talleres, conferencias y grupos de apoyo de especialistas en duelo, tanatología, psicoterapia y salud. Aparta tu lugar en línea.</p></div>
+  <div class="filters" id="filters"></div>
+  <div class="evs" id="list"><div class="empty">Cargando…</div></div>
+</div></main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script src="assets/common.js"></script>
+<script>
+(() => {
+const { sb, esc, av, ic, money, fmtDay, fmtTime } = PA;
+const KIND = { conferencia: 'Conferencia', taller: 'Taller', grupo: 'Grupo de apoyo' };
+const F = { kind: new URLSearchParams(location.search).get('tipo') || '', mode: '' };
+let all = [];
+
+function filters() {
+  const chip = (k, v, t) => `<button class="chip ${F[k] === v ? 'on' : ''}" data-k="${k}" data-v="${v}" aria-pressed="${F[k] === v}">${t}</button>`;
+  document.getElementById('filters').innerHTML = chip('kind', '', 'Todos') + [['conferencia', 'Conferencias'], ['taller', 'Talleres'], ['grupo', 'Grupos de apoyo']].map(([k, t]) => chip('kind', k, t)).join('')
+    + '<span style="width:10px"></span>' + chip('mode', '', 'Cualquier modalidad') + chip('mode', 'en_linea', 'En línea') + chip('mode', 'presencial', 'Presencial');
+}
+function render() {
+  filters();
+  const list = all.filter(e => (!F.kind || e.kind === F.kind) && (!F.mode || e.mode === F.mode));
+  document.getElementById('list').innerHTML = list.map(e => { const pr = e.professional || {}, tz = pr.timezone || PA.TZ;
+    return `<a class="ev" href="evento.html?e=${encodeURIComponent(e.public_token)}">
+      ${e.image_url ? `<img class="ev-img" src="${esc(e.image_url)}" alt="" loading="lazy">` : `<div class="ev-img ev-ph">${ic('users', 40)}</div>`}
+      <div class="ev-b"><div><span class="tag">${KIND[e.kind] || 'Conferencia'}</span></div><h3>${esc(e.title)}</h3>
+        <div class="ev-meta"><span>${ic('cal', 15)}${fmtDay(e.starts_at, tz)} · ${fmtTime(e.starts_at, tz)}</span>
+          <span>${ic(e.mode === 'en_linea' ? 'video' : 'pin', 15)}${e.mode === 'en_linea' ? 'En línea' : esc(e.place || 'Presencial')}</span>
+          ${e.capacity ? `<span>${ic('users', 15)}${Math.max(0, e.capacity - e.confirmed)} lugares disponibles</span>` : ''}</div>
+        <div class="ev-foot"><div class="who">${av(pr.name, 'sm', pr.photo_url)}<div><b>${esc(pr.name || '')}</b><small>${esc(pr.title || '')}</small></div></div><span class="price">${e.price ? money(e.price) : 'Gratis'}</span></div>
+      </div></a>`; }).join('') || `<div class="empty">${all.length ? 'No hay eventos con esos filtros.' : 'Por ahora no hay talleres ni conferencias próximas. Vuelve pronto.'}</div>`;
+}
+document.addEventListener('click', e => { const b = e.target.closest('[data-k]'); if (!b) return; F[b.dataset.k] = b.dataset.v; render(); });
+(async () => {
+  if (!sb) { document.getElementById('list').innerHTML = '<div class="empty">No se pudo cargar la conexión.</div>'; return; }
+  const { data, error } = await sb.rpc('public_upcoming_events');
+  if (error) { document.getElementById('list').innerHTML = '<div class="empty">No pudimos cargar los eventos. Recarga la página.</div>'; return; }
+  all = data || []; render();
+})();
+})();
+</script>
+</body>
+</html>
