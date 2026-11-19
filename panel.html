@@ -88,6 +88,10 @@
 .back-link{display:inline-block;color:var(--muted);text-decoration:none;font-weight:600;font-size:13px;margin-bottom:12px}
 .pat-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap}
 .pat-head small{display:block;color:var(--muted)}
+.site-grid{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:20px;align-items:center}
+.site-qr{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}
+.site-qr #site-qr{padding:8px;background:#fff;border:1px solid var(--line);border-radius:12px;min-width:166px;min-height:166px;display:grid;place-items:center}
+@media (max-width:640px){.site-grid{grid-template-columns:1fr}}
 .erow{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,.8fr) minmax(0,.55fr) 36px;gap:8px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--card)}
 .erow.cred{grid-template-columns:minmax(0,1.6fr) minmax(0,1.3fr) minmax(0,.55fr) 36px}
 .erow .in{padding:10px 12px;font-size:14px}
@@ -880,7 +884,29 @@ async function saveLoc(id, btn) {
 }
 
 V.perfil = () => `<div class="title-row"><h1>Mi perfil</h1><a class="btn neu sm" href="perfil.html?p=${encodeURIComponent(S.profile.slug)}" target="_blank" rel="noopener">${ic('eye', 15)} Ver como paciente</a></div>
-  <section class="card">${profileForm(S.profile, false)}</section>${waAlertCard()}`;
+  ${siteCard()}<section class="card">${profileForm(S.profile, false)}</section>${waAlertCard()}`;
+
+/* Página propia: enlace del especialista que se ve como su propia página (sin el buscador de MiConsulta) */
+const siteUrl = () => pageUrl('perfil.html?sitio=' + encodeURIComponent(S.profile.slug));
+function siteCard() {
+  const u = siteUrl();
+  setTimeout(drawQR, 0);
+  return `<section class="card site-card"><div class="site-grid"><div>
+    <h2>Tu página propia</h2><p class="muted small" style="margin:4px 0 12px">Compártela en tus redes, WhatsApp o tarjetas. Tus pacientes ven solo tu perfil: tu nombre arriba, tus horarios, servicios, opiniones y talleres, sin el buscador ni otros especialistas.</p>
+    <div class="mono" id="site-u">${esc(u)}</div>
+    <div class="chips" style="margin-top:12px"><button class="btn pri sm" data-a="copy" data-u="${esc(u)}" data-el="site-u">Copiar enlace</button>
+      <a class="btn neu sm" href="${esc(u)}" target="_blank" rel="noopener">${ic('eye', 15)} Abrir</a>
+      <a class="btn sec sm" href="https://wa.me/?text=${encodeURIComponent(`Agenda tu cita conmigo en línea: ${u}`)}" target="_blank" rel="noopener">${ic('phone', 15)} Compartir por WhatsApp</a></div>
+    ${S.profile.is_listed ? '' : '<p class="err" style="margin-top:10px">Tu perfil aún no está publicado: activa "Mostrar mi perfil en el buscador" abajo para que tu página funcione.</p>'}</div>
+    <div class="site-qr"><div id="site-qr" aria-label="Código QR de tu página"></div><button class="btn neu sm" data-a="qrDl">Descargar QR</button><small class="muted">Para tu consultorio o tarjetas</small></div></div></section>`;
+}
+function drawQR() {
+  const box = document.getElementById('site-qr'); if (!box) return;
+  const go = () => { box.innerHTML = ''; new QRCode(box, { text: siteUrl(), width: 148, height: 148, colorDark: '#0b3558', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M }); };
+  if (window.QRCode) return go();
+  const sc = document.createElement('script'); sc.src = 'https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js'; sc.onload = go;
+  sc.onerror = () => { box.innerHTML = '<small class="muted">No se pudo crear el código QR.</small>'; }; document.head.appendChild(sc);
+}
 
 /* Pacientes */
 const SOURCES = { particular: 'Particular (llegó por su cuenta)', empresa: 'Recomendado por una empresa', referido: 'Referido por una persona', redes: 'Redes sociales', buscador: 'Buscador de MiConsulta', encuesta: 'Encuesta (link abierto)', otro: 'Otro' };
@@ -1482,6 +1508,15 @@ document.addEventListener('click', async e => {
     case 'svcAdd': document.getElementById('pf-svcs').insertAdjacentHTML('beforeend', svcRow()); document.querySelector('#pf-svcs .svc:last-child input').focus(); break;
     case 'credAdd': document.getElementById('pf-creds').insertAdjacentHTML('beforeend', credRow()); document.querySelector('#pf-creds .cred:last-child input').focus(); break;
     case 'rowDel': el.closest('.erow').remove(); break;
+    case 'qrDl': {
+      const c = document.querySelector('#site-qr canvas'); if (!c) return;
+      // QR con margen blanco y el nombre debajo, listo para imprimir
+      const out = document.createElement('canvas'), pad = 24, w = c.width + pad * 2; out.width = w; out.height = w + 40;
+      const x = out.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, out.width, out.height); x.drawImage(c, pad, pad);
+      x.fillStyle = '#0b3558'; x.font = 'bold 15px Manrope, Arial'; x.textAlign = 'center'; x.fillText('Agenda tu cita', w / 2, w + 18);
+      x.font = '13px Manrope, Arial'; x.fillText(S.profile.full_name, w / 2, w + 34);
+      const a = document.createElement('a'); a.href = out.toDataURL('image/png'); a.download = 'qr-' + S.profile.slug + '.png'; a.click(); break;
+    }
     case 'replyRv': {
       el.disabled = true; const { data, error } = await sb.rpc('reply_review', { p_id: d.id, p_reply: val('rp-' + d.id) }); el.disabled = false;
       if (error || !data.ok) return toast('No se pudo guardar la respuesta.');

@@ -140,3 +140,9 @@ Igual que la app de Los Ponpones, MiConsulta es una app web instalable:
 - En el inicio y en el panel aparece "Instala MiConsulta": en Android/Chrome instala con un toque; en iPhone muestra los pasos
   (Compartir → Agregar a inicio). Si se cierra, no vuelve a salir en 30 días.
 Para publicar cambios en las páginas guardadas, sube el número en `const C = 'miconsulta-v1'` de `sw.js`.
+
+## Página propia del especialista
+`perfil.html?sitio=<slug>` es la página personal de cada especialista: su nombre y foto arriba en lugar de MiConsulta,
+sin enlaces al buscador ni a otros especialistas. Al agendar (`cita.html`) y al abrir un taller (`evento.html`) se conserva su marca
+(`&sitio=` en el enlace o recordado en la pestaña). En el panel, **Mi perfil → Tu página propia** tiene el enlace para copiar o
+compartir por WhatsApp y un código QR descargable para imprimir. El perfil normal (`?p=`) sigue mostrando MiConsulta.

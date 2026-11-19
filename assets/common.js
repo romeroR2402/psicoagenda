@@ -139,6 +139,27 @@ window.PA = (() => {
     setTimeout(draw, 1200);
   }
 
+  // ---------- Página propia del especialista (perfil.html?sitio=slug) ----------
+  // Se ve como la página del especialista: su nombre arriba y sin enlaces al buscador de MiConsulta.
+  // Se conserva al pasar a la cita o a un taller (?sitio=slug, o lo recuerda la pestaña).
+  function siteSlug(owner) {
+    const q = new URLSearchParams(location.search).get('sitio');
+    if (q) { try { sessionStorage.setItem('mc_sitio', q); } catch (e) {} return q; }
+    let s = null; try { s = sessionStorage.getItem('mc_sitio'); } catch (e) {}
+    return s && (!owner || owner === s) ? s : null;
+  }
+  const siteQS = slug => slug ? '&sitio=' + encodeURIComponent(slug) : '';
+  function siteBrand(pro) {
+    const home = 'perfil.html?sitio=' + encodeURIComponent(pro.slug);
+    const b = document.querySelector('.topbar .brand');
+    if (b) { b.href = home; b.classList.add('site-brand'); b.innerHTML = `${av(pro.name, 'sm', pro.photo)}<span><b>${esc(pro.name)}</b>${pro.title ? `<small>${esc(pro.title)}</small>` : ''}</span>`; }
+    document.querySelectorAll('.topbar .top-links').forEach(n => n.remove());
+    document.querySelector('link[rel="manifest"]')?.remove();
+    document.querySelector('meta[name="apple-mobile-web-app-title"]')?.setAttribute('content', pro.name.split(' ')[0]);
+    if (pro.photo) document.querySelectorAll('link[rel="icon"],link[rel="apple-touch-icon"]').forEach(l => { l.href = pro.photo; l.removeAttribute('type'); l.removeAttribute('sizes'); });
+    document.body.classList.add('site-mode');
+  }
+
   function copy(text, el) {
     const ok = () => toast('Copiado');
     const fallback = () => { if (el) { const r = document.createRange(); r.selectNodeContents(el); const s = getSelection(); s.removeAllRanges(); s.addRange(r); } toast('Texto seleccionado: cópialo con Ctrl+C o manteniendo presionado'); };
@@ -167,5 +188,5 @@ window.PA = (() => {
   const waLink = (phone, text) => { const d = String(phone).replace(/\D/g, ''); return `https://wa.me/${d.length === 10 ? '52' + d : d}?text=${encodeURIComponent(text)}`; };
   const pageUrl = p => new URL(p, location.href).href;
 
-  return { sb, TZ, gmaps, gdir, MAPS_RE, esc, av, avc, ini, cap, norm, slugify, fmtDay, fmtShort, fmtTime, fmtDT, dayKey, todayKey, money, STATUS, pill, MODE, DOW, ic, toast, openModal, closeModal, accountMenu, offerInstall, isApp, copy, compress, waLink, pageUrl };
+  return { sb, TZ, gmaps, gdir, MAPS_RE, esc, av, avc, ini, cap, norm, slugify, fmtDay, fmtShort, fmtTime, fmtDT, dayKey, todayKey, money, STATUS, pill, MODE, DOW, ic, toast, openModal, closeModal, accountMenu, offerInstall, isApp, siteSlug, siteQS, siteBrand, copy, compress, waLink, pageUrl };
 })();

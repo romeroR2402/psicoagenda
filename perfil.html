@@ -91,7 +91,9 @@
 (() => {
 const { sb, esc, av, ic, money, MODE, fmtDay, fmtTime, dayKey } = PA;
 const root = document.getElementById('root');
-const slug = new URLSearchParams(location.search).get('p') || '';
+const QP = new URLSearchParams(location.search), SITE = QP.get('sitio') || '', slug = QP.get('p') || SITE;
+if (!SITE) { try { sessionStorage.removeItem('mc_sitio'); } catch (e) {} } else PA.siteSlug();
+const SQ = PA.siteQS(SITE);
 let P = null, slots = [], byDay = {}, B = { loc: null, day: null, slot: null }, RV = null, rvAll = false;
 const STAR = n => `<svg viewBox="0 0 24 24" width="${n}" height="${n}" fill="currentColor" aria-hidden="true"><path d="M12 2.8l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17.2l-5.7 3.1 1.2-6.4-4.7-4.4 6.4-.8z"/></svg>`;
 const starsI = (r, n = 16) => `<span class="stars-i" aria-label="${r} de 5">${[1, 2, 3, 4, 5].map(i => `<span class="${i <= Math.round(r) ? '' : 'off'}">${STAR(n)}</span>`).join('')}</span>`;
@@ -99,14 +101,15 @@ const hoursTxt = h => h >= 24 && h % 24 === 0 ? `${h / 24} día${h / 24 > 1 ? 's
 const DOW3 = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 const locOf = id => (P.locations || []).find(l => l.id === id);
 
-function fail(msg) { root.innerHTML = `<a class="back" href="index.html">← Volver al buscador</a><div class="card"><h2>No encontramos este perfil</h2><p class="muted">${msg}</p></div>`; }
+function fail(msg) { root.innerHTML = `${SITE ? '' : '<a class="back" href="index.html">← Volver al buscador</a>'}<div class="card"><h2>No encontramos este perfil</h2><p class="muted">${msg}</p></div>`; }
 
 async function load() {
   if (!sb) return fail('No se pudo cargar la conexión.');
   const { data, error } = await sb.from('profiles').select('id,full_name,slug,specialty,specialties,services,credentials,title,license,license_verified,cancel_policy,cancel_hours,bio,topics,price,session_minutes,timezone,photo_url,whatsapp,languages,locations(id,kind,name,address,city,lat,lng,maps_url),schedules(weekday,start_time,end_time,location_id)')
     .eq('slug', slug).eq('is_listed', true).eq('is_active', true).maybeSingle();
   if (error || !data) return fail('Puede que el link esté mal escrito o que el especialista ya no esté disponible.');
-  P = data; document.title = `${P.full_name} · MiConsulta`;
+  P = data; document.title = SITE ? `${P.full_name} · Agenda tu cita` : `${P.full_name} · MiConsulta`;
+  if (SITE) PA.siteBrand({ name: P.full_name, title: P.title, photo: P.photo_url, slug: P.slug });
   render();
   sb.rpc('public_events', { p_psych: P.id }).then(({ data }) => { if (data && data.length) renderEvents(data); });
   sb.rpc('public_reviews', { p_psych: P.id }).then(({ data }) => { RV = data; renderReviews(); });
@@ -120,7 +123,7 @@ async function loadSlots() {
   const want = new URLSearchParams(location.search).get('slot'), hit = slots.find(x => x.s === want);
   if (hit && !B.slot) {
     B.loc = hit.loc || placeOptions()[0]?.id || null; B.slot = hit.s; B.day = dayKey(hit.s, P.timezone);
-    history.replaceState(null, '', location.pathname + '?p=' + encodeURIComponent(slug) + '#agendar');
+    history.replaceState(null, '', location.pathname + (SITE ? '?sitio=' : '?p=') + encodeURIComponent(slug) + '#agendar');
   }
   if (!B.loc || !placeOptions().some(l => l.id === B.loc)) B.loc = placeOptions()[0]?.id || null;
   regroup();
@@ -165,18 +168,18 @@ function renderEvents(list) {
   const el = document.getElementById('events'); if (!el) return;
   el.hidden = false;
   const EVK = { conferencia: 'Conferencia', taller: 'Taller', grupo: 'Grupo de apoyo' };
-  el.innerHTML = `<h3>Próximos talleres y conferencias</h3><div class="stack" style="margin-top:12px;gap:10px">${list.map(e => `<a class="ev-row" href="evento.html?e=${e.public_token}">
+  el.innerHTML = `<h3>Próximos talleres y conferencias</h3><div class="stack" style="margin-top:12px;gap:10px">${list.map(e => `<a class="ev-row" href="evento.html?e=${e.public_token}${SQ}">
     ${e.image_url ? `<img src="${esc(e.image_url)}" alt="">` : `<span class="ic-box">${ic('mic')}</span>`}<div><span class="tag" style="font-size:11px">${EVK[e.kind] || 'Conferencia'}${e.price ? ' · ' + money(e.price) : ' · Gratis'}</span><b>${esc(e.title)}</b><small>${fmtDay(e.starts_at, P.timezone)} · ${fmtTime(e.starts_at, P.timezone)} · ${e.mode === 'en_linea' ? 'En línea' : esc(e.place || 'Presencial')}</small></div><span class="btn sec sm">Asistir</span></a>`).join('')}</div>`;
 }
 
 function render() {
   const locs = P.locations || [];
-  root.innerHTML = `<a class="back" href="index.html">← Volver al buscador</a>
+  root.innerHTML = `${SITE ? '' : '<a class="back" href="index.html">← Volver al buscador</a>'}
   <div class="layout">
     <div class="stack">
       <section class="card"><div class="head">${av(P.full_name, 'xl', P.photo_url)}<div>
         <h1>${esc(P.full_name)}</h1><div class="muted">${esc(P.title || 'Especialista')}${P.license ? ' · Cédula profesional ' + esc(P.license) : ''}</div>
-        ${P.license_verified ? `<span class="vbadge" style="margin-top:8px">${ic('shield', 13)} Cédula verificada por MiConsulta</span>` : ''}
+        ${P.license_verified ? `<span class="vbadge" style="margin-top:8px">${ic('shield', 13)} Cédula verificada${SITE ? '' : ' por MiConsulta'}</span>` : ''}
         <div id="rating-top" style="margin-top:8px"></div>
         <div class="meta" style="margin-top:8px"><span class="price">${money(P.price)}</span><span>${ic('clock', 14)}Sesión de ${P.session_minutes} min</span></div></div></div>
         ${(P.topics || []).length ? `<div class="tags" style="margin-top:16px">${P.topics.map(t => `<span class="tag">${esc(t)}</span>`).join('')}</div>` : ''}
@@ -272,7 +275,7 @@ document.addEventListener('submit', async e => {
   btn.disabled = true; btn.textContent = 'Apartando tu horario…';
   const { data, error } = await sb.rpc('book_appointment', { p_psych: P.id, p_starts_at: B.slot, p_mode: locOf(B.loc)?.kind || 'en_linea', p_location: B.loc,
     p_name: name, p_phone: phone, p_email: email || null, p_note: val('bk-note') || null });
-  if (!error && data.ok) { location.href = 'cita.html?t=' + data.token + '&nueva=1'; return; }
+  if (!error && data.ok) { location.href = 'cita.html?t=' + data.token + '&nueva=1' + SQ; return; }
   const code = error ? 'network' : data.error;
   const MSG = { slot_taken: 'Alguien acaba de apartar ese horario. Elige otro.', too_many: 'Ya tienes 3 citas pendientes con este especialista.', location: 'Elige un consultorio.',
     name: 'Escribe tu nombre completo.', phone: 'Revisa tu teléfono.', email: 'Revisa tu correo.', network: 'No pudimos conectarnos. Intenta de nuevo.' };

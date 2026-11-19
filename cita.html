@@ -51,7 +51,7 @@
 const { sb, esc, av, ic, money, MODE, fmtDay, fmtTime, pill, compress, copy, toast } = PA;
 const root = document.getElementById('root');
 const qp = new URLSearchParams(location.search), token = qp.get('t') || '';
-let A = null, file = null, R = { stars: 0, showed: true }, RS = { slots: [], day: null, slot: null };
+let SITE = null, A = null, file = null, R = { stars: 0, showed: true }, RS = { slots: [], day: null, slot: null };
 const STAR = (n = 22) => `<svg viewBox="0 0 24 24" width="${n}" height="${n}" fill="currentColor" aria-hidden="true"><path d="M12 2.8l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17.2l-5.7 3.1 1.2-6.4-4.7-4.4 6.4-.8z"/></svg>`;
 const hoursTxt = h => h >= 24 && h % 24 === 0 ? `${h / 24} día${h / 24 > 1 ? 's' : ''}` : `${h} hora${h === 1 ? '' : 's'}`;
 // Fechas en formato de calendario (UTC): 20261120T180000Z
@@ -61,7 +61,9 @@ async function load() {
   if (!sb || !/^[a-f0-9]{20,}$/.test(token)) { root.innerHTML = '<div class="card"><h2>Link no válido</h2><p class="muted">Revisa que copiaste el link completo de tu cita.</p></div>'; return; }
   const { data, error } = await sb.rpc('get_appointment', { p_token: token });
   if (error || !data) { root.innerHTML = '<div class="card"><h2>No encontramos tu cita</h2><p class="muted">Revisa que copiaste el link completo o pide ayuda a tu especialista.</p></div>'; return; }
-  A = data; render();
+  A = data;
+  SITE = PA.siteSlug(A.psych_slug); if (SITE) PA.siteBrand({ name: A.psych_name, title: A.psych_title, photo: A.photo_url, slug: A.psych_slug });
+  render();
 }
 
 function waText(url) {
@@ -97,7 +99,7 @@ function render() {
         <dt>Hora</dt><dd>${fmtTime(A.starts_at, tz)} – ${fmtTime(A.ends_at, tz)}</dd>
         <dt>Modalidad</dt><dd>${MODE[A.mode]}</dd>
         ${A.location ? `<dt>Lugar</dt><dd>${esc(A.location.name)}${A.location.address ? '<br><span class="muted small">' + esc([A.location.address, A.location.city].filter(Boolean).join(', ')) + '</span>' : ''}${A.location.kind !== 'en_linea' ? `<br><a class="btn sec sm" style="margin-top:8px" href="${esc(PA.gdir(A.location))}" target="_blank" rel="noopener">Cómo llegar en Google Maps</a>` : ''}</dd>` : ''}
-        <dt>Especialista</dt><dd><a href="perfil.html?p=${encodeURIComponent(A.psych_slug)}">${esc(A.psych_name)}</a></dd>
+        <dt>Especialista</dt><dd><a href="perfil.html?${SITE ? 'sitio' : 'p'}=${encodeURIComponent(A.psych_slug)}">${esc(A.psych_name)}</a></dd>
         <dt>Costo</dt><dd>${money(A.price)}</dd>
       </dl></section>
     ${past ? reviewCard() : ''}
