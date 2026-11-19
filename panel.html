@@ -725,6 +725,8 @@ function locForm(id) {
     <label class="field"><span>Nombre</span><input id="lc-name" value="${esc(l.name || '')}" placeholder="Ej. Consultorio Roma Norte"></label>
     <label class="field"><span>Dirección</span><input id="lc-addr" value="${esc(l.address || '')}" placeholder="Calle, número, colonia"></label>
     <label class="field"><span>Ciudad</span><input id="lc-city" value="${esc(l.city || '')}" placeholder="Ej. Ciudad de México"></label>
+    <div class="row2" id="lc-zone" ${l.kind === 'en_linea' ? 'hidden' : ''}><label class="field"><span>Estado</span><input id="lc-state" value="${esc(l.state || '')}" placeholder="Se llena al ubicarlo en el mapa"></label>
+      <label class="field"><span>Alcaldía o municipio</span><input id="lc-district" value="${esc(l.district || '')}" placeholder="Ej. Iztacalco"><small class="muted">Así te encuentran quienes buscan en su zona.</small></label></div>
     <div class="stack" id="lc-mapwrap" style="gap:8px" ${l.kind === 'en_linea' ? 'hidden' : ''}>
       <label class="field"><span>Enlace de Google Maps (recomendado, para la ubicación exacta)</span><input id="lc-gmaps" value="${esc(l.maps_url || '')}" placeholder="https://maps.app.goo.gl/…"></label>
       <div class="acts"><button class="btn sec sm" data-a="useGmaps">Usar este enlace</button><small class="muted">En Google Maps busca tu consultorio, toca <b>Compartir</b> y copia el enlace.</small></div>
@@ -741,6 +743,21 @@ function setPin(lat, lng, zoom, auto) {
   else { LM.marker = L.marker([lat, lng], { draggable: true }).addTo(LM.map); LM.marker.on('dragend', e => { const p = e.target.getLatLng(); setPin(p.lat, p.lng); }); }
   if (zoom) LM.map.setView([lat, lng], zoom);
   const t = document.getElementById('lc-pin'); if (t) t.textContent = 'Ubicación marcada. Puedes arrastrar el marcador para ajustarla.';
+  fillZone(lat, lng, auto);
+}
+// Estado y alcaldía/municipio a partir del punto en el mapa (se pueden corregir a mano)
+let zoneT;
+function fillZone(lat, lng, auto) {
+  if (auto) return; clearTimeout(zoneT);
+  zoneT = setTimeout(async () => {
+    try {
+      const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=14&accept-language=es&lat=${lat}&lon=${lng}`);
+      const a = (await r.json()).address || {};
+      const d = (a.borough || a.city_district || a.municipality || a.county || a.city || a.town || a.village || '').replace(/^(Alcaldía|Municipio( de)?|Delegación)\s+/i, '');
+      const st = document.getElementById('lc-state'), di = document.getElementById('lc-district');
+      if (st && a.state) st.value = a.state; if (di && d) di.value = d;
+    } catch (e) { /* si falla, se calcula al guardar */ }
+  }, 600);
 }
 function initLocMap(l) {
   Object.assign(LM, { map: null, marker: null, lat: l.lat ?? null, lng: l.lng ?? null, touched: false, orig: l, linkUrl: l.maps_url || null });
@@ -779,7 +796,8 @@ async function geocode(btn) {
 
 async function saveLoc(id, btn) {
   const kind = val('lc-kind'), row = { kind, name: val('lc-name'), address: kind === 'presencial' ? val('lc-addr') || null : null, city: kind === 'presencial' ? val('lc-city') || null : null,
-    lat: kind === 'presencial' ? LM.lat : null, lng: kind === 'presencial' ? LM.lng : null };
+    lat: kind === 'presencial' ? LM.lat : null, lng: kind === 'presencial' ? LM.lng : null,
+    state: kind === 'presencial' ? val('lc-state') || null : null, district: kind === 'presencial' ? val('lc-district') || null : null };
   const gm = kind === 'presencial' ? val('lc-gmaps') : '';
   if (gm && !PA.MAPS_RE.test(gm)) return setErr('lc-err', 'El enlace de Google Maps no es válido.');
   row.maps_url = gm || null;
@@ -1341,7 +1359,7 @@ document.addEventListener('change', e => {
     PA.compress(f, 1600).then(b => { S.evImg = b; const pv = document.getElementById('ev-prev'); pv.src = URL.createObjectURL(b); pv.hidden = false; document.getElementById('ev-file-t').innerHTML = ic('upload', 18) + ' Cambiar imagen'; }).catch(() => setErr('ev-err', 'No se pudo leer la imagen.'));
   }
   if (e.target.id === 'cl-source') document.getElementById('cl-sdl').textContent = { empresa: 'Nombre de la empresa', referido: 'Quién lo recomendó' }[e.target.value] || 'Detalle (empresa, persona o campaña)';
-  if (e.target.id === 'lc-kind') { document.getElementById('lc-mapwrap').hidden = e.target.value !== 'presencial'; if (LM.map) setTimeout(() => LM.map.invalidateSize(), 50); }
+  if (e.target.id === 'lc-kind') { document.getElementById('lc-mapwrap').hidden = document.getElementById('lc-zone').hidden = e.target.value !== 'presencial'; if (LM.map) setTimeout(() => LM.map.invalidateSize(), 50); }
 });
 document.addEventListener('keydown', e => {
   if (e.key === 'Enter' && e.target.id === 'pf-topic-new') {

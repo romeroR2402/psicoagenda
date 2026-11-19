@@ -106,6 +106,15 @@ body.home{font-size:16px;overflow-x:clip}
 .dd-list li:hover,.dd-list li.act{background:var(--pebble)}
 .dd-list li[aria-selected="true"]{color:var(--accent);font-weight:700}
 .dd-list li[aria-selected="true"] svg{visibility:visible}
+.dd-list li em{font-style:normal;font-size:12.5px;font-weight:700;color:var(--muted);background:var(--pebble);border-radius:999px;padding:1px 8px;flex:none}
+.dd-list li .nx{visibility:visible;color:var(--muted)}
+.dd-list li.dd-back{color:var(--muted);font-weight:700;border-bottom:1px solid var(--line);border-radius:8px 8px 0 0;margin-bottom:4px}
+.dd-list li.dd-back svg{visibility:visible;color:var(--muted)}
+.zmap-w{padding:16px 22px 4px;border-bottom:1px solid var(--line)}
+.zmap{height:340px;border-radius:12px;overflow:hidden;border:1px solid var(--line);z-index:0}
+.zmap-w p{margin:8px 0 10px}
+.mk{cursor:pointer}
+@media (max-width:640px){.zmap{height:260px}.zmap-w{padding:12px 14px 2px}}
 .searchbox .btn{padding:16px 32px;font-size:18px;border-radius:10px}
 .popular{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:16px;font-size:14px}
 .popular button{padding:5px 12px;border-radius:999px;background:var(--pebble);color:var(--ink);font-weight:600;font-size:13px}
@@ -308,9 +317,8 @@ span.doc-photo{display:grid;place-items:center}
       <form class="searchbox" id="f-search" role="search">
         <label class="fld" for="q"><span id="ic-q"></span><input id="q" name="q" placeholder="Ansiedad, pareja, duelo… o un nombre" autocomplete="off"></label>
         <div class="fld" id="c-dd"><span id="ic-c"></span>
-          <button type="button" class="dd-btn" id="c-btn" aria-haspopup="listbox" aria-expanded="false" aria-label="Ciudad o modalidad"><span class="dd-val" id="c-val">Cualquier ciudad</span><svg class="chev" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
-          <ul class="dd-list" id="c-list" role="listbox" aria-label="Ciudad o modalidad" hidden></ul>
-          <select id="c" name="c" hidden><option value="">Cualquier ciudad</option><option value="en_linea">En línea</option></select></div>
+          <button type="button" class="dd-btn" id="c-btn" aria-haspopup="listbox" aria-expanded="false" aria-label="Estado y alcaldía o municipio"><span class="dd-val" id="c-val">Cualquier lugar</span><svg class="chev" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+          <ul class="dd-list" id="c-list" role="listbox" aria-label="Estado y alcaldía o municipio" hidden></ul></div>
         <button class="btn pri" type="submit">Buscar</button>
       </form>
       <div class="popular"><span class="muted">Frecuentes:</span>
@@ -332,6 +340,7 @@ span.doc-photo{display:grid;place-items:center}
       <div class="tools"><span class="count"><span id="r-count">Cargando…</span><small class="order-note">Ordenados por disponibilidad. Nadie paga por aparecer primero.</small></span>
         <button class="btn neu" data-a="map"><span id="ic-map"></span>Mapa</button>
         <button class="btn neu" data-a="filters"><span id="ic-f"></span>Filtros <b id="f-n" hidden></b></button></div>
+      <div class="zmap-w" id="zmap-w" hidden><div class="zmap" id="zmap"></div><p class="muted small" id="zmap-t"></p></div>
       <div id="r-list"><div class="empty" style="margin:18px">Cargando especialistas…</div></div>
     </div>
   </div></section>
@@ -380,7 +389,13 @@ const $ = id => document.getElementById(id);
 $('ic-q').innerHTML = ic('search'); $('ic-c').innerHTML = ic('pin');
 $('ic-map').innerHTML = ic('pin', 17);
 $('ic-f').innerHTML = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>';
-const list = $('r-list'), qEl = $('q'), cEl = $('c');
+const list = $('r-list'), qEl = $('q');
+// Zona elegida: c = '' (cualquier lugar) | 'en_linea' | estado; d = alcaldía o municipio dentro del estado
+const Z = { c: '', d: '' };
+const CDMX = ['cdmx', 'ciudad de mexico', 'df', 'mexico df', 'distrito federal'];
+const zState = l => l.state ? l.state.trim() : CDMX.includes(norm(l.city || '')) ? 'Ciudad de México' : ['mexico', 'mx', ''].includes(norm(l.city || '')) ? '' : l.city.trim();
+const zDist = l => (l.district || '').trim();
+const inZone = l => l.kind === 'presencial' && Z.c && Z.c !== 'en_linea' && zState(l) === Z.c && (!Z.d || norm(zDist(l)) === norm(Z.d));
 
 /* ---------- ilustraciones del inicio (decorativas) ---------- */
 const svg = (d, n = 18, w = 2) => `<svg viewBox="0 0 24 24" width="${n}" height="${n}" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
@@ -488,13 +503,13 @@ function card(p) {
 }
 
 function filtered() {
-  const q = norm(qEl.value.trim()), c = cEl.value, today = PA.todayKey();
+  const q = norm(qEl.value.trim()), c = Z.c, today = PA.todayKey();
   let res = all.filter(p => {
     if ((p.specialty || 'psicologia') !== spec) return false;
     const locs = p.locations || [];
     const hay = norm([p.full_name, p.title, p.bio, ...(p.topics || [])].join(' '));
     if (q && !q.split(/\s+/).every(w => hay.includes(w))) return false;
-    if (c && !(c === 'en_linea' ? locs.some(l => l.kind === 'en_linea') : locs.some(l => l.kind === 'presencial' && norm(l.city) === norm(c)))) return false;
+    if (c && !(c === 'en_linea' ? locs.some(l => l.kind === 'en_linea') : locs.some(inZone))) return false;
     if (F.today && !daySlots(p, PA.todayKey(tzOf(p))).length) return false;
     if (F.in3 && ![0, 1, 2].some(i => daySlots(p, keyAdd(PA.todayKey(tzOf(p)), i)).length)) return false;
     if (F.cheap && !(p.price != null && p.price < 600)) return false;
@@ -515,6 +530,7 @@ function show() {
   const res = filtered(), n = Object.values(F).filter(Boolean).length;
   $('f-n').hidden = !n; $('f-n').textContent = n;
   $('r-count').textContent = `${res.length} ${res.length === 1 ? SPEC[spec][0] : SPEC[spec][1]}`;
+  if (window.L) renderZoneMap(res);
   list.innerHTML = res.length ? res.map(card).join('')
     : `<div class="empty" style="margin:18px">${all.some(p => (p.specialty || 'psicologia') === spec) ? 'No encontramos especialistas con esa búsqueda o filtros. Prueba quitando alguno.' : `Todavía no hay ${SPEC[spec][1]} publicados. Si eres ${SPEC[spec][0]}, regístrate y sé el primero.`}</div>`;
 }
@@ -526,6 +542,35 @@ function filtersModal() {
     <div class="acts" style="display:flex;gap:8px;margin-top:16px"><button class="btn neu" data-a="fclear">Quitar filtros</button><button class="btn pri" style="flex:1" data-a="fapply">Ver ${filtered().length} resultados</button></div>`);
 }
 
+// Consultorios con ubicación; si hay zona elegida, solo los de esa zona
+const zonePins = p => pinned(p).filter(l => !Z.c || Z.c === 'en_linea' || inZone(l));
+// Marcador con el precio; al tocarlo lleva al perfil del especialista
+function priceMarker(p, l, on) {
+  const ns = nextAt(p, l), tz = tzOf(p);
+  const label = `<b>${p.price != null ? '$' + p.price.toLocaleString('es-MX') : 'Consultar'}</b><span>${ns ? 'Próx. ' + kLabel(dayKey(ns, tz), { day: 'numeric', month: 'short' }) : 'Sin horario'}</span>`;
+  const m = L.marker([l.lat, l.lng], { icon: L.divIcon({ className: '', html: `<div class="mk ${on ? 'on' : ''}" role="link">${label}</div>`, iconSize: [0, 0] }), title: p.full_name, riseOnHover: true });
+  m.bindTooltip(`<b>${esc(p.full_name)}</b><br>${esc(p.title || SPEC[p.specialty || 'psicologia'][2])}<br><span style="color:#476788">${esc([l.name, zDist(l)].filter(Boolean).join(' · '))}</span><br><span style="color:#006bff;font-weight:700">Ver perfil y agendar →</span>`, { direction: 'top', offset: [0, -40] });
+  m.on('click', () => { location.href = `perfil.html?p=${encodeURIComponent(p.slug)}#agendar`; });
+  return m;
+}
+// Mapa de resultados dentro de la página cuando se elige una zona
+let zmap = null, zlayer = null;
+function renderZoneMap(res) {
+  const box = $('zmap-w');
+  const pts = Z.c && Z.c !== 'en_linea' ? res.flatMap(p => zonePins(p).map(l => [p, l])) : [];
+  box.hidden = !pts.length || !window.L;
+  if (box.hidden) return;
+  $('zmap-t').textContent = `${pts.length} consultorio${pts.length === 1 ? '' : 's'} en ${Z.d ? Z.d + ', ' : ''}${Z.c}. Toca un precio para ver el perfil.`;
+  if (!zmap) {
+    zmap = L.map('zmap', { scrollWheelZoom: false });
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(zmap);
+    zlayer = L.layerGroup().addTo(zmap);
+  }
+  zlayer.clearLayers();
+  pts.forEach(([p, l]) => priceMarker(p, l).addTo(zlayer));
+  setTimeout(() => { zmap.invalidateSize(); pts.length === 1 ? zmap.setView([pts[0][1].lat, pts[0][1].lng], 15) : zmap.fitBounds(pts.map(([, l]) => [l.lat, l.lng]), { padding: [50, 50], maxZoom: 15 }); }, 60);
+}
+
 let map = null;
 function mapModal(focusId) {
   const res = filtered().filter(p => pinned(p).length);
@@ -534,13 +579,10 @@ function mapModal(focusId) {
   map = L.map('map', { zoomControl: true }).setView([19.4326, -99.1332], 11);
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(map);
   const pts = [];
-  res.forEach(p => pinned(p).forEach(l => {
-    const ns = nextAt(p, l), tz = tzOf(p);
-    const label = `<b>${p.price != null ? '$' + p.price.toLocaleString('es-MX') : 'Consultar'}</b><span>${ns ? 'Próx. ' + kLabel(dayKey(ns, tz), { day: 'numeric', month: 'short' }) : 'Sin horario'}</span>`;
-    const m = L.marker([l.lat, l.lng], { icon: L.divIcon({ className: '', html: `<div class="mk ${p.id === focusId ? 'on' : ''}">${label}</div>`, iconSize: [0, 0] }) }).addTo(map);
-    m.bindPopup(`<b>${esc(p.full_name)}</b><br><span style="color:#6f6d88">${esc([l.name, l.address].filter(Boolean).join(' · '))}</span><br>Consulta: <b>${money(p.price)}</b><br><a href="perfil.html?p=${encodeURIComponent(p.slug)}#agendar">Ver horarios y agendar</a> · <a href="${esc(PA.gdir(l))}" target="_blank" rel="noopener">Cómo llegar</a>`, { offset: [0, -36] });
+  res.forEach(p => zonePins(p).forEach(l => {
+    const m = priceMarker(p, l, p.id === focusId).addTo(map);
     pts.push([l.lat, l.lng]);
-    if (p.id === focusId) setTimeout(() => { map.setView([l.lat, l.lng], 15); m.openPopup(); }, 50);
+    if (p.id === focusId) setTimeout(() => { map.setView([l.lat, l.lng], 15); m.openTooltip(); }, 50);
   }));
   if (me) L.circleMarker([me.lat, me.lng], { radius: 8, color: '#4f63e8', fillOpacity: .9 }).addTo(map).bindTooltip('Tú');
   if (!focusId && pts.length) map.fitBounds(pts, { padding: [60, 60], maxZoom: 14 });
@@ -551,15 +593,13 @@ function mapModal(focusId) {
 async function load() {
   if (!sb) { list.innerHTML = '<div class="empty" style="margin:18px">No se pudo cargar la conexión.</div>'; return; }
   const { data, error } = await sb.from('profiles')
-    .select('id,full_name,slug,specialty,title,license,license_verified,bio,topics,price,session_minutes,photo_url,timezone,gender,languages,locations(id,kind,name,address,city,lat,lng,maps_url)')
+    .select('id,full_name,slug,specialty,title,license,license_verified,bio,topics,price,session_minutes,photo_url,timezone,gender,languages,locations(id,kind,name,address,city,state,district,lat,lng,maps_url)')
     .eq('is_listed', true).eq('is_active', true).order('created_at');
   if (error) { list.innerHTML = '<div class="empty" style="margin:18px">No pudimos cargar los especialistas. Revisa tu conexión y recarga la página.</div>'; return; }
   all = data;
-  const cities = [...new Set(all.flatMap(p => (p.locations || []).filter(l => l.kind === 'presencial' && l.city).map(l => l.city.trim())))].sort((a, b) => a.localeCompare(b));
-  cEl.insertAdjacentHTML('beforeend', cities.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join(''));
   const qp = new URLSearchParams(location.search);
   if (qp.get('q')) qEl.value = qp.get('q');
-  if (qp.get('c')) cEl.value = qp.get('c');
+  if (qp.get('c')) { Z.c = qp.get('c'); Z.d = qp.get('d') || ''; }
   ddLabel();
   show();
   if (all.length) sb.rpc('public_ratings', { p_ids: all.map(p => p.id) }).then(({ data }) => { (data || []).forEach(r => rates[r.psychologist_id] = { avg: r.avg, n: r.n }); if (data && data.length) show(); });
@@ -577,7 +617,8 @@ async function load() {
 function sync() {
   const qp = new URLSearchParams();
   if (qEl.value.trim()) qp.set('q', qEl.value.trim());
-  if (cEl.value) qp.set('c', cEl.value);
+  if (Z.c) qp.set('c', Z.c);
+  if (Z.d) qp.set('d', Z.d);
   history.replaceState(null, '', location.pathname + (qp.toString() ? '?' + qp : ''));
 }
 const toResults = () => $('results').scrollIntoView({ behavior: 'smooth' });
@@ -590,36 +631,69 @@ function locate() {
 }
 
 $('f-search').addEventListener('submit', e => { e.preventDefault(); sync(); show(); toResults(); });
-cEl.addEventListener('change', () => { sync(); show(); });
 
-/* ---------- lista de ciudad (reemplaza la del navegador) ---------- */
-const dd = { btn: $('c-btn'), list: $('c-list'), val: $('c-val'), act: -1 };
+/* ---------- lugar: estado → alcaldía o municipio (lista propia, no la del navegador) ---------- */
+const dd = { btn: $('c-btn'), list: $('c-list'), val: $('c-val'), act: -1, level: null, items: [] };
 const CHECK_I = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>';
+const NEXT_I = '<svg class="nx" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
+const BACK_I = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg>';
 // Si el texto no cabe, se ve con puntitos y el texto completo aparece al pasar el cursor
-const tipIfCut = el => { const t = el.firstElementChild || el; el.title = t.scrollWidth > t.clientWidth ? t.textContent : ''; };
-function ddLabel() { dd.val.textContent = cEl.selectedOptions[0]?.textContent || 'Cualquier ciudad'; dd.btn.title = dd.val.scrollWidth > dd.val.clientWidth ? dd.val.textContent : ''; }
-function ddOpen() {
-  const opts = [...cEl.options];
-  dd.list.innerHTML = opts.map((o, i) => `<li role="option" id="c-o${i}" data-v="${esc(o.value)}" aria-selected="${o.value === cEl.value}"><span>${esc(o.textContent)}</span>${CHECK_I}</li>`).join('');
+const tipIfCut = el => { const t = el.querySelector('span') || el; el.title = t.scrollWidth > t.clientWidth ? t.textContent : ''; };
+const zoneLabel = () => Z.c === 'en_linea' ? 'En línea' : Z.c ? (Z.d ? `${Z.d}, ${Z.c}` : Z.c) : 'Cualquier lugar';
+function ddLabel() { dd.val.textContent = zoneLabel(); dd.btn.title = dd.val.scrollWidth > dd.val.clientWidth ? dd.val.textContent : ''; }
+// Estados y alcaldías con especialistas de la especialidad elegida (con cuántos hay en cada uno)
+function zoneTree() {
+  const tree = {}, online = new Set();
+  all.filter(p => (p.specialty || 'psicologia') === spec).forEach(p => (p.locations || []).forEach(l => {
+    if (l.kind === 'en_linea') return online.add(p.id);
+    const st = zState(l); if (!st) return;
+    const t = tree[st] = tree[st] || { ids: new Set(), d: {} }; t.ids.add(p.id);
+    const d = zDist(l); if (d) (t.d[d] = t.d[d] || new Set()).add(p.id);
+  }));
+  return { tree, online };
+}
+function ddItems() {
+  const { tree, online } = zoneTree(), n = x => x.size;
+  if (dd.level) {
+    const t = tree[dd.level] || { ids: new Set(), d: {} };
+    return [{ back: true, text: dd.level }, { c: dd.level, d: '', text: `Toda ${dd.level}`, n: n(t.ids) },
+      ...Object.keys(t.d).sort((a, b) => a.localeCompare(b, 'es')).map(d => ({ c: dd.level, d, text: d, n: n(t.d[d]) }))];
+  }
+  return [{ c: '', d: '', text: 'Cualquier lugar' }, { c: 'en_linea', d: '', text: 'En línea', n: n(online) },
+    ...Object.keys(tree).sort((a, b) => a.localeCompare(b, 'es')).map(st => ({ c: st, d: '', text: st, n: n(tree[st].ids), more: Object.keys(tree[st].d).length > 0 }))];
+}
+function ddOpen(level = dd.level) {
+  dd.level = level; dd.items = ddItems();
+  const sel = it => !it.back && !it.more && it.c === Z.c && it.d === Z.d || it.more && it.c === Z.c;
+  dd.list.innerHTML = dd.items.map((it, i) => it.back
+    ? `<li role="option" id="c-o${i}" class="dd-back" data-i="${i}">${BACK_I}<span>${esc(it.text)}</span></li>`
+    : `<li role="option" id="c-o${i}" data-i="${i}" aria-selected="${sel(it)}"><span>${esc(it.text)}</span>${it.n != null ? `<em>${it.n}</em>` : ''}${it.more ? NEXT_I : CHECK_I}</li>`).join('');
   dd.list.hidden = false; dd.btn.setAttribute('aria-expanded', 'true');
-  dd.act = Math.max(0, opts.findIndex(o => o.value === cEl.value)); ddMark();
+  dd.act = Math.max(0, dd.items.findIndex(sel)); ddMark();
   dd.list.querySelectorAll('li').forEach(tipIfCut);
 }
-function ddClose() { dd.list.hidden = true; dd.btn.setAttribute('aria-expanded', 'false'); }
+function ddClose() { dd.list.hidden = true; dd.btn.setAttribute('aria-expanded', 'false'); dd.level = null; }
 function ddMark() {
   dd.list.querySelectorAll('li').forEach((li, i) => li.classList.toggle('act', i === dd.act));
   const li = dd.list.children[dd.act]; if (li) { li.scrollIntoView({ block: 'nearest' }); dd.btn.setAttribute('aria-activedescendant', li.id); }
 }
-function ddPick(v) { cEl.value = v; ddLabel(); ddClose(); dd.btn.focus(); cEl.dispatchEvent(new Event('change')); }
-dd.btn.addEventListener('click', () => dd.list.hidden ? ddOpen() : ddClose());
-dd.list.addEventListener('click', e => { const li = e.target.closest('li'); if (li) ddPick(li.dataset.v); });
+function ddChoose(i) {
+  const it = dd.items[i]; if (!it) return;
+  if (it.back) return ddOpen(null);
+  if (it.more) return ddOpen(it.c);   // estado → mostrar sus alcaldías o municipios
+  Z.c = it.c; Z.d = it.d; ddLabel(); ddClose(); dd.btn.focus(); sync(); show();
+}
+dd.btn.addEventListener('click', () => dd.list.hidden ? ddOpen(Z.c && Z.c !== 'en_linea' && Z.d ? Z.c : null) : ddClose());
+dd.list.addEventListener('click', e => { e.stopPropagation(); const li = e.target.closest('li'); if (li) ddChoose(+li.dataset.i); });
 dd.btn.addEventListener('keydown', e => {
-  const n = cEl.options.length;
   if (dd.list.hidden && ['ArrowDown', 'ArrowUp', 'Enter', ' '].includes(e.key)) { e.preventDefault(); ddOpen(); return; }
   if (dd.list.hidden) return;
+  const n = dd.items.length;
   if (e.key === 'ArrowDown') { e.preventDefault(); dd.act = (dd.act + 1) % n; ddMark(); }
   else if (e.key === 'ArrowUp') { e.preventDefault(); dd.act = (dd.act - 1 + n) % n; ddMark(); }
-  else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); ddPick(cEl.options[dd.act].value); }
+  else if (e.key === 'ArrowRight' && dd.items[dd.act]?.more) { e.preventDefault(); ddChoose(dd.act); }
+  else if ((e.key === 'ArrowLeft' || e.key === 'Backspace') && dd.level) { e.preventDefault(); ddOpen(null); }
+  else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); ddChoose(dd.act); }
   else if (e.key === 'Escape' || e.key === 'Tab') ddClose();
 });
 document.addEventListener('click', e => { if (!e.target.closest('#c-dd')) ddClose(); });
