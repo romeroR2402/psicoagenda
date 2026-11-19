@@ -188,3 +188,14 @@ img.av{object-fit:cover;background:var(--line)}
 .acc-sheet .acc-head{padding-right:44px}
 .acc-sheet .acc-it{padding:14px 10px;font-size:15px}
 @media (max-width:700px){.acc-btn b,.acc-btn svg{display:none}.acc-btn{padding:3px;border-radius:50%}}
+
+/* aviso para instalar la app */
+.inst{position:fixed;left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:45;max-width:440px;margin:0 auto;display:flex;align-items:center;gap:12px;padding:12px 12px 12px 14px;background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow-l);animation:up .25s ease-out}
+.inst img{border-radius:10px;flex:none}
+.inst span{flex:1;min-width:0}
+.inst b{display:block;font-size:14.5px}
+.inst small{display:block;color:var(--muted);font-size:12.5px;line-height:1.35}
+.inst-x{width:32px;height:32px;border-radius:8px;color:var(--muted);flex:none}
+.inst-x:hover{background:var(--pebble)}
+.inst-steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:10px;font-size:15px;line-height:1.5}
+@media (max-width:900px){body:has(.tabbar) .inst{bottom:calc(84px + env(safe-area-inset-bottom,0px))}}

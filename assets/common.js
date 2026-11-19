@@ -110,6 +110,35 @@ window.PA = (() => {
     if (!accountMenu.bound) { accountMenu.bound = true; document.addEventListener('click', e => { if (!e.target.closest('.acc')) document.querySelectorAll('.acc-menu').forEach(m => { m.hidden = true; m.previousElementSibling.setAttribute('aria-expanded', 'false'); }); }); }
   }
 
+  // ---------- MiConsulta como app (se instala en el celular, como Los Ponpones) ----------
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) navigator.serviceWorker.register('sw.js').catch(() => {});
+  let installEvt = null;
+  const isApp = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+  const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+  // Muestra una tarjeta "Instala la app" (una vez cerrada, no vuelve a salir en 30 días)
+  function offerInstall(text) {
+    const draw = () => {
+      document.getElementById('inst')?.remove();
+      if (isApp() || (!installEvt && !isIOS()) || +lsGet('mc_inst_no') > Date.now()) return;
+      const d = document.createElement('div'); d.id = 'inst'; d.className = 'inst'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-label', 'Instalar la app');
+      d.innerHTML = `<img src="assets/favicon-192.png" alt="" width="40" height="40"><span><b>Instala MiConsulta</b><small>${esc(text || 'Ábrela desde tu pantalla de inicio, como una app.')}</small></span>
+        <button class="btn pri sm" data-inst="go">Instalar</button><button class="inst-x" data-inst="no" aria-label="Ahora no">✕</button>`;
+      document.body.appendChild(d);
+    };
+    window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; draw(); });
+    window.addEventListener('appinstalled', () => { installEvt = null; draw(); toast('¡Listo! MiConsulta quedó en tu pantalla de inicio'); });
+    document.addEventListener('click', e => {
+      const b = e.target.closest('[data-inst]'); if (!b) return;
+      if (b.dataset.inst === 'no') { lsSet('mc_inst_no', Date.now() + 30 * 864e5); return draw(); }
+      if (installEvt) { const ev = installEvt; installEvt = null; ev.prompt(); ev.userChoice.finally(draw); return; }
+      openModal(`<h3>Instalar en iPhone o iPad</h3><p class="sub">Así queda MiConsulta en tu pantalla de inicio, como una app.</p>
+        <ol class="inst-steps"><li>En <b>Safari</b>, toca el botón <b>Compartir</b> (el cuadro con una flecha hacia arriba).</li><li>Elige <b>«Agregar a inicio»</b>.</li><li>Toca <b>Agregar</b>. ¡Listo!</li></ol>`);
+    });
+    setTimeout(draw, 1200);
+  }
+
   function copy(text, el) {
     const ok = () => toast('Copiado');
     const fallback = () => { if (el) { const r = document.createRange(); r.selectNodeContents(el); const s = getSelection(); s.removeAllRanges(); s.addRange(r); } toast('Texto seleccionado: cópialo con Ctrl+C o manteniendo presionado'); };
@@ -138,5 +167,5 @@ window.PA = (() => {
   const waLink = (phone, text) => { const d = String(phone).replace(/\D/g, ''); return `https://wa.me/${d.length === 10 ? '52' + d : d}?text=${encodeURIComponent(text)}`; };
   const pageUrl = p => new URL(p, location.href).href;
 
-  return { sb, TZ, gmaps, gdir, MAPS_RE, esc, av, avc, ini, cap, norm, slugify, fmtDay, fmtShort, fmtTime, fmtDT, dayKey, todayKey, money, STATUS, pill, MODE, DOW, ic, toast, openModal, closeModal, accountMenu, copy, compress, waLink, pageUrl };
+  return { sb, TZ, gmaps, gdir, MAPS_RE, esc, av, avc, ini, cap, norm, slugify, fmtDay, fmtShort, fmtTime, fmtDT, dayKey, todayKey, money, STATUS, pill, MODE, DOW, ic, toast, openModal, closeModal, accountMenu, offerInstall, isApp, copy, compress, waLink, pageUrl };
 })();

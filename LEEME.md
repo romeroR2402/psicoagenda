@@ -132,3 +132,11 @@ a partir de su punto en el mapa, y el especialista puede corregirlos en **Ubicac
 - **Formación y certificaciones** (`profiles.credentials`): nombre, institución, año, folio y enlace de verificación (botón "Verificar" en el perfil).
 - **Talleres y conferencias** (`events.kind`: conferencia, taller o grupo de apoyo; `events.price` opcional). Los públicos aparecen en el perfil
   y en la cartelera `eventos.html` (función `public_upcoming_events`).
+
+## MiConsulta como app (se instala en el celular)
+Igual que la app de Los Ponpones, MiConsulta es una app web instalable:
+- `site.webmanifest`: nombre, íconos (normales y adaptables para Android) y atajos (Buscar, Mi panel, Talleres).
+- `sw.js`: guarda las páginas en el celular; abre rápido y funciona aunque falle la conexión (siempre intenta la versión más reciente primero).
+- En el inicio y en el panel aparece "Instala MiConsulta": en Android/Chrome instala con un toque; en iPhone muestra los pasos
+  (Compartir → Agregar a inicio). Si se cierra, no vuelve a salir en 30 días.
+Para publicar cambios en las páginas guardadas, sube el número en `const C = 'miconsulta-v1'` de `sw.js`.

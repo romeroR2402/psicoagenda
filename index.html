@@ -10,6 +10,10 @@
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <link rel="manifest" href="site.webmanifest">
 <meta name="theme-color" content="#006bff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="MiConsulta">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
@@ -733,6 +737,7 @@ document.addEventListener('input', e => { if (e.target.id === 'f-q') { qEl.value
 function refreshCard(id) { const el = $('doc-' + id), p = all.find(x => x.id === id); if (el && p) el.outerHTML = card(p); }
 renderPopular();
 load();
+PA.offerInstall('Busca y agenda tu cita desde tu pantalla de inicio.');
 })();
 </script>
 </body>
