@@ -604,7 +604,7 @@ async function load() {
   if (!sb) { list.innerHTML = '<div class="empty" style="margin:18px">No se pudo cargar la conexión.</div>'; return; }
   const { data, error } = await sb.from('profiles')
     .select('id,full_name,slug,specialty,specialties,title,license,license_verified,bio,topics,price,session_minutes,photo_url,timezone,gender,languages,locations(id,kind,name,address,city,state,district,lat,lng,maps_url)')
-    .eq('is_listed', true).eq('is_active', true).order('created_at');
+    .eq('is_listed', true).eq('is_active', true).eq('is_demo', false).order('created_at');
   if (error) { list.innerHTML = '<div class="empty" style="margin:18px">No pudimos cargar los especialistas. Revisa tu conexión y recarga la página.</div>'; return; }
   all = data;
   const qp = new URLSearchParams(location.search);

@@ -62,6 +62,7 @@
 .vbadge{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--ok);background:var(--ok-soft);padding:3px 9px;border-radius:999px}
 .vbadge.warn{color:var(--bad);background:var(--bad-soft)}
 .rv-reply{margin-top:10px;background:var(--pebble);border-radius:10px;padding:10px 12px;font-size:13.5px}
+.demo-note{background:var(--warn-soft);color:var(--warn);border-radius:10px;padding:10px 12px;font-size:13px;font-weight:700;margin-bottom:12px}
 .svc-list{display:flex;flex-direction:column;margin-top:6px}
 .svc-it{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:12px 0;border-top:1px solid var(--line)}
 .svc-it:first-child{border-top:0}
@@ -105,7 +106,7 @@ function fail(msg) { root.innerHTML = `${SITE ? '' : '<a class="back" href="inde
 
 async function load() {
   if (!sb) return fail('No se pudo cargar la conexión.');
-  const { data, error } = await sb.from('profiles').select('id,full_name,slug,specialty,specialties,services,credentials,title,license,license_verified,cancel_policy,cancel_hours,bio,topics,price,session_minutes,timezone,photo_url,whatsapp,languages,locations(id,kind,name,address,city,lat,lng,maps_url),schedules(weekday,start_time,end_time,location_id)')
+  const { data, error } = await sb.from('profiles').select('id,is_demo,full_name,slug,specialty,specialties,services,credentials,title,license,license_verified,cancel_policy,cancel_hours,bio,topics,price,session_minutes,timezone,photo_url,whatsapp,languages,locations(id,kind,name,address,city,lat,lng,maps_url),schedules(weekday,start_time,end_time,location_id)')
     .eq('slug', slug).eq('is_listed', true).eq('is_active', true).maybeSingle();
   if (error || !data) return fail('Puede que el link esté mal escrito o que el especialista ya no esté disponible.');
   P = data; document.title = SITE ? `${P.full_name} · Agenda tu cita` : `${P.full_name} · MiConsulta`;
@@ -217,7 +218,7 @@ function renderBooking(err = '') {
   const days = Object.keys(byDay);
   const keep = { n: val('bk-name'), ph: val('bk-phone'), em: val('bk-email'), no: val('bk-note') };
   const prevScroll = document.getElementById('days')?.scrollLeft || 0;
-  el.innerHTML = `<h2>Agenda tu cita</h2><p class="muted small" style="margin:0">El horario se aparta al solicitarlo y se confirma cuando ${esc(P.full_name.split(' ')[0])} verifica tu pago.</p>
+  el.innerHTML = `${P.is_demo ? '<div class="demo-note">Perfil de demostración: los datos son de ejemplo y las citas no son reales.</div>' : ''}<h2>Agenda tu cita</h2><p class="muted small" style="margin:0">El horario se aparta al solicitarlo y se confirma cuando ${esc(P.full_name.split(' ')[0])} verifica tu pago.</p>
     <div class="step"><b>1</b>¿Dónde quieres tu cita?</div>
     ${opts.length ? `<div class="places" role="group" aria-label="Ubicación">${opts.map(l => `<button class="place" data-place="${l.id}" aria-pressed="${B.loc === l.id}">${ic(l.kind === 'en_linea' ? 'video' : 'pin', 18)}<span><b>${esc(l.name)}</b><small>${l.kind === 'en_linea' ? 'En línea' : esc(l.city || l.address || 'Presencial')} · próx. ${nextOf(l)}</small></span></button>`).join('')}</div>
       ${cur && cur.kind === 'presencial' ? `<div class="muted small" style="margin-top:8px">${esc([cur.address, cur.city].filter(Boolean).join(', '))} · <a href="${esc(PA.gdir(cur))}" target="_blank" rel="noopener">Cómo llegar</a></div>` : ''}` : ''}

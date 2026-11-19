@@ -108,7 +108,6 @@ function render() {
     top.dataset.sig = sig;
     if (!S.user) top.innerHTML = '';
     else PA.accountMenu(top, { name: S.user.user_metadata?.full_name || 'Administrador', email: S.user.email, items: [
-      { text: 'Mi panel de especialista', icon: 'home', href: 'panel.html' },
       { text: 'Ir al buscador', icon: 'search', href: 'index.html' }], onLogout: () => sb.auth.signOut() });
   }
   if (!S.authKnown) return;
@@ -142,7 +141,7 @@ function render() {
     <div class="tbl-wrap"><table><thead><tr><th>Especialista</th><th>Acceso</th><th>Perfil</th><th>Último acceso</th><th>Actividad</th><th class="right">Acciones</th></tr></thead><tbody>
       ${rows.map(u => { const p = u.profile;
         const st = !u.confirmed ? '<span class="pill p-warn">Correo sin confirmar</span>' : !p ? '<span class="pill p-mute">Sin perfil</span>' : !p.is_active ? '<span class="pill p-bad">Desactivado</span>' : p.is_listed ? '<span class="pill p-ok">Publicado</span>' : '<span class="pill p-mute">No publicado</span>';
-        return `<tr><td><div class="who">${av(p?.full_name || u.email, 'sm', p?.photo_url)}<div><b>${esc(p?.full_name || 'Sin nombre')}${p?.title ? ` <span class="ttl">· ${esc(p.title)}</span>` : ''}</b><small>${esc(u.email)} · desde ${date(u.created_at)}</small></div></div></td><td>${accPill(u)}</td><td>${st}</td><td class="date">${date(u.last_sign_in_at)}</td>
+        return `<tr><td><div class="who">${av(p?.full_name || u.email, 'sm', p?.photo_url)}<div><b>${esc(p?.full_name || 'Sin nombre')}${p?.title ? ` <span class="ttl">· ${esc(p.title)}</span>` : ''}</b><small>${p?.is_demo ? '<span class="pill p-warn" style="margin-right:6px">Demo</span>' : ''}${esc(u.email)} · desde ${date(u.created_at)}</small></div></div></td><td>${accPill(u)}</td><td>${st}</td><td class="date">${date(u.last_sign_in_at)}</td>
           <td class="act"><span title="Citas">${ic('cal', 14)} ${u.appointments}</span><span title="Pacientes">${ic('users', 14)} ${u.clients}</span><span title="Encuestas">${ic('form', 14)} ${u.surveys}</span></td>
           <td class="right"><div class="acts">${u.is_admin ? '' : `<button class="abtn" data-a="access" data-id="${u.id}">Acceso</button>`}<button class="ibtn" data-a="detail" data-id="${u.id}" title="Ver detalle" aria-label="Ver detalle">${ic('eye', 16)}</button><button class="ibtn" data-a="pass" data-id="${u.id}" title="Contraseña" aria-label="Contraseña">${ic('key', 16)}</button>${u.is_admin || u.id === S.user.id ? '<span class="ibtn ph" aria-hidden="true"></span>' : `<button class="ibtn del" data-a="delUser" data-id="${u.id}" title="Eliminar cuenta" aria-label="Eliminar cuenta">${ic('trash', 16)}</button>`}</div></td></tr>`; }).join('') || '<tr><td colspan="6"><div class="empty">Sin resultados.</div></td></tr>'}
     </tbody></table></div>`;
@@ -208,7 +207,22 @@ function settingsView() {
     <section class="card form" style="max-width:640px">
       <label class="field"><span>Días de prueba gratis al registrarse</span><input id="st-trial" type="number" min="0" max="365" value="${st.auto_trial_days ?? 14}"><small class="muted">Pon 0 si prefieres activar a cada especialista a mano.</small></label>
       <label class="field"><span>Tu contacto para renovar el acceso</span><textarea id="st-contact" maxlength="300" placeholder="Ej. WhatsApp 55 1234 5678 · correo@ejemplo.com">${esc(st.admin_contact || '')}</textarea><small class="muted">Lo ven los especialistas cuando su prueba está por vencer o ya venció.</small></label>
-      <p class="err" id="st-err"></p><button class="btn pri" data-a="saveSettings">Guardar ajustes</button></section>`;
+      <p class="err" id="st-err"></p><button class="btn pri" data-a="saveSettings">Guardar ajustes</button></section>
+    ${demoCard()}`;
+}
+// Cuenta demo: un especialista ficticio con todo lleno para mostrar la plataforma. No aparece en el buscador.
+function demoCard() {
+  const d = S.users.find(u => u.profile?.is_demo);
+  if (!d) return '';
+  const pub = 'perfil.html?p=' + encodeURIComponent(d.profile.slug), own = 'perfil.html?sitio=' + encodeURIComponent(d.profile.slug);
+  return `<section class="card" style="max-width:640px;margin-top:16px"><h2>Cuenta demo</h2>
+    <p class="muted small" style="margin:4px 0 12px">${esc(d.profile.full_name)}: un especialista de ejemplo con citas, pacientes, expedientes, encuestas, talleres y opiniones.
+      No aparece en el buscador ni en la cartelera. Úsala para mostrar a tus clientes cómo se ve la plataforma llena.</p>
+    <dl class="kv"><dt>Usuario</dt><dd>${esc(d.email)}</dd><dt>Contraseña</dt><dd>La que te compartí. Si no la tienes, asigna una nueva en Contraseña.</dd></dl>
+    <div class="acts" style="margin-top:14px"><button class="btn pri sm" data-a="demoEnter" data-e="${esc(d.email)}">Entrar al panel del demo</button>
+      <a class="btn neu sm" href="${pub}" target="_blank" rel="noopener">Ver su perfil</a><a class="btn neu sm" href="${own}" target="_blank" rel="noopener">Ver su página propia</a>
+      <button class="btn sec sm" data-a="pass" data-id="${d.id}">Contraseña</button></div>
+    <p class="muted small" style="margin-top:10px">Al entrar al demo se cierra tu sesión de administrador; para volver, sal del demo y entra con tu cuenta.</p></section>`;
 }
 
 async function detail(id) {
@@ -292,6 +306,7 @@ document.addEventListener('click', async e => {
       el.disabled = false; if (r.error) setErr('lg-err', 'Correo o contraseña incorrectos.'); break;
     }
     case 'logout': await sb.auth.signOut(); break;
+    case 'demoEnter': await sb.auth.signOut(); location.href = 'panel.html?correo=' + encodeURIComponent(d.e); break;
     case 'reload': await load(); toast('Lista actualizada'); break;
     case 'detail': detail(d.id); break;
     case 'tab': S.tab = d.t; history.replaceState(null, '', d.t === 'pros' ? location.pathname : '#' + { clients: 'pacientes', settings: 'ajustes' }[d.t]); render(); break;

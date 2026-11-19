@@ -246,6 +246,8 @@ async function loadAll() {
   const [pr, adm, sub, st] = await Promise.all([sb.from('profiles').select('*').eq('id', uid).maybeSingle(), sb.rpc('is_admin'),
     sb.from('subscriptions').select('*').eq('user_id', uid).maybeSingle(), sb.from('platform_settings').select('admin_contact').maybeSingle()]);
   S.profile = pr.data || null; S.isAdmin = !!adm.data; S.sub = sub.data || null; S.contact = st.data?.admin_contact || '';
+  // El superadministrador no usa el panel de especialista: va directo a Administración
+  if (S.isAdmin) { location.replace('admin.html'); return; }
   if (S.profile) {
     const [l, s, t, a, c, sv, lk, nt, ev, at, ps, rv] = await Promise.all([
       sb.from('locations').select('*').eq('owner_id', uid).order('created_at'),
@@ -298,7 +300,6 @@ function renderTop() {
     const { error } = await sb.auth.resetPasswordForEmail(S.user.email, { redirectTo: pageUrl('panel.html') });
     toast(error ? 'No se pudo enviar el correo. Intenta más tarde.' : `Te enviamos un enlace a ${S.user.email} para crear tu nueva contraseña.`);
   } });
-  if (S.isAdmin) items.push({ text: 'Administración', icon: 'shield', href: 'admin.html' });
   if (S.profile) items.push({ text: 'Recorrido por el panel', icon: 'eye', action: () => startTour(true) }, { text: 'Guía de cada sección', icon: 'form', action: guideModal });
   items.push({ text: 'Ir al buscador', icon: 'search', href: 'index.html' });
   PA.accountMenu(top, { name: S.profile?.full_name || 'Mi cuenta', email: S.user.email, photo: S.profile?.photo_url, items,
@@ -453,7 +454,7 @@ function renderAuth() {
     <div><h1>${T[0]}</h1><p class="muted" style="margin:0">${T[1]}</p></div>
     ${m === 'signup' ? `<label class="field"><span>Nombre completo</span><input id="au-name" autocomplete="name" placeholder="Ej. Laura Méndez Ruiz"></label>
     <label class="field"><span>Especialidad</span><select id="au-spec">${Object.entries(SPECS).map(([k, t]) => `<option value="${k}">${t}</option>`).join('')}</select></label>` : ''}
-    <label class="field"><span>Correo</span><input id="au-email" type="email" autocomplete="email" placeholder="tu@correo.com"></label>
+    <label class="field"><span>Correo</span><input id="au-email" type="email" autocomplete="email" placeholder="tu@correo.com" value="${esc(new URLSearchParams(location.search).get('correo') || '')}"></label>
     ${m !== 'forgot' ? `<label class="field"><span>Contraseña</span><input id="au-pass" type="password" autocomplete="${m === 'signup' ? 'new-password' : 'current-password'}" placeholder="${m === 'signup' ? 'Mínimo 8 caracteres' : ''}"></label>` : ''}
     ${S.linkErr ? `<div class="banner-acc warn">${ic('lock', 16)}<span>${esc(S.linkErr)}</span></div>` : ''}
     <p class="err" id="au-err"></p><p class="ok-msg" id="au-ok"></p>

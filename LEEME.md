@@ -152,3 +152,9 @@ La primera vez que un especialista entra a su panel aparece un **recorrido guiad
 (en celular, las pestañas de abajo y "Más"), y termina llevándolo a completar su perfil. Se guarda en su cuenta para no repetirse en otros dispositivos.
 Desde su foto (arriba a la derecha) puede volver a verlo en **Recorrido por el panel**, o abrir la **Guía de cada sección**.
 Los textos de cada sección están en `HELP` dentro de `panel.html`.
+
+## Superadministrador y cuenta demo
+- Las cuentas de administrador no tienen panel de especialista: al entrar a `panel.html` van directo a `admin.html`, y su perfil no se publica en el buscador.
+- **Cuenta demo** (`profiles.is_demo`): "Mariana López", un especialista de ejemplo con citas en todos los estados, pacientes con expediente y notas,
+  encuestas respondidas, talleres con asistentes y opiniones. No aparece en el buscador ni en la cartelera; su perfil muestra el aviso
+  "Perfil de demostración". Se entra desde Administración → Ajustes → Cuenta demo. Solo un administrador puede marcar una cuenta como demo.
