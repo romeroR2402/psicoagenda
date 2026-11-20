@@ -167,5 +167,6 @@ Los textos de cada sección están en `HELP` dentro de `panel.html`.
 - **Uso:** pacientes, citas y su estado, valor de las citas confirmadas, calificación promedio, encuestas y talleres.
 - **¿Todo funciona bien?:** tareas automáticas (recordatorios), llamadas a las funciones del servidor, correos, pagos sin revisar,
   cédulas por verificar, consultorios sin ubicar y perfiles publicados sin horario.
-**Bitácora** (función `admin_activity`): registros, pagos, citas, opiniones, talleres, errores y las acciones del administrador
+**Bitácora** (función `admin_activity_range`, por rango de fechas con atajos Hoy, Ayer, 7 y 30 días, Este mes, Mes pasado, Este año o fechas exactas;
+muestra el resumen del periodo y se descarga en CSV para Excel): registros, pagos, citas, opiniones, talleres, errores y las acciones del administrador
 (tabla `admin_log`: pagos, accesos, contraseñas, correos confirmados, cédulas, perfiles, eliminaciones, opiniones ocultas).

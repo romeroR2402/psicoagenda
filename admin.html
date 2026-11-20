@@ -99,6 +99,25 @@ td.num{font-variant-numeric:tabular-nums;text-align:center}
 .hc b em{font-style:normal;font-size:11.5px;font-weight:700;margin-left:6px}
 .hc.ok b em{color:var(--ok)} .hc.warn b em{color:var(--warn)} .hc.bad b em{color:var(--bad)}
 .hc small{display:block;color:var(--muted);font-size:12.5px;line-height:1.4}
+.rng{position:relative;display:inline-block}
+.rng-btn{display:inline-flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);font-weight:600;font-size:14.5px;box-shadow:var(--shadow)}
+.rng-btn:hover,.rng-btn[aria-expanded="true"]{border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+.rng-btn svg:first-child{color:var(--accent)}
+.rng-btn svg:last-child{color:var(--muted)}
+.rng-pop{position:absolute;left:0;top:calc(100% + 8px);z-index:40;display:grid;grid-template-columns:190px 260px;background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow-l);overflow:hidden}
+.rng-pre{display:flex;flex-direction:column;padding:8px;border-right:1px solid var(--line);background:var(--bg)}
+.rng-pre button{text-align:left;padding:9px 10px;border-radius:8px;font-weight:600;font-size:14px;color:var(--ink)}
+.rng-pre button:hover{background:var(--pebble)}
+.rng-pre button[aria-pressed="true"]{background:var(--accent-soft);color:var(--cobalt)}
+.rng-cus{padding:14px;display:flex;flex-direction:column;gap:10px}
+.rng-cus .acts{justify-content:flex-end}
+@media (max-width:560px){.rng{display:block}.rng-btn{width:100%}.rng-pop{grid-template-columns:1fr;left:0;right:0}.rng-pre{flex-direction:row;flex-wrap:wrap;border-right:0;border-bottom:1px solid var(--line)}}
+.rng-sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-top:14px}
+.rng-sum div{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.rng-sum small{display:block;color:var(--muted);font-size:12px;font-weight:600}
+.rng-sum b{display:block;font-size:18px;font-weight:800;font-variant-numeric:tabular-nums}
+.rng-sum b.bad{color:var(--bad)}
+.log-d span{font-weight:600;font-size:12.5px;margin-left:6px}
 .log-d{font-size:14px;color:var(--muted);margin:18px 0 8px;font-weight:700}
 .log{padding:4px 14px}
 .log-it{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
@@ -126,7 +145,7 @@ td.num{font-variant-numeric:tabular-nums;text-align:center}
 (() => {
 const { sb, esc, av, ic, money, MODE, DOW, fmtDT, fmtShort, pill, toast, openModal, closeModal, copy, norm } = PA;
 const root = document.getElementById('root');
-const S = { authKnown: false, user: null, isAdmin: null, users: [], q: '', tab: { '#pacientes': 'clients', '#ajustes': 'settings', '#especialistas': 'pros', '#bitacora': 'log' }[location.hash] || 'dash', dash: null, act: [], logF: 'todo', logDemo: false, settings: null, clients: [], cq: '' };
+const S = { authKnown: false, user: null, isAdmin: null, users: [], q: '', tab: { '#pacientes': 'clients', '#ajustes': 'settings', '#especialistas': 'pros', '#bitacora': 'log' }[location.hash] || 'dash', dash: null, act: [], logF: 'todo', logDemo: false, rng: null, rAct: null, rLoading: false, rOpen: false, settings: null, clients: [], cq: '' };
 const QTYPES = { single: 'Una opción', multi: 'Varias opciones', scale: 'Escala 1 a 5', freq: 'Frecuencia', text: 'Respuesta abierta' };
 const FREQ = ['Nunca', 'Varios días', 'Más de la mitad de los días', 'Casi todos los días'];
 const val = id => (document.getElementById(id)?.value || '').trim();
@@ -344,6 +363,7 @@ const ACTN = { pago: 'Registraste un pago', acceso: 'Diste acceso', prueba: 'Dis
   correo_restablecer: 'Enviaste correo para restablecer contraseña', correo_confirmado: 'Confirmaste un correo', cedula_verificada: 'Verificaste una cédula', cedula_sin_verificar: 'Quitaste la verificación de cédula',
   perfil_desactivado: 'Desactivaste un perfil', perfil_reactivado: 'Reactivaste un perfil' };
 const STN = { unpaid: 'pago pendiente', review: 'pago por revisar', confirmed: 'confirmada', cancelled: 'cancelada', rejected: 'no aprobada' };
+const KIND_T = { registro: 'Registro', pago: 'Pago', cita: 'Cita', opinion: 'Opinión', evento: 'Taller', admin: 'Acción del administrador', correo_error: 'Error de correo', tarea_error: 'Error de tarea' };
 const KINDS = { todo: 'Todo', admin: 'Mis acciones', registro: 'Registros', pago: 'Pagos', cita: 'Citas', opinion: 'Opiniones', evento: 'Talleres', error: 'Errores' };
 function logLine(e) {
   const i = e.info || {}, who = nameOf(e.who), w = who ? `<b>${esc(who)}</b>` : '';
@@ -359,15 +379,66 @@ function logLine(e) {
   }
   return ['form', e.kind, ''];
 }
+/* Rango de fechas de la bitácora (días en hora de Ciudad de México) */
+const TZ_MX = 'America/Mexico_City';
+const dk = d => d.toLocaleDateString('en-CA', { timeZone: TZ_MX });
+const addD = (k, n) => { const d = new Date(k + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+const PRESETS = [['hoy', 'Hoy'], ['ayer', 'Ayer'], ['7', 'Últimos 7 días'], ['30', 'Últimos 30 días'], ['mes', 'Este mes'], ['mesant', 'Mes pasado'], ['anio', 'Este año'], ['todo', 'Desde el inicio']];
+function presetRange(k) {
+  const t = dk(new Date()), [y, m] = t.split('-').map(Number);
+  const first = (yy, mm) => `${yy}-${String(mm).padStart(2, '0')}-01`;
+  switch (k) {
+    case 'hoy': return [t, t];
+    case 'ayer': return [addD(t, -1), addD(t, -1)];
+    case '7': return [addD(t, -6), t];
+    case 'mes': return [first(y, m), t];
+    case 'mesant': { const py = m === 1 ? y - 1 : y, pm = m === 1 ? 12 : m - 1; return [first(py, pm), addD(first(y, m), -1)]; }
+    case 'anio': return [`${y}-01-01`, t];
+    case 'todo': return ['2026-01-01', t];
+    default: return [addD(t, -29), t];
+  }
+}
+const fmtK = (k, year) => new Date(k + 'T12:00:00Z').toLocaleDateString('es-MX', { timeZone: 'UTC', day: 'numeric', month: 'short', ...(year ? { year: 'numeric' } : {}) }).replace('.', '');
+const rngLabel = () => { const [a, b] = [S.rng.from, S.rng.to], p = PRESETS.find(x => x[0] === S.rng.preset);
+  return `${p ? p[1] + ' · ' : ''}${a === b ? fmtK(a, true) : `${fmtK(a, a.slice(0, 4) !== b.slice(0, 4))} – ${fmtK(b, true)}`}`; };
+async function loadRange() {
+  if (!S.rng) { const [f, t] = presetRange('30'); S.rng = { from: f, to: t, preset: '30' }; }
+  S.rLoading = true; render();
+  const { data, error } = await sb.rpc('admin_activity_range', { p_from: S.rng.from, p_to: S.rng.to });
+  S.rAct = error ? [] : data; S.rLoading = false; render();
+  if (error) toast('No se pudo cargar la bitácora de esas fechas.');
+}
+function rangePop() {
+  const today = dk(new Date());
+  return `<div class="rng-pop" role="dialog" aria-label="Elegir fechas"><div class="rng-pre">${PRESETS.map(([k, t]) => `<button data-a="rngPre" data-k="${k}" aria-pressed="${S.rng.preset === k}">${t}</button>`).join('')}</div>
+    <div class="rng-cus"><b>Fechas exactas</b>
+      <label class="field"><span>Desde</span><input type="date" id="rg-from" value="${S.rng.from}" max="${today}"></label>
+      <label class="field"><span>Hasta</span><input type="date" id="rg-to" value="${S.rng.to}" max="${today}"></label>
+      <p class="err" id="rg-err"></p>
+      <div class="acts"><button class="btn neu sm" data-a="rngClose">Cancelar</button><button class="btn pri sm" data-a="rngApply">Aplicar</button></div></div></div>`;
+}
+// Texto simple (sin formato) de cada movimiento, para el archivo descargable
+const plain = h => { const d = document.createElement('div'); d.innerHTML = h; return d.textContent.replace(/\s+/g, ' ').trim(); };
+function rangeRows() {
+  const f = S.logF;
+  return (S.rAct || []).filter(e => (S.logDemo || !isDemo(e.who)) && (f === 'todo' || (f === 'error' ? /error/.test(e.kind) : e.kind === f)));
+}
 function logView() {
-  const f = S.logF, list = S.act.filter(e => (S.logDemo || !isDemo(e.who)) && (f === 'todo' || (f === 'error' ? /error/.test(e.kind) : e.kind === f)));
-  const days = {}; list.forEach(e => { const k = new Date(e.at).toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' }); (days[k] = days[k] || []).push(e); });
-  return `<div class="title-row"><h1>Bitácora</h1><button class="btn neu sm" data-a="reload">Actualizar</button></div>
-    <div class="chips" style="margin-bottom:14px">${Object.entries(KINDS).map(([k, t]) => `<button class="chip ${f === k ? 'on' : ''}" data-a="logF" data-f="${k}" aria-pressed="${f === k}">${t}</button>`).join('')}
+  if (!S.rng || (!S.rAct && !S.rLoading)) { setTimeout(loadRange, 0); if (!S.rng) { const [a, b] = presetRange('30'); S.rng = { from: a, to: b, preset: '30' }; } }
+  const f = S.logF, all = (S.rAct || []).filter(e => S.logDemo || !isDemo(e.who)), list = rangeRows();
+  const cnt = k => all.filter(e => k === 'error' ? /error/.test(e.kind) : e.kind === k).length;
+  const income = all.filter(e => e.kind === 'pago').reduce((t, e) => t + +e.info.monto, 0);
+  const days = {}; list.forEach(e => { const k = new Date(e.at).toLocaleDateString('es-MX', { timeZone: TZ_MX, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }); (days[k] = days[k] || []).push(e); });
+  return `<div class="title-row"><h1>Bitácora</h1><div class="acts"><button class="btn neu sm" data-a="logCsv" ${list.length ? '' : 'disabled'}>${ic('upload', 15)} Descargar (CSV)</button><button class="btn neu sm" data-a="reloadRange">Actualizar</button></div></div>
+    <div class="rng"><button class="rng-btn" data-a="rngToggle" aria-expanded="${S.rOpen}">${ic('cal', 17)}<span>${esc(rngLabel())}</span><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+      ${S.rOpen ? rangePop() : ''}</div>
+    <div class="rng-sum">${[['Ingresos', money(income)], ['Pagos', cnt('pago')], ['Registros', cnt('registro')], ['Citas', cnt('cita')], ['Opiniones', cnt('opinion')], ['Talleres', cnt('evento')], ['Mis acciones', cnt('admin')], ['Errores', cnt('error')]]
+      .map(([t, v]) => `<div><small>${t}</small><b class="${t === 'Errores' && v ? 'bad' : ''}">${v}</b></div>`).join('')}</div>
+    <div class="chips" style="margin:14px 0">${Object.entries(KINDS).map(([k, t]) => `<button class="chip ${f === k ? 'on' : ''}" data-a="logF" data-f="${k}" aria-pressed="${f === k}">${t}</button>`).join('')}
       <label class="check" style="margin-left:6px"><input type="checkbox" data-a="logDemo" ${S.logDemo ? 'checked' : ''}> Incluir la cuenta demo</label></div>
-    ${Object.keys(days).length ? Object.entries(days).map(([d, es]) => `<h3 class="log-d">${PA.cap(d)}</h3><div class="card log">${es.map(e => { const [icn, t, txt] = logLine(e);
-      return `<div class="log-it ${/error/.test(e.kind) ? 'err' : e.kind === 'admin' ? 'adm' : ''}"><span class="ic-box">${ic(icn, 16)}</span><div><b>${esc(t)}</b><small>${txt}</small></div><time title="${new Date(e.at).toLocaleString('es-MX')}">${new Date(e.at).toLocaleTimeString('es-MX', { hour: 'numeric', minute: '2-digit' })}</time></div>`; }).join('')}</div>`).join('')
-      : '<div class="empty">No hay movimientos con este filtro.</div>'}`;
+    ${S.rLoading ? '<div class="empty">Cargando movimientos…</div>' : Object.keys(days).length ? Object.entries(days).map(([d, es]) => `<h3 class="log-d">${PA.cap(d)} <span>${es.length} movimiento${es.length === 1 ? '' : 's'}</span></h3><div class="card log">${es.map(e => { const [icn, t, txt] = logLine(e);
+      return `<div class="log-it ${/error/.test(e.kind) ? 'err' : e.kind === 'admin' ? 'adm' : ''}"><span class="ic-box">${ic(icn, 16)}</span><div><b>${esc(t)}</b><small>${txt}</small></div><time title="${new Date(e.at).toLocaleString('es-MX', { timeZone: TZ_MX })}">${new Date(e.at).toLocaleTimeString('es-MX', { timeZone: TZ_MX, hour: 'numeric', minute: '2-digit' })}</time></div>`; }).join('')}</div>`).join('')
+      : '<div class="empty">No hay movimientos en esas fechas con este filtro.</div>'}`;
 }
 
 function settingsView() {
@@ -464,6 +535,7 @@ document.addEventListener('input', e => {
   const id = e.target.id;
   if (id === 'q' || id === 'cq') { S[id] = e.target.value; const pos = e.target.selectionStart; render(); const q = document.getElementById(id); q.focus(); q.setSelectionRange(pos, pos); }
 });
+document.addEventListener('click', e => { if (S.rOpen && !e.target.closest('.rng')) { S.rOpen = false; render(); } }, true);
 document.addEventListener('change', e => { if (e.target.id === 'ac-period') document.getElementById('ac-days-w').hidden = !e.target.value.endsWith('|0'); });
 document.addEventListener('click', async e => {
   const el = e.target.closest('[data-a]'); if (!el || el.disabled) return;
@@ -480,6 +552,23 @@ document.addEventListener('click', async e => {
     case 'detail': detail(d.id); break;
     case 'tab': S.tab = d.t; history.replaceState(null, '', d.t === 'dash' ? location.pathname : '#' + { pros: 'especialistas', clients: 'pacientes', settings: 'ajustes', log: 'bitacora' }[d.t]); render(); break;
     case 'logF': S.logF = d.f; render(); break;
+    case 'rngToggle': S.rOpen = !S.rOpen; render(); break;
+    case 'rngClose': S.rOpen = false; render(); break;
+    case 'rngPre': { const [a, b] = presetRange(d.k); S.rng = { from: a, to: b, preset: d.k }; S.rOpen = false; loadRange(); break; }
+    case 'rngApply': {
+      const a = val('rg-from'), b = val('rg-to');
+      if (!a || !b) return setErr('rg-err', 'Elige las dos fechas.');
+      if (b < a) return setErr('rg-err', 'La fecha final debe ser igual o posterior a la inicial.');
+      S.rng = { from: a, to: b, preset: null }; S.rOpen = false; loadRange(); break;
+    }
+    case 'reloadRange': await load(); await loadRange(); toast('Bitácora actualizada'); break;
+    case 'logCsv': {
+      const q = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+      const rows = [['Fecha', 'Hora', 'Tipo', 'Movimiento', 'Detalle', 'Especialista'], ...rangeRows().map(e => { const [, t, txt] = logLine(e), dt = new Date(e.at);
+        return [dt.toLocaleDateString('es-MX', { timeZone: TZ_MX }), dt.toLocaleTimeString('es-MX', { timeZone: TZ_MX, hour: '2-digit', minute: '2-digit' }), KIND_T[e.kind] || e.kind, t, plain(txt), nameOf(e.who) || '']; })];
+      const blob = new Blob(['\ufeff' + rows.map(r => r.map(q).join(',')).join('\r\n')], { type: 'text/csv;charset=utf-8' });
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `bitacora_${S.rng.from}_a_${S.rng.to}.csv`; a.click(); break;
+    }
     case 'logDemo': S.logDemo = !S.logDemo; render(); break;
     case 'goPro': S.tab = 'pros'; render(); detail(d.id); break;
     case 'access': accessModal(d.id); break;
