@@ -170,3 +170,10 @@ Los textos de cada sección están en `HELP` dentro de `panel.html`.
 **Bitácora** (función `admin_activity_range`, por rango de fechas con atajos Hoy, Ayer, 7 y 30 días, Este mes, Mes pasado, Este año o fechas exactas;
 muestra el resumen del periodo y se descarga en CSV para Excel): registros, pagos, citas, opiniones, talleres, errores y las acciones del administrador
 (tabla `admin_log`: pagos, accesos, contraseñas, correos confirmados, cédulas, perfiles, eliminaciones, opiniones ocultas).
+
+## Horario más claro y citas agregadas a mano
+- **Horario:** cada rango se ve como "De 09:00 a 14:00" con su botón **Quitar**; "No atender este día" vacía el día.
+  Al cambiar algo aparece una barra fija **"Guardar cambios"** (con Deshacer), y avisa si sales sin guardar.
+- **+ Agregar cita** (en Citas y Calendario, función `add_manual_appointment`): para las citas que el especialista ya tenía acordadas.
+  Elige paciente existente o nuevo, fecha, hora, duración, lugar y si ya está pagada o pendiente. Ocupa la agenda (nadie más puede
+  reservar ese horario), no envía correo al paciente y queda marcada como "Registrada por ti" (`appointments.source = 'manual'`).
