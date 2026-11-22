@@ -111,14 +111,15 @@ a.guide-it:hover{border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
 .site-qr #site-qr{padding:8px;background:#fff;border:1px solid var(--line);border-radius:12px;min-width:166px;min-height:166px;display:grid;place-items:center}
 @media (max-width:640px){.site-grid{grid-template-columns:1fr}}
 .erow{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,.8fr) minmax(0,.55fr) 36px;gap:8px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--card)}
-.erow.cred{grid-template-columns:minmax(0,1.6fr) minmax(0,1.3fr) minmax(0,.55fr) 36px}
+.erow.cred{grid-template-columns:minmax(150px,1fr) minmax(0,1.6fr) minmax(0,1.3fr) minmax(0,.55fr) 36px}
+.erow.cred [data-k="type"]{padding-right:30px}
 .erow .in{padding:10px 12px;font-size:14px}
 .erow .wide{grid-column:1/-2}
-.erow.cred [data-k="id"]{grid-column:1/2}
-.erow.cred [data-k="url"]{grid-column:2/-2}
+.erow.cred [data-k="id"]{grid-column:1/3}
+.erow.cred [data-k="url"]{grid-column:3/-2}
 .ibtn{width:36px;height:36px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--muted);display:grid;place-items:center;grid-row:1;grid-column:-2/-1}
 .ibtn:hover{color:var(--bad);background:var(--bad-soft)}
-@media (max-width:640px){.erow,.erow.cred{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 36px}.erow [data-k="name"]{grid-column:1/-2}.erow .wide,.erow.cred [data-k="url"],.erow.cred [data-k="org"]{grid-column:1/-1}.erow.cred [data-k="id"]{grid-column:auto}}
+@media (max-width:640px){.erow,.erow.cred{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 36px}.erow [data-k="name"]{grid-column:1/-2}.erow .wide,.erow.cred [data-k="url"],.erow.cred [data-k="org"]{grid-column:1/-1}.erow.cred [data-k="id"]{grid-column:auto}.erow.cred [data-k="type"]{grid-column:1/-2}}
 .note-priv{display:flex;gap:8px;align-items:center;background:var(--calm-soft);color:var(--calm);border-radius:12px;padding:10px 12px;font-size:12.5px;font-weight:600}
 .nt-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .conf{display:flex;flex-direction:column;gap:12px;padding:0;overflow:hidden}
@@ -543,6 +544,9 @@ function profileForm(p, creating) {
       <label class="field"><span>Título (como quieres que aparezca)</span><input id="pf-title" value="${esc(p.title || '')}" maxlength="120" placeholder="Ej. Tanatóloga clínica y psicoterapeuta"></label></div>
     <div class="row2"><label class="field"><span>Cédula profesional</span><input id="pf-license" value="${esc(p.license || '')}" maxlength="40"><small class="muted">${p.license_verified ? '✓ Verificada por MiConsulta: aparece el sello en tu perfil.' : p.license ? 'Pendiente de verificar por MiConsulta. Si la cambias, se vuelve a revisar.' : 'Con tu cédula verificada aparece un sello de confianza en tu perfil.'}</small></label>
       <label class="field"><span>Precio por sesión (MXN)</span><input id="pf-price" type="number" min="0" step="50" value="${p.price ?? ''}"></label></div>
+    <div class="field cred-box"><span>Diplomados y certificaciones</span><small class="muted">Agrega tus diplomados, certificaciones, especialidades y posgrados. Si tienen folio o enlace de verificación, tus pacientes podrán comprobarlos y MiConsulta podrá validarlos.</small>
+      <div class="stack" id="pf-creds" style="gap:8px;margin-top:6px">${(p.credentials || []).map(credRow).join('')}</div>
+      <button type="button" class="btn neu sm" data-a="credAdd" style="align-self:flex-start;margin-top:6px">+ Agregar diplomado o certificación</button></div>
     <label class="field"><span>Sobre ti</span><textarea id="pf-bio" maxlength="1500" placeholder="Tu enfoque, experiencia y con quién trabajas">${esc(p.bio || '')}</textarea></label>
     <div class="field"><span>Temas que atiendes (aparecen en el buscador)</span>
       <div class="sugg" id="pf-topics">${[...new Set([...topicsFor([main, ...extra]), ...topics])].map(t => `<button type="button" data-a="topic" data-t="${esc(t)}" aria-pressed="${topics.has(t)}">${esc(t)}</button>`).join('')}</div>
@@ -550,9 +554,6 @@ function profileForm(p, creating) {
     <div class="field"><span>Servicios que ofreces</span><small class="muted">Ej. Terapia individual, Acompañamiento en duelo, Terapia de pareja. Aparecen en tu perfil con su precio.</small>
       <div class="stack" id="pf-svcs" style="gap:8px;margin-top:6px">${(p.services || []).map(svcRow).join('')}</div>
       <button type="button" class="btn neu sm" data-a="svcAdd" style="align-self:flex-start;margin-top:6px">+ Agregar servicio</button></div>
-    <div class="field"><span>Formación y certificaciones</span><small class="muted">Títulos, diplomados y certificaciones. Si tienen folio o enlace de verificación, tus pacientes podrán comprobarlos.</small>
-      <div class="stack" id="pf-creds" style="gap:8px;margin-top:6px">${(p.credentials || []).map(credRow).join('')}</div>
-      <button type="button" class="btn neu sm" data-a="credAdd" style="align-self:flex-start;margin-top:6px">+ Agregar formación o certificación</button></div>
     <div class="row2"><label class="field"><span>Género (para el filtro del buscador)</span><select id="pf-gender">
         ${[['', 'Prefiero no decir'], ['mujer', 'Mujer'], ['hombre', 'Hombre'], ['otro', 'Otro']].map(([v, t]) => `<option value="${v}" ${(p.gender || '') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
       <div class="field"><span>Idiomas en que atiendes</span><div class="sugg" id="pf-langs">${LANGS.map(l => `<button type="button" data-a="topic" data-t="${l}" aria-pressed="${(p.languages || ['Español']).includes(l)}">${l}</button>`).join('')}</div></div></div>
@@ -591,8 +592,10 @@ function svcRow(v = {}) {
     <input class="in wide" data-k="desc" maxlength="200" placeholder="Descripción breve (opcional)" value="${esc(v.desc || '')}">
     <button type="button" class="ibtn" data-a="rowDel" aria-label="Quitar">✕</button></div>`;
 }
+const CRED_T = { diplomado: 'Diplomado', certificacion: 'Certificación', especialidad: 'Especialidad', maestria: 'Maestría', doctorado: 'Doctorado', licenciatura: 'Licenciatura', curso: 'Curso o taller' };
 function credRow(v = {}) {
-  return `<div class="erow cred"><input class="in" data-k="name" maxlength="120" placeholder="Nombre (ej. Diplomado en Tanatología Clínica)" value="${esc(v.name || '')}">
+  return `<div class="erow cred"><select class="in" data-k="type" aria-label="Tipo">${Object.entries(CRED_T).map(([k, t]) => `<option value="${k}" ${(v.type || 'diplomado') === k ? 'selected' : ''}>${t}</option>`).join('')}</select>
+    <input class="in" data-k="name" maxlength="120" placeholder="Nombre (ej. Diplomado en Tanatología Clínica)" value="${esc(v.name || '')}">
     <input class="in" data-k="org" maxlength="120" placeholder="Institución que lo emite" value="${esc(v.org || '')}">
     <input class="in" data-k="year" type="number" min="1950" max="2100" placeholder="Año" value="${v.year ?? ''}">
     <input class="in" data-k="id" maxlength="80" placeholder="Folio o ID (opcional)" value="${esc(v.id || '')}">
@@ -615,7 +618,7 @@ async function saveProfile(btn) {
     languages: [...document.querySelectorAll('#pf-langs [aria-pressed="true"]')].map(b => b.dataset.t),
     specialties: [...document.querySelectorAll('#pf-extra [aria-pressed="true"]')].map(b => b.dataset.t).filter(k => k !== val('pf-spec')),
     services: readRows('#pf-svcs .svc').filter(r => r.name).map(r => ({ name: r.name, price: r.price === '' ? null : Math.round(+r.price), minutes: r.minutes === '' ? null : Math.round(+r.minutes), desc: r.desc || null })),
-    credentials: readRows('#pf-creds .cred').filter(r => r.name).map(r => ({ name: r.name, org: r.org || null, year: r.year === '' ? null : +r.year, id: r.id || null, url: r.url || null })),
+    credentials: readRows('#pf-creds .cred').filter(r => r.name).map(r => ({ type: r.type || 'diplomado', name: r.name, org: r.org || null, year: r.year === '' ? null : +r.year, id: r.id || null, url: r.url || null })),
   };
   if (row.credentials.some(c => c.url && !/^https:\/\/\S+$/.test(c.url))) return setErr('pf-err', 'El enlace de verificación debe empezar con https://');
   if (row.services.some(v => v.price != null && (isNaN(v.price) || v.price < 0))) return setErr('pf-err', 'Revisa los precios de tus servicios.');
