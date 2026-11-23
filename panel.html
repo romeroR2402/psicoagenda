@@ -276,7 +276,7 @@ else sb.auth.onAuthStateChange((ev, session) => {
 });
 
 // Columnas públicas del perfil. Los datos privados (cuenta para cobrar, avisos por correo) se piden aparte con my_private_profile.
-const PCOLS = 'id,full_name,slug,specialty,title,license,bio,topics,price,session_minutes,slot_minutes,min_notice_hours,timezone,is_listed,is_active,created_at,whatsapp,photo_url,gender,languages,license_verified,cancel_policy,cancel_hours,specialties,services,credentials,is_demo';
+const PCOLS = 'id,full_name,slug,specialty,title,license,bio,topics,price,price_online,price_hidden,price_note,session_minutes,slot_minutes,min_notice_hours,timezone,is_listed,is_active,created_at,whatsapp,photo_url,gender,languages,license_verified,cancel_policy,cancel_hours,specialties,services,credentials,is_demo';
 async function withPrivate(p) {
   if (!p) return p;
   const { data } = await sb.rpc('my_private_profile');
@@ -720,7 +720,13 @@ function profileForm(p, creating) {
     <div class="row2"><label class="field"><span>Nombre completo</span><input id="pf-name" value="${esc(p.full_name || '')}"></label>
       <label class="field"><span>Título (como quieres que aparezca)</span><input id="pf-title" value="${esc(p.title || '')}" maxlength="120" placeholder="Ej. Tanatóloga clínica y psicoterapeuta"></label></div>
     <div class="row2"><label class="field"><span>Cédula profesional</span><input id="pf-license" value="${esc(p.license || '')}" maxlength="40"><small class="muted">${p.license_verified ? '✓ Verificada por MiConsulta: aparece el sello en tu perfil.' : p.license ? 'Pendiente de verificar por MiConsulta. Si la cambias, se vuelve a revisar.' : 'Con tu cédula verificada aparece un sello de confianza en tu perfil.'}</small></label>
-      <label class="field"><span>Precio por sesión (MXN)</span><input id="pf-price" type="number" min="0" step="50" value="${p.price ?? ''}"></label></div>
+      <div></div></div>
+    <div class="field price-box"><span>Precio por sesión</span>
+      <div class="row2"><label class="field"><span class="muted small">Presencial (MXN)</span><input id="pf-price" type="number" min="0" step="50" value="${p.price ?? ''}" placeholder="Ej. 700"></label>
+        <label class="field"><span class="muted small">En línea (MXN)</span><input id="pf-price-on" type="number" min="0" step="50" value="${p.price_online ?? ''}" placeholder="Igual que presencial"></label></div>
+      <small class="muted">Si cobras lo mismo, deja vacío el de en línea. Si solo atiendes en línea, pon tu precio en cualquiera de los dos.</small>
+      <label class="check" style="margin-top:6px"><input type="checkbox" id="pf-price-hide" ${p.price_hidden ? 'checked' : ''}> No mostrar mi precio a los pacientes</label>
+      <label class="field" id="pf-note-w" ${p.price_hidden ? '' : 'hidden'}><span class="muted small">Leyenda que verán en lugar del precio</span><input id="pf-price-note" maxlength="120" value="${esc(p.price_note || '')}" placeholder="Precio a consultar con el especialista"></label></div>
     <div class="field cred-box"><span>Diplomados y certificaciones</span><small class="muted">Agrega tus diplomados, certificaciones, especialidades y posgrados. Si tienen folio o enlace de verificación, tus pacientes podrán comprobarlos y MiConsulta podrá validarlos.</small>
       <div class="stack" id="pf-creds" style="gap:8px;margin-top:6px">${(p.credentials || []).map(credRow).join('')}</div>
       <button type="button" class="btn neu sm" data-a="credAdd" style="align-self:flex-start;margin-top:6px">+ Agregar diplomado o certificación</button></div>
@@ -787,6 +793,8 @@ async function saveProfile(btn) {
     full_name: val('pf-name').replace(/\s+/g, ' '), title: val('pf-title') || null, license: val('pf-license') || null,
     bio: val('pf-bio') || null, payment_info: val('pf-pay') || null, slug: slugify(val('pf-slug')),
     price: val('pf-price') === '' ? null : Math.round(Number(val('pf-price'))),
+    price_online: val('pf-price-on') === '' ? null : Math.round(Number(val('pf-price-on'))),
+    price_hidden: document.getElementById('pf-price-hide').checked, price_note: val('pf-price-note') || null,
     topics: [...document.querySelectorAll('#pf-topics [aria-pressed="true"]')].map(b => b.dataset.t),
     whatsapp: val('pf-wa') || null,
     cancel_hours: +val('pf-ch') || 0, cancel_policy: val('pf-cp') || null,
@@ -802,7 +810,7 @@ async function saveProfile(btn) {
   if (row.whatsapp && row.whatsapp.replace(/\D/g, '').length < 8) return setErr('pf-err', 'Revisa tu WhatsApp: debe tener al menos 8 dígitos.');
   if (row.full_name.length < 3) return setErr('pf-err', 'Escribe tu nombre completo.');
   if (row.slug.length < 3) return setErr('pf-err', 'La dirección del perfil debe tener al menos 3 letras o números.');
-  if (row.price != null && (isNaN(row.price) || row.price < 0)) return setErr('pf-err', 'Revisa el precio.');
+  if ([row.price, row.price_online].some(v => v != null && (isNaN(v) || v < 0))) return setErr('pf-err', 'Revisa el precio.');
   if (!creating) {
     row.is_listed = document.getElementById('pf-listed').checked;
     row.notify_email = document.getElementById('pf-notify').checked;
@@ -828,7 +836,7 @@ const alertsInvite = () => 'Notification' in window && Notification.permission =
 V.inicio = () => {
   const p = S.profile, now = new Date();
   const steps = [
-    ['Completa tu perfil', 'Precio, descripción y temas', !!(p.bio && p.price != null && p.topics.length), 'perfil'],
+    ['Completa tu perfil', 'Precio, descripción y temas', !!(p.bio && (p.price != null || p.price_online != null || p.price_hidden) && p.topics.length), 'perfil'],
     ['Configura tu horario', 'Días y horas en que atiendes', S.schedules.length > 0, 'horario'],
     ['Agrega una ubicación', 'Consultorio o consulta en línea', S.locations.length > 0, 'ubicaciones'],
     ['Publica tu perfil', 'Aparece en el buscador para pacientes', p.is_listed, 'perfil'],
@@ -995,7 +1003,7 @@ async function showReceipt(id) {
   const { data, error } = await sb.storage.from('receipts').createSignedUrl(a.receipt_path, 600);
   openModal(`<h3>Comprobante de ${esc(a.patient_name)}</h3><p class="sub">Revisa monto, destinatario y fecha antes de aprobar.</p>
     ${error ? '<div class="empty">No se pudo cargar la imagen.</div>' : `<img class="rcpt-img" src="${esc(data.signedUrl)}" alt="Comprobante de pago de ${esc(a.patient_name)}">`}
-    <dl class="kv" style="margin:14px 0"><dt>Cita</dt><dd>${fmtDT(a.starts_at, tz())}</dd><dt>Precio</dt><dd>${money(S.profile.price)}</dd><dt>Referencia</dt><dd>${esc(a.payment_ref || '—')}</dd></dl>
+    <dl class="kv" style="margin:14px 0"><dt>Cita</dt><dd>${fmtDT(a.starts_at, tz())}</dd><dt>Precio</dt><dd>${money(a.mode === 'en_linea' && S.profile.price_online != null ? S.profile.price_online : S.profile.price)}</dd><dt>Referencia</dt><dd>${esc(a.payment_ref || '—')}</dd></dl>
     ${a.status === 'review' ? `<div class="acts"><button class="btn pri" data-a="setStatus" data-id="${a.id}" data-s="confirmed">Pago correcto · apartar</button><button class="btn danger" data-a="setStatus" data-id="${a.id}" data-s="rejected">Rechazar</button></div>` : ''}`);
 }
 
@@ -1703,6 +1711,7 @@ document.addEventListener('input', e => {
   if (t.id === 'pf-slug') updateSlugUrl();
 });
 document.addEventListener('change', e => {
+  if (e.target.id === 'pf-price-hide') document.getElementById('pf-note-w').hidden = !e.target.checked;
   if (e.target.dataset.b && S.builder && e.target.type !== 'text') syncBuilder(e.target);
   if (e.target.id === 'pf-file' && e.target.files[0]) uploadPhoto(e.target.files[0]);
   if (e.target.id === 'ev-mode') { document.getElementById('ev-pres').hidden = e.target.value !== 'presencial'; document.getElementById('ev-url-w').hidden = e.target.value !== 'en_linea'; }

@@ -109,7 +109,7 @@ function fail(msg) { root.innerHTML = `${SITE ? '' : '<a class="back" href="inde
 let MODS = null;
 async function load() {
   if (!sb) return fail('No se pudo cargar la conexión.');
-  const { data, error } = await sb.from('profiles').select('id,is_demo,full_name,slug,specialty,specialties,services,credentials,title,license,license_verified,cancel_policy,cancel_hours,bio,topics,price,session_minutes,timezone,photo_url,whatsapp,languages,locations(id,kind,name,address,city,lat,lng,maps_url),schedules(weekday,start_time,end_time,location_id)')
+  const { data, error } = await sb.from('profiles').select('id,is_demo,full_name,slug,specialty,specialties,services,credentials,title,license,license_verified,cancel_policy,cancel_hours,bio,topics,price,price_online,price_hidden,price_note,session_minutes,timezone,photo_url,whatsapp,languages,locations(id,kind,name,address,city,lat,lng,maps_url),schedules(weekday,start_time,end_time,location_id)')
     .eq('slug', slug).eq('is_listed', true).eq('is_active', true).maybeSingle();
   if (error || !data) return fail('Puede que el link esté mal escrito o que el especialista ya no esté disponible.');
   // La página propia (?sitio=) es parte del plan: sin el módulo se muestra el perfil normal
@@ -189,7 +189,7 @@ function render() {
         <h1>${esc(P.full_name)}</h1><div class="muted">${esc(P.title || 'Especialista')}${P.license ? ' · Cédula profesional ' + esc(P.license) : ''}</div>
         ${P.license_verified ? `<span class="vbadge" style="margin-top:8px">${ic('shield', 13)} Cédula verificada${SITE ? '' : ' por MiConsulta'}</span>` : ''}
         <div id="rating-top" style="margin-top:8px"></div>
-        <div class="meta" style="margin-top:8px"><span class="price">${money(P.price)}</span><span>${ic('clock', 14)}Sesión de ${P.session_minutes} min</span></div></div></div>
+        <div class="meta" style="margin-top:8px"><span class="price">${esc(PA.priceLabel(P))}</span><span>${ic('clock', 14)}Sesión de ${P.session_minutes} min</span></div></div></div>
         ${(P.topics || []).length ? `<div class="tags" style="margin-top:16px">${P.topics.map(t => `<span class="tag">${esc(t)}</span>`).join('')}</div>` : ''}
         ${(P.languages || []).length ? `<div class="muted small" style="margin-top:10px">Idiomas: ${P.languages.map(esc).join(', ')}</div>` : ''}
       </section>
@@ -212,7 +212,7 @@ function render() {
   if (pins.length && window.L) {
     const m = L.map('locmap', { scrollWheelZoom: false });
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(m);
-    pins.forEach(l => L.marker([l.lat, l.lng], { icon: L.divIcon({ className: '', html: `<div class="mk"><b>${P.price != null ? '$' + P.price.toLocaleString('es-MX') : 'Consultar'}</b><span>${esc(l.name)}</span></div>`, iconSize: [0, 0] }) }).addTo(m));
+    pins.forEach(l => L.marker([l.lat, l.lng], { icon: L.divIcon({ className: '', html: `<div class="mk"><b>${PA.priceShort(P)}</b><span>${esc(l.name)}</span></div>`, iconSize: [0, 0] }) }).addTo(m));
     if (pins.length === 1) m.setView([pins[0].lat, pins[0].lng], 15); else m.fitBounds(pins.map(l => [l.lat, l.lng]), { padding: [40, 40] });
   }
 }

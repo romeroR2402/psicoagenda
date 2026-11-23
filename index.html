@@ -216,7 +216,7 @@ function card(p) {
     <ul>
       ${main ? `<li>${ic('pin', 16)}<span>${esc([main.address, [zDist(main), zState(main)].filter(Boolean).join(', ')].filter(Boolean).join(' · ') || main.name)}${d != null ? ` · <b>${d < 1 ? '<1' : Math.round(d)} km</b>` : ''}${main.lat != null ? `<button class="link" data-a="map" data-id="${p.id}">Mapa</button>` : ''}<a class="link" href="${esc(PA.gdir(main))}" target="_blank" rel="noopener">Cómo llegar</a></span></li>` : ''}
       ${online ? `<li>${ic('video', 16)}<span>También en línea por videollamada</span></li>` : ''}
-      <li>${ic('pay', 16)}<span>Sesión de ${p.session_minutes} min · <b>${money(p.price)}</b></span></li>
+      <li>${ic('pay', 16)}<span>Sesión de ${p.session_minutes} min · <b>${esc(PA.priceLabel(p))}</b></span></li>
       ${p.bio ? `<li>${ic('user', 16)}<span>${esc(p.bio.length > 150 ? p.bio.slice(0, 150).trim() + '…' : p.bio)}</span></li>` : ''}
     </ul></div>${mini(p)}</article>`;
 }
@@ -231,7 +231,7 @@ function filtered() {
     if (c && !(c === 'en_linea' ? locs.some(l => l.kind === 'en_linea') : locs.some(inZone))) return false;
     if (F.today && !daySlots(p, PA.todayKey(tzOf(p))).length) return false;
     if (F.in3 && ![0, 1, 2].some(i => daySlots(p, keyAdd(PA.todayKey(tzOf(p)), i)).length)) return false;
-    if (F.cheap && !(p.price != null && p.price < 600)) return false;
+    if (F.cheap && (p.price_hidden || !([p.price, p.price_online].some(v => v != null && v < 600)))) return false;
     if (F.online && !locs.some(l => l.kind === 'en_linea')) return false;
     if (F.near && !(dist(p) != null && dist(p) <= 25)) return false;
     if (F.women && p.gender !== 'mujer') return false;
@@ -266,7 +266,7 @@ const zonePins = p => pinned(p).filter(l => !Z.c || Z.c === 'en_linea' || inZone
 // Marcador con el precio; al tocarlo lleva al perfil del especialista
 function priceMarker(p, l, on) {
   const ns = nextAt(p, l), tz = tzOf(p);
-  const label = `<b>${p.price != null ? '$' + p.price.toLocaleString('es-MX') : 'Consultar'}</b><span>${ns ? 'Próx. ' + kLabel(dayKey(ns, tz), { day: 'numeric', month: 'short' }) : 'Sin horario'}</span>`;
+  const label = `<b>${PA.priceShort(p)}</b><span>${ns ? 'Próx. ' + kLabel(dayKey(ns, tz), { day: 'numeric', month: 'short' }) : 'Sin horario'}</span>`;
   const m = L.marker([l.lat, l.lng], { icon: L.divIcon({ className: '', html: `<div class="mk ${on ? 'on' : ''}" role="link">${label}</div>`, iconSize: [0, 0] }), title: p.full_name, riseOnHover: true });
   m.bindTooltip(`<b>${esc(p.full_name)}</b><br>${esc(p.title || SPEC[p.specialty || 'psicologia'][2])}<br><span style="color:#476788">${esc([l.name, zDist(l)].filter(Boolean).join(' · '))}</span><br><span style="color:#006bff;font-weight:700">Ver perfil y agendar →</span>`, { direction: 'top', offset: [0, -40] });
   m.on('click', () => { location.href = `perfil.html?p=${encodeURIComponent(p.slug)}#agendar`; });
@@ -312,7 +312,7 @@ function mapModal(focusId) {
 async function load() {
   if (!sb) { list.innerHTML = '<div class="empty" style="margin:18px">No se pudo cargar la conexión.</div>'; return; }
   const { data, error } = await sb.from('profiles')
-    .select('id,full_name,slug,specialty,specialties,title,license,license_verified,bio,topics,price,session_minutes,photo_url,timezone,gender,languages,locations(id,kind,name,address,city,state,district,lat,lng,maps_url)')
+    .select('id,full_name,slug,specialty,specialties,title,license,license_verified,bio,topics,price,price_online,price_hidden,price_note,session_minutes,photo_url,timezone,gender,languages,locations(id,kind,name,address,city,state,district,lat,lng,maps_url)')
     .eq('is_listed', true).eq('is_active', true).eq('is_demo', false).order('created_at');
   if (error) { list.innerHTML = '<div class="empty" style="margin:18px">No pudimos cargar los especialistas. Revisa tu conexión y recarga la página.</div>'; return; }
   all = data;

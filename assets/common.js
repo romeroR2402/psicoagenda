@@ -21,6 +21,17 @@ window.PA = (() => {
   const dayKey = (d, tz = TZ) => new Date(d).toLocaleDateString('en-CA', { timeZone: tz });
   const todayKey = (tz = TZ) => dayKey(new Date(), tz);
   const money = n => n == null ? 'Precio a consultar' : '$' + Number(n).toLocaleString('es-MX') + ' MXN';
+  // Precios del especialista: presencial (price), en línea (price_online, opcional) u oculto con leyenda (price_hidden + price_note)
+  const priceNote = p => (p && p.price_note) || 'Precio a consultar con el especialista';
+  const priceOf = (p, mode) => !p || p.price_hidden ? null : mode === 'en_linea' && p.price_online != null ? p.price_online : (p.price ?? p.price_online ?? null);
+  const priceText = (p, mode) => p && p.price_hidden ? priceNote(p) : money(priceOf(p, mode));
+  const priceLabel = p => {
+    if (!p) return money(null);
+    if (p.price_hidden) return priceNote(p);
+    if (p.price != null && p.price_online != null && p.price !== p.price_online) return `Presencial ${money(p.price)} · En línea ${money(p.price_online)}`;
+    return money(p.price ?? p.price_online);
+  };
+  const priceShort = p => p && !p.price_hidden && (p.price ?? p.price_online) != null ? '$' + Number(p.price ?? p.price_online).toLocaleString('es-MX') : 'Consultar';
 
   const STATUS = {
     unpaid: ['Pago pendiente', 'p-warn'], review: ['Pago por revisar', 'p-calm'], confirmed: ['Confirmada', 'p-ok'],
@@ -188,5 +199,5 @@ window.PA = (() => {
   const waLink = (phone, text) => { const d = String(phone).replace(/\D/g, ''); return `https://wa.me/${d.length === 10 ? '52' + d : d}?text=${encodeURIComponent(text)}`; };
   const pageUrl = p => new URL(p, location.href).href;
 
-  return { sb, TZ, gmaps, gdir, MAPS_RE, esc, av, avc, ini, cap, norm, slugify, fmtDay, fmtShort, fmtTime, fmtDT, dayKey, todayKey, money, STATUS, pill, MODE, DOW, ic, toast, openModal, closeModal, accountMenu, offerInstall, isApp, siteSlug, siteQS, siteBrand, copy, compress, waLink, pageUrl };
+  return { sb, TZ, gmaps, gdir, MAPS_RE, esc, av, avc, ini, cap, norm, slugify, fmtDay, fmtShort, fmtTime, fmtDT, dayKey, todayKey, money, priceOf, priceText, priceLabel, priceNote, priceShort, STATUS, pill, MODE, DOW, ic, toast, openModal, closeModal, accountMenu, offerInstall, isApp, siteSlug, siteQS, siteBrand, copy, compress, waLink, pageUrl };
 })();

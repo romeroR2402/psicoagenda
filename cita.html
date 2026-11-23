@@ -102,7 +102,7 @@ function render() {
         <dt>Modalidad</dt><dd>${MODE[A.mode]}</dd>
         ${A.location ? `<dt>Lugar</dt><dd>${esc(A.location.name)}${A.location.address ? '<br><span class="muted small">' + esc([A.location.address, A.location.city].filter(Boolean).join(', ')) + '</span>' : ''}${A.location.kind !== 'en_linea' ? `<br><a class="btn sec sm" style="margin-top:8px" href="${esc(PA.gdir(A.location))}" target="_blank" rel="noopener">Cómo llegar en Google Maps</a>` : ''}</dd>` : ''}
         <dt>Especialista</dt><dd><a href="perfil.html?${SITE ? 'sitio' : 'p'}=${encodeURIComponent(A.psych_slug)}">${esc(A.psych_name)}</a></dd>
-        <dt>Costo</dt><dd>${money(A.price)}</dd>
+        <dt>Costo</dt><dd>${A.price != null ? money(A.price) : esc(A.price_note || 'Precio a consultar con el especialista')}</dd>
       </dl></section>
     ${past && A.reviews_on !== false ? reviewCard() : ''}
     ${active ? `<section class="card"><h3>Organiza tu cita</h3>

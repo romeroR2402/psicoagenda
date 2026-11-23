@@ -220,3 +220,9 @@ y en el menú de la cuenta del especialista.
   (función `event-reminders`, cada 5 minutos; `appointments.psych_soon_at` evita repetirlo).
 - **WhatsApp automático al paciente**: no está activado. Requiere la API oficial de WhatsApp Business (Meta), que cobra por mensaje
   y pide verificar un negocio; mientras, el especialista lo manda con un toque desde el aviso.
+
+## Precios del especialista
+- `profiles.price` = precio presencial (o general), `profiles.price_online` = precio en línea (vacío = igual).
+- `profiles.price_hidden` + `profiles.price_note`: no mostrar precios; en su lugar se ve la leyenda (por defecto "Precio a consultar con el especialista").
+- Se editan en Mi perfil → "Precio por sesión". Los muestran el buscador, el mapa, el perfil y el link de cita del paciente
+  (`get_appointment` devuelve el precio de la modalidad de esa cita, o la leyenda). Funciones comunes: `PA.priceLabel/priceShort/priceOf`.
