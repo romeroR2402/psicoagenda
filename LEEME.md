@@ -205,4 +205,5 @@ y en el menú de la cuenta del especialista.
   si entra por el enlace ve "no está en tu plan" con los precios. En el menú de su foto está **Mi plan**.
 - También lo respeta la base de datos (`has_module`): sin el módulo no puede crear encuestas ni eventos, sus eventos no salen en la cartelera,
   sus opiniones no se muestran ni se piden, y su página propia (`?sitio=`) se abre como perfil normal.
-- La página de inicio muestra los planes activos en la sección "Para especialistas".
+- Los planes se muestran en `especialistas.html` (página para doctores: funciones, cómo empezar, planes, preguntas, entrar o crear cuenta).
+  El inicio (`index.html`) es solo para pacientes: buscar y agendar; su botón "Soy especialista" lleva a esa página. Los estilos de ambas están en `assets/home.css`.

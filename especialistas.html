@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MiConsulta para especialistas · Agenda, cobros y pacientes</title>
+<meta name="description" content="Agenda en línea para psicólogos, psicoterapeutas, tanatólogos, médicos y dentistas: perfil en el buscador, citas con comprobante de pago, pacientes y más. Planes desde $199 al mes.">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="manifest" href="site.webmanifest">
+<meta name="theme-color" content="#006bff">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="assets/app.css">
+<link rel="stylesheet" href="assets/home.css">
+<style>
+.hero-acts{display:flex;gap:20px;align-items:center;flex-wrap:wrap;margin-top:28px}
+.hero-acts a.ghost{color:var(--ink);font-weight:600;text-decoration:none}
+.hero-acts a.ghost:hover{text-decoration:underline}
+.hero-note{color:var(--muted);font-size:14px;margin:14px 0 0}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}
+.fcard{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px}
+.fcard .ic{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent);margin-bottom:14px}
+.fcard h3{margin:0 0 6px;font-size:17px}
+.fcard p{margin:0;color:var(--muted);font-size:14.5px;line-height:1.55}
+.how{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;counter-reset:n}
+.how li{list-style:none;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px;counter-increment:n}
+.how li::before{content:counter(n);width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:var(--accent);color:#fff;font-weight:800;margin-bottom:12px}
+.how b{display:block;font-size:17px;color:var(--ink);margin-bottom:6px}
+.how span{color:var(--muted);font-size:14.5px;line-height:1.55}
+.how{padding:0;margin:0}
+.pricing{margin-top:0}
+.faq{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:10px}
+.faq details{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+.faq summary{cursor:pointer;font-weight:700;color:var(--ink);list-style:none;display:flex;justify-content:space-between;gap:12px}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"+";color:var(--accent);font-size:20px;line-height:1}
+.faq details[open] summary::after{content:"−"}
+.faq p{margin:10px 0 0;color:var(--muted);line-height:1.6;font-size:15px}
+.cta{background:var(--ink);color:#fff;border-radius:24px;padding:40px 28px;text-align:center}
+.cta h2{color:#fff;font-size:clamp(26px,3.4vw,38px);margin:0}
+.cta p{color:#c9d8ea;margin:12px auto 22px;max-width:52ch;line-height:1.55}
+.cta .acts{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.cta .btn.neu{background:transparent;color:#fff;border-color:rgba(255,255,255,.4)}
+.hero .pill{white-space:normal;max-width:100%;line-height:1.35}
+@media (max-width:640px){
+  .hero-acts .btn{width:100%;justify-content:center}
+  .brand small{display:none}
+  .top-links .btn.dark{display:none}
+  .top-links .ghost{display:inline-flex;border:1px solid var(--line);border-radius:10px;padding:8px 16px;background:var(--card)}
+}
+</style>
+</head>
+<body class="home">
+<header class="topbar"><div class="wrap gutter">
+  <a class="brand" href="especialistas.html"><i><svg viewBox="6 8 20 20" width="22" height="22" aria-hidden="true"><path d="M16 26c-6-3.8-9.6-7.8-9.6-12.3A5.2 5.2 0 0 1 16 10.6a5.2 5.2 0 0 1 9.6 3.1C25.6 18.2 22 22.2 16 26z" fill="currentColor"/><path d="M16 22.2v-5" stroke="var(--accent)" stroke-width="1.7" stroke-linecap="round"/><path d="M16 18.4c0-2.5 1.7-4 4.1-4 0 2.5-1.7 4-4.1 4zM16 19.6c0-2.1-1.5-3.4-3.5-3.4 0 2.1 1.5 3.4 3.5 3.4z" fill="var(--accent)"/></svg></i>MiConsulta <small style="font-weight:600;color:var(--muted);font-size:13px;margin-left:6px">Especialistas</small></a>
+  <nav class="nav" aria-label="Secciones"><a href="#funciones">Funciones</a><a href="#empezar">Cómo empezar</a><a href="#planes">Planes y precios</a><a href="#preguntas">Preguntas</a></nav>
+  <nav class="top-links"><a class="ghost" href="panel.html">Entrar</a><a class="btn dark" href="panel.html#registro">Empezar prueba gratis</a></nav>
+</div></header>
+
+<main>
+  <section class="hero"><div class="wrap gutter">
+    <div>
+      <span class="pill">Para psicólogos, psicoterapeutas, tanatólogos, médicos y dentistas</span>
+      <h1>Tu consulta, <em>organizada</em> en un solo panel</h1>
+      <p class="lead">Aparece en el buscador, recibe citas con el comprobante de pago ya subido y lleva a tus pacientes desde tu computadora o tu celular.</p>
+      <div class="hero-acts"><a class="btn pri lg" href="panel.html#registro">Empezar prueba gratis</a><a class="ghost" href="panel.html">Ya tengo cuenta, entrar →</a></div>
+      <p class="hero-note">Planes desde $199 MXN al mes. Sin tarjeta para empezar.</p>
+    </div>
+    <div class="stage" aria-hidden="true"><div class="pcard shot" id="pro-shot"></div></div>
+  </div></section>
+
+  <section class="sec" id="funciones"><div class="wrap gutter">
+    <div class="sec-h"><h2>Todo lo que necesitas para recibir pacientes</h2><p>Sin llamadas ni mensajes de ida y vuelta: tus pacientes eligen horario, pagan y tú solo apruebas.</p></div>
+    <div class="fgrid" id="fgrid"></div>
+  </div></section>
+
+  <section class="sec" id="empezar"><div class="wrap gutter">
+    <div class="sec-h"><h2>Empieza en tres pasos</h2><p>En unos minutos tu perfil puede estar recibiendo citas.</p></div>
+    <ol class="how">
+      <li><b>Crea tu cuenta</b><span>Con tu correo. Empiezas con una prueba gratis para conocer todo el panel.</span></li>
+      <li><b>Completa tu perfil</b><span>Foto, especialidad, cédula, precio, consultorios y los horarios en que atiendes.</span></li>
+      <li><b>Publícate y recibe citas</b><span>Activa "Mostrar mi perfil en el buscador" y comparte tu link. Te avisamos cuando alguien agenda.</span></li>
+    </ol>
+  </div></section>
+
+  <section class="sec" id="planes"><div class="wrap gutter">
+    <div class="sec-h"><h2>Planes y precios</h2><p>Elige el plan que va con tu consulta. Puedes cambiarlo cuando quieras.</p></div>
+    <div class="pricing" id="pricing"><div class="empty">Cargando planes…</div></div>
+  </div></section>
+
+  <section class="sec" id="preguntas"><div class="wrap gutter">
+    <div class="sec-h"><h2>Preguntas frecuentes</h2></div>
+    <div class="faq">
+      <details><summary>¿Cómo me pagan mis pacientes?</summary><p>Directo a ti: pones tus datos para recibir pagos en tu perfil, el paciente paga y sube su comprobante, y tú confirmas la cita al revisarlo. MiConsulta no cobra comisión por cita.</p></details>
+      <details><summary>¿Cómo pago mi plan?</summary><p>Al terminar tu prueba gratis, contacta al administrador desde tu panel para activar el plan que elijas. Puedes pagar por mes, trimestre, semestre o año.</p></details>
+      <details><summary>¿Puedo cambiar de plan después?</summary><p>Sí. Puedes subir o bajar de plan cuando quieras; tus datos se conservan. Si bajas de plan, lo que no incluye se oculta, pero no se borra.</p></details>
+      <details><summary>¿Quién puede ver los datos de mis pacientes?</summary><p>Solo tú. Tus pacientes y sus citas están protegidos y no son visibles para otros especialistas. MiConsulta no guarda expedientes clínicos.</p></details>
+      <details><summary>¿Necesito tener consultorio?</summary><p>No. Puedes atender solo en línea, solo presencial o combinar ambos, con horarios distintos para cada lugar.</p></details>
+    </div>
+  </div></section>
+
+  <section class="sec"><div class="wrap gutter">
+    <div class="cta"><h2>Empieza hoy tu prueba gratis</h2><p>Crea tu perfil, configura tus horarios y comparte tu link. Si ya tienes cuenta, entra a tu panel.</p>
+      <div class="acts"><a class="btn pri lg" href="panel.html#registro">Crear mi cuenta</a><a class="btn neu lg" href="panel.html">Entrar a mi panel</a></div></div>
+  </div></section>
+</main>
+
+<footer class="foot"><div class="wrap gutter">
+  <div class="cols">
+    <div><a class="brand" href="especialistas.html"><i><svg viewBox="6 8 20 20" width="22" height="22" aria-hidden="true"><path d="M16 26c-6-3.8-9.6-7.8-9.6-12.3A5.2 5.2 0 0 1 16 10.6a5.2 5.2 0 0 1 9.6 3.1C25.6 18.2 22 22.2 16 26z" fill="currentColor"/><path d="M16 22.2v-5" stroke="var(--accent)" stroke-width="1.7" stroke-linecap="round"/><path d="M16 18.4c0-2.5 1.7-4 4.1-4 0 2.5-1.7 4-4.1 4zM16 19.6c0-2.1-1.5-3.4-3.5-3.4 0 2.1 1.5 3.4 3.5 3.4z" fill="var(--accent)"/></svg></i>MiConsulta</a>
+      <p class="about">La agenda en línea para especialistas de la salud.</p></div>
+    <div><h4>Especialistas</h4><ul><li><a href="panel.html#registro">Crear cuenta</a></li><li><a href="panel.html">Entrar a mi panel</a></li><li><a href="#planes">Planes y precios</a></li></ul></div>
+    <div><h4>Pacientes</h4><ul><li><a href="index.html">Buscar especialistas</a></li><li><a href="eventos.html">Talleres y conferencias</a></li></ul></div>
+    <div><h4>Legal</h4><ul><li><a href="aviso-privacidad.html?para=especialista">Aviso de privacidad</a></li></ul></div>
+  </div>
+</div></footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script src="assets/common.js"></script>
+<script>
+(() => {
+const { sb, esc, ic } = PA;
+const $ = id => document.getElementById(id);
+const CHECK = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>';
+
+$('pro-shot').innerHTML = `<div class="fake-in" style="justify-content:space-between"><span>${ic('cal', 18)} Hoy</span><span>3 citas</span></div>
+  ${[['AR', 'Ana R.', '10:00 · Presencial', 'Confirmada', '#ddf5ea', '#0a7a52'], ['JM', 'Jorge M.', '12:00 · En línea', 'Pago por revisar', '#fff0d6', '#9a5900'], ['CL', 'Carla L.', '17:30 · Presencial', 'Apartada', '#e6f0ff', '#004eba']]
+    .map(([a, n, t, s, bg, c]) => `<div class="row"><span class="ava" style="background:${bg};color:${c}">${a}</span><div><b>${n}</b><small>${t}</small></div><span class="st" style="background:${bg};color:${c}">${s}</span></div>`).join('')}`;
+
+$('fgrid').innerHTML = [
+  ['eye', 'Perfil en el buscador', 'Los pacientes te encuentran por especialidad, tema, alcaldía o consulta en línea, con tu precio y tu cédula visibles.'],
+  ['week', 'Agenda en línea sin empalmes', 'Horarios por consultorio, duración de sesión, anticipación mínima y días de descanso. Solo se ofrecen horarios libres.'],
+  ['shield', 'Cobro con comprobante', 'El paciente paga directo a tu cuenta y sube su comprobante. Tú apruebas la cita con un toque.'],
+  ['clock', 'Recordatorios automáticos', 'Tus pacientes reciben su link de cita, el recordatorio un día antes y pueden reagendar o cancelar solos.'],
+  ['users', 'Tus pacientes en orden', 'Quien agenda contigo se agrega solo a tu lista, con sus datos de contacto y sus citas.'],
+  ['pin', 'Página propia con QR', 'Un enlace con solo tu perfil y tu agenda para compartir en redes, WhatsApp o tu consultorio.'],
+  ['star', 'Opiniones verificadas', 'Solo opinan quienes tuvieron cita contigo, y puedes responder públicamente.'],
+  ['mic', 'Talleres y conferencias', 'Publica talleres y grupos, recibe registros y avisa a tus asistentes por WhatsApp.'],
+].map(([i, t, d]) => `<article class="fcard"><div class="ic">${ic(i, 22)}</div><h3>${t}</h3><p>${d}</p></article>`).join('');
+
+// Planes (se editan en Administración, Ajustes, Planes y precios)
+(async () => {
+  const el = $('pricing');
+  const { data } = sb ? await sb.from('plan_tiers').select('key,name,price,description,modules').eq('active', true).order('sort') : { data: null };
+  if (!data || !data.length) { el.innerHTML = '<div class="empty">Escríbenos para conocer los planes disponibles.</div>'; return; }
+  const BASE = ['Perfil en el buscador y agenda en línea', 'Horarios y consultorios', 'Cobro con comprobante y recordatorios'];
+  const MODS = [['pacientes', 'Lista de pacientes'], ['citas_manuales', 'Citas por teléfono o en persona'], ['sitio', 'Página propia con código QR'],
+    ['opiniones', 'Opiniones de pacientes'], ['encuestas', 'Encuestas'], ['conferencias', 'Talleres y conferencias']];
+  const top = data.length > 2 ? data[Math.floor(data.length / 2)].key : null;
+  el.innerHTML = data.map(t => `<article class="price-c ${t.key === top ? 'top' : ''}">${t.key === top ? '<span class="pill" style="align-self:flex-start">Más elegido</span>' : ''}
+    <h3>${esc(t.name)}</h3><div class="amt">$${Number(t.price).toLocaleString('es-MX')} <small>MXN al mes</small></div>${t.description ? `<p>${esc(t.description)}</p>` : ''}
+    <ul>${BASE.map(b => `<li><span>${CHECK}</span>${b}</li>`).join('')}${MODS.map(([k, n]) => `<li class="${t.modules.includes(k) ? '' : 'n'}"><span>${t.modules.includes(k) ? CHECK : '—'}</span>${n}</li>`).join('')}</ul>
+    <a class="btn ${t.key === top ? 'pri' : 'neu'}" href="panel.html#registro">Empezar prueba gratis</a></article>`).join('');
+})();
+})();
+</script>
+</body>
+</html>
