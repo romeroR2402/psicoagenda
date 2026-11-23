@@ -99,6 +99,12 @@
 .pat-head small{display:block;color:var(--muted)}
 .plan-c.cur{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 30%,transparent)}
 .plan-l{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:4px;font-size:13.5px}.plan-l .n{color:var(--muted);opacity:.7}
+.alerts{position:fixed;z-index:80;right:16px;top:72px;display:flex;flex-direction:column;gap:10px;width:min(380px,calc(100vw - 32px))}
+.alert-c{display:flex;gap:12px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:14px;padding:14px;box-shadow:var(--shadow-l);animation:up .2s ease-out}
+.alert-c.soon{border-left-color:#f5a623}.alert-c b{display:block;color:var(--ink);font-size:15px}.alert-c small{display:block;color:var(--muted);font-size:13px;margin-top:3px;line-height:1.4}
+.alert-c .acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.alert-x{border:0;background:none;color:var(--muted);font-size:22px;line-height:1;cursor:pointer;padding:0 2px}
+.alert-inv{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:16px;border-left:4px solid var(--accent)}.alert-inv b{display:block}.alert-inv small{color:var(--muted)}
+@media (max-width:900px){.alerts{top:auto;bottom:84px;right:12px;left:12px;width:auto}}
 .tour-shade{position:fixed;z-index:70;border-radius:12px;box-shadow:0 0 0 9999px rgba(11,53,88,.55),0 0 0 3px var(--accent);pointer-events:none;transition:all .25s ease}
 .tour-shade.full{inset:0;border-radius:0;box-shadow:none;background:rgba(11,53,88,.55)}
 .tour-card{position:fixed;z-index:71;width:min(340px,calc(100vw - 24px));background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px;box-shadow:var(--shadow-l);animation:up .2s ease-out}
@@ -300,7 +306,7 @@ async function loadAll() {
       sb.from('professional_settings').select('*').eq('user_id', uid).maybeSingle(),
       sb.from('reviews').select('*, appointments(patient_name, starts_at, mode)').eq('psychologist_id', uid).order('created_at', { ascending: false }),
     ]);
-    S.locations = l.data || []; S.schedules = s.data || []; S.timeOff = t.data || []; S.appts = a.data || [];
+    S.locations = l.data || []; S.schedules = s.data || []; S.timeOff = t.data || []; S.appts = a.data || []; apptChanges(S.appts); startLive(); setTimeout(soonCheck, 1500);
     S.clients = c.data || []; S.surveys = sv.data || []; S.links = lk.data || []; S.notes = nt.data || [];
     S.events = ev.data || []; S.attendees = at.data || []; S.psettings = ps.data || null; S.reviews = rv.data || [];
     S.week = null;
@@ -337,7 +343,7 @@ function renderTop() {
   if (S.profile) items.push({ text: 'Mi perfil', icon: 'user', action: () => { location.hash = '#perfil'; } },
     { text: 'Ver mi perfil público', icon: 'eye', href: 'perfil.html?p=' + encodeURIComponent(S.profile.slug), target: '_blank' },
     ...(hasMod('opiniones') ? [{ text: 'Mis opiniones', icon: 'star', action: () => { location.hash = '#opiniones'; } }] : []),
-    { text: 'Mi plan', icon: 'form', action: planModal });
+    { text: 'Mi plan', icon: 'form', action: planModal }, { text: 'Alertas y sonido', icon: 'clock', action: alertsModal });
   items.push({ text: 'Cambiar contraseña', icon: 'lock', action: async () => {
     const { error } = await sb.auth.resetPasswordForEmail(S.user.email, { redirectTo: pageUrl('panel.html') });
     toast(error ? 'No se pudo enviar el correo. Intenta más tarde.' : `Te enviamos un enlace a ${S.user.email} para crear tu nueva contraseña.`);
@@ -365,6 +371,111 @@ function render() {
     </nav><main class="content gutter"><div class="wrap">${trialBanner()}${viewOn(S.view) ? V[S.view]() : lockedView(S.view)}</div></main></div>${tabbar(badge)}`;
   if (S.view === 'pacientes') filterClients();
   if (!TOUR.checked) { TOUR.checked = true; if (!tourDone()) setTimeout(() => startTour(false), 700); }
+}
+
+/* ---------- alertas: citas nuevas y sesiones por empezar ---------- */
+// Preferencias de este dispositivo (sonido y con cuántos minutos de anticipación avisar)
+const aPrefs = () => { let o = {}; try { o = JSON.parse(localStorage.getItem('mc_alertas') || '{}'); } catch (e) {} return { sound: true, mins: 10, ...o }; };
+const setPrefs = o => { try { localStorage.setItem('mc_alertas', JSON.stringify({ ...aPrefs(), ...o })); } catch (e) {} };
+const seenKey = k => { try { const v = JSON.parse(localStorage.getItem('mc_alert_seen') || '{}'); if (v[k]) return true; v[k] = Date.now();
+  for (const x of Object.keys(v)) if (Date.now() - v[x] > 3 * 864e5) delete v[x]; localStorage.setItem('mc_alert_seen', JSON.stringify(v)); } catch (e) {} return false; };
+let actx = null;
+const audio = () => { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume(); } catch (e) {} return actx; };
+// El navegador solo deja sonar después de que la persona toca la página una vez
+document.addEventListener('pointerdown', audio, { once: true });
+function chime(kind) {
+  if (!aPrefs().sound) return; const c = audio(); if (!c) return;
+  const notes = kind === 'soon' ? [784, 988, 784, 988, 1175] : [659, 880, 1047];
+  notes.forEach((f, i) => { const o = c.createOscillator(), g = c.createGain(), t = c.currentTime + i * 0.2;
+    o.type = 'sine'; o.frequency.value = f; g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.4, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.19);
+    o.connect(g); g.connect(c.destination); o.start(t); o.stop(t + 0.2); });
+}
+async function sysNotify(title, body, tag) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  try {
+    const reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration();
+    const opt = { body, tag, renotify: true, icon: 'assets/favicon-192.png', badge: 'assets/favicon-192.png', data: { url: pageUrl('panel.html#citas') } };
+    if (reg) await reg.showNotification(title, opt); else new Notification(title, opt);
+  } catch (e) {}
+}
+function alertCard(kind, title, body, acts) {
+  let w = document.getElementById('alerts');
+  if (!w) { w = document.createElement('div'); w.id = 'alerts'; w.className = 'alerts'; w.setAttribute('aria-live', 'assertive'); document.body.append(w); }
+  const el = document.createElement('div'); el.className = 'alert-c ' + kind;
+  el.innerHTML = `<span class="ic-box">${ic(kind === 'soon' ? 'clock' : 'cal', 18)}</span><div style="flex:1;min-width:0"><b>${title}</b><small>${body}</small>${acts ? `<div class="acts">${acts}</div>` : ''}</div>
+    <button class="alert-x" aria-label="Cerrar aviso">×</button>`;
+  el.querySelector('.alert-x').onclick = () => el.remove();
+  el.querySelectorAll('a').forEach(a => a.addEventListener('click', () => setTimeout(() => el.remove(), 300)));
+  w.prepend(el); while (w.children.length > 4) w.lastChild.remove();
+}
+function notifyAlert(kind, title, body, acts) {
+  chime(kind); alertCard(kind, esc(title), esc(body), acts);
+  sysNotify(title, body, kind + title);
+  document.title = '● ' + title + ' · MiConsulta';
+  setTimeout(() => { document.title = 'Panel del especialista · MiConsulta'; }, 15000);
+}
+const patientWa = (a, text) => a.patient_phone ? `<a class="btn sec sm" href="${esc(waLink(a.patient_phone, text))}" target="_blank" rel="noopener">${ic('phone', 14)} WhatsApp a ${esc(a.patient_name.split(' ')[0])}</a>` : '';
+// Compara las citas antes y después de recargar para avisar de lo nuevo
+let apptState = null;
+function apptChanges(list) {
+  const prev = apptState; apptState = new Map(list.map(a => [a.id, a.status]));
+  if (!prev) return;
+  for (const a of list) {
+    const was = prev.get(a.id), when = `${fmtDay(a.starts_at, tz())} a las ${fmtTime(a.starts_at, tz())}`;
+    if (!was && a.source !== 'manual' && !seenKey('new_' + a.id))
+      notifyAlert('new', `Nueva cita: ${a.patient_name}`, `${when} · ${MODE[a.mode]}. Se confirma cuando revises su pago.`, `<a class="btn pri sm" href="#citas">Ver cita</a>`);
+    else if (was && was !== a.status && a.status === 'review' && !seenKey('rev_' + a.id + (a.payment_ref || '')))
+      notifyAlert('new', `${a.patient_name} subió su comprobante`, `Cita del ${when}. Revísalo y aprueba la cita.`, `<a class="btn pri sm" href="#citas">Revisar pago</a>`);
+    else if (was && was !== a.status && a.status === 'cancelled' && a.cancelled_by === 'patient' && !seenKey('can_' + a.id))
+      notifyAlert('new', `${a.patient_name} canceló su cita`, `Era el ${when}. El horario quedó libre.`, '');
+  }
+}
+// Sesión por empezar: avisa una vez, con los minutos que eligió el especialista
+function soonCheck() {
+  if (!S.user || !S.profile || !S.appts) return;
+  const mins = aPrefs().mins, now = Date.now();
+  for (const a of S.appts) {
+    if (a.status !== 'confirmed') continue;
+    const left = new Date(a.starts_at) - now;
+    if (left > mins * 60e3 || left < -10 * 60e3 || seenKey('soon_' + a.id)) continue;
+    const m = Math.max(0, Math.round(left / 60e3)), loc = S.locations.find(l => l.id === a.location_id), first = a.patient_name.split(' ')[0];
+    const where = a.mode === 'en_linea' ? 'en línea' : loc ? 'en ' + loc.name : 'presencial';
+    const msg = `Hola ${first}, soy ${S.profile.full_name}. Te recuerdo que nuestra sesión empieza ${m ? `en ${m} minutos` : 'ahora'} (${fmtTime(a.starts_at, tz())}).${a.mode === 'en_linea' ? ' Te escribo por aquí para conectarnos.' : ' Te espero.'}`;
+    notifyAlert('soon', m ? `Tu sesión con ${a.patient_name} empieza en ${m} min` : `Tu sesión con ${a.patient_name} empieza ahora`,
+      `${fmtTime(a.starts_at, tz())} · ${where}${a.patient_phone ? '' : ' · Sin teléfono del paciente'}`, patientWa(a, msg) + '<a class="btn neu sm" href="#citas">Ver cita</a>');
+  }
+}
+setInterval(soonCheck, 30000);
+// Avisos en vivo: cuando cambia una cita, se recargan solo las citas (sin borrar lo que estés escribiendo)
+let rtChan = null;
+function startLive() {
+  if (rtChan || !S.user || !sb.channel) return;
+  rtChan = sb.channel('citas-' + S.user.id).on('postgres_changes', { event: '*', schema: 'public', table: 'appointments', filter: 'psychologist_id=eq.' + S.user.id }, () => syncAppts()).subscribe();
+}
+let syncing = false;
+async function syncAppts() {
+  if (syncing || !S.user || !S.profile) return; syncing = true;
+  try {
+    const { data } = await sb.from('appointments').select('*').eq('psychologist_id', S.user.id).order('starts_at');
+    if (!data) return;
+    S.appts = data; apptChanges(data); soonCheck();
+    const typing = document.activeElement && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
+    if (!typing && document.getElementById('modal')?.hidden !== false && !TOUR.on && ['inicio', 'citas', 'calendario'].includes(S.view)) render();
+  } finally { syncing = false; }
+}
+setInterval(() => { if (!document.hidden) syncAppts(); }, 45000);
+function alertsModal() {
+  const p = aPrefs(), perm = 'Notification' in window ? Notification.permission : 'unsupported';
+  openModal(`<h3>Alertas y sonido</h3><p class="sub">Con tu panel abierto (en el navegador o en la app instalada) te avisamos con sonido cuando te agendan, cuando un paciente sube su comprobante o cancela, y antes de cada sesión.</p>
+    <div class="form">
+      <label class="check"><input type="checkbox" id="al-sound" ${p.sound ? 'checked' : ''}> Sonar al llegar un aviso</label>
+      <label class="field"><span>Avisarme antes de cada sesión</span><select id="al-mins">${[5, 10, 15, 30].map(m => `<option value="${m}" ${p.mins === m ? 'selected' : ''}>${m} minutos antes</option>`).join('')}</select></label>
+      <div class="policy"><span>${perm === 'granted' ? 'Las notificaciones de tu dispositivo están <b>activadas</b>: verás el aviso aunque estés en otra pestaña o app.'
+        : perm === 'denied' ? 'Bloqueaste las notificaciones para esta página. Puedes permitirlas en la configuración de tu navegador (ícono del candado junto a la dirección).'
+        : perm === 'unsupported' ? 'Este navegador no muestra notificaciones del sistema. En iPhone, instala MiConsulta en tu pantalla de inicio para recibirlas.'
+        : 'Activa las notificaciones para ver el aviso aunque estés en otra pestaña o app.'}</span></div>
+      <div class="acts">${perm === 'default' ? '<button class="btn pri" data-a="alPerm">Activar notificaciones</button>' : ''}<button class="btn neu" data-a="alTest">Probar aviso</button><button class="btn sec" data-a="alSave">Guardar</button></div>
+      <p class="muted small" style="margin:0">Para recibir también un WhatsApp, actívalo en Mi perfil, en "Alertas por WhatsApp".</p></div>`);
 }
 
 /* ---------- paquetes: sección fuera del plan y "Mi plan" ---------- */
@@ -711,6 +822,9 @@ async function saveProfile(btn) {
 /* ---------- vistas ---------- */
 const V = {};
 
+const alertsInvite = () => 'Notification' in window && Notification.permission === 'default' && !aPrefs().asked
+  ? `<section class="card alert-inv"><span class="ic-box">${ic('clock', 18)}</span><div style="flex:1;min-width:200px"><b>Activa las alertas de tus citas</b><small>Te avisamos con sonido cuando te agenden y unos minutos antes de cada sesión.</small></div>
+    <div class="acts"><button class="btn pri sm" data-a="alPerm">Activar</button><button class="btn neu sm" data-a="alDismiss">Ahora no</button></div></section>` : '';
 V.inicio = () => {
   const p = S.profile, now = new Date();
   const steps = [
@@ -723,7 +837,7 @@ V.inicio = () => {
   const upcoming = S.appts.filter(a => a.status === 'confirmed' && new Date(a.starts_at) > now);
   const answered = S.links.filter(l => l.status === 'done').length;
   const url = pageUrl('perfil.html?p=' + p.slug);
-  return `<div class="title-row"><h1>Hola, ${esc(p.full_name.split(' ')[0])}</h1>${p.is_active ? '' : '<span class="pill p-bad">Perfil desactivado por administración</span>'}</div>
+  return `<div class="title-row"><h1>Hola, ${esc(p.full_name.split(' ')[0])}</h1>${p.is_active ? '' : '<span class="pill p-bad">Perfil desactivado por administración</span>'}</div>${alertsInvite()}
     <div class="stats">
       <a class="card stat" href="#citas" style="text-decoration:none;color:inherit"><b>${review.length}</b><small>Pagos por revisar</small></a>
       <div class="card stat"><b>${unpaid.length}</b><small>Citas sin pago</small></div>
@@ -739,12 +853,12 @@ V.inicio = () => {
     </div>`;
 };
 
-const NOTE_EV = { booked: 'Cita solicitada', review: 'Comprobante recibido', confirmed: 'Cita confirmada', rejected: 'Cita rechazada', cancelled: 'Cita cancelada', reminder: 'Recordatorio' };
+const NOTE_EV = { booked: 'Cita solicitada', review: 'Comprobante recibido', confirmed: 'Cita confirmada', rejected: 'Cita rechazada', cancelled: 'Cita cancelada', reminder: 'Recordatorio', soon: 'Sesión por empezar', review_request: 'Opinión solicitada', rescheduled: 'Cita reagendada' };
 function notesCard() {
   const noProvider = S.notes.some(n => n.status === 'skipped' && /servicio de correo|remitente/.test(n.detail || ''));
-  return `<section class="card"><h3>Avisos por correo</h3>
+  return `<section class="card"><h3>Avisos enviados</h3>
     ${noProvider ? '<p class="small" style="margin:8px 0 0;color:var(--warn)">Los correos todavía no se envían: falta conectar el servicio de correo de la plataforma. El administrador lo activa una sola vez.</p>' : ''}
-    <div class="stack" style="margin-top:12px;gap:8px">${S.notes.map(n => `<div class="who"><div style="flex:1"><b class="small">${NOTE_EV[n.event] || n.event} · a ${n.recipient === 'patient' ? 'paciente' : 'ti'}</b><small>${esc(n.to_address || 'sin correo')} · ${fmtDT(n.created_at, tz())}</small></div>
+    <div class="stack" style="margin-top:12px;gap:8px">${S.notes.map(n => `<div class="who"><div style="flex:1"><b class="small">${NOTE_EV[n.event] || n.event} · ${n.channel === "whatsapp" ? "WhatsApp" : "correo"} a ${n.recipient === "patient" ? "paciente" : "ti"}</b><small>${esc(n.to_address || 'sin correo')} · ${fmtDT(n.created_at, tz())}</small></div>
       <span class="pill ${n.status === 'sent' ? 'p-ok' : n.status === 'failed' ? 'p-bad' : 'p-mute'}" title="${esc(n.detail || '')}">${n.status === 'sent' ? 'Enviado' : n.status === 'failed' ? 'Falló' : 'No enviado'}</span></div>`).join('') || '<div class="empty">Aquí verás los correos que se envían a ti y a tus pacientes.</div>'}</div></section>`;
 }
 
@@ -1407,10 +1521,9 @@ async function invite(id, btn) {
 
 // Alerta por WhatsApp con CallMeBot (en Mi perfil)
 function waAlertCard() {
-  if (!hasMod('conferencias')) return '';
   const st = S.psettings || {};
   return `<section class="card form" style="margin-top:16px"><h3>Alertas por WhatsApp</h3>
-    <p class="muted small" style="margin:0">Te mandamos un WhatsApp un día antes y una hora antes de cada conferencia. Usa el servicio gratuito CallMeBot, que solo puede escribirle a tu propio número.</p>
+    <p class="muted small" style="margin:0">Te mandamos un WhatsApp cuando te agendan una cita, cuando un paciente sube su comprobante o cancela, y entre 5 y 15 minutos antes de cada sesión${hasMod('conferencias') ? '; también un día antes y una hora antes de cada conferencia' : ''}. Usa el servicio gratuito CallMeBot, que solo puede escribirle a tu propio número.</p>
     <ol class="steps-ol"><li>Guarda en tus contactos el número de CallMeBot que aparece en <a href="https://www.callmebot.com/blog/free-api-whatsapp-messages/" target="_blank" rel="noopener">su página</a>.</li>
       <li>Envíale por WhatsApp el mensaje: <b>I allow callmebot to send me messages</b></li><li>Te contestará con tu clave (apikey). Pégala aquí abajo.</li></ol>
     <div class="row2"><label class="field"><span>Tu WhatsApp</span><input id="wa-phone" type="tel" value="${esc(st.wa_phone || S.profile.whatsapp || '')}" placeholder="Ej. 55 1234 5678"></label>
@@ -1661,6 +1774,11 @@ document.addEventListener('click', async e => {
     case 'saveProfile': saveProfile(el); break;
     case 'manualForm': manualForm(); break;
     case 'planModal': closeModal(); planModal(); break;
+    case 'alertsModal': alertsModal(); break;
+    case 'alPerm': { audio(); const r = await Notification.requestPermission(); if (r === 'granted') { setPrefs({ asked: 1 }); sysNotify('Notificaciones activadas', 'Así te avisaremos de tus citas.', 'perm'); } closeModal(); alertsModal(); render(); break; }
+    case 'alTest': audio(); notifyAlert('soon', 'Así se ve un aviso', 'Tu sesión con un paciente empieza en 10 min · 10:00 · Consultorio', ''); break;
+    case 'alSave': setPrefs({ sound: document.getElementById('al-sound').checked, mins: +val('al-mins') }); closeModal(); toast('Alertas guardadas'); break;
+    case 'alDismiss': setPrefs({ asked: 1 }); render(); break;
     case 'manualSave': manualSave(el); break;
     case 'tourAgain': startTour(true); break;
     case 'svcAdd': document.getElementById('pf-svcs').insertAdjacentHTML('beforeend', svcRow()); document.querySelector('#pf-svcs .svc:last-child input').focus(); break;

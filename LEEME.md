@@ -207,3 +207,16 @@ y en el menú de la cuenta del especialista.
   sus opiniones no se muestran ni se piden, y su página propia (`?sitio=`) se abre como perfil normal.
 - Los planes se muestran en `especialistas.html` (página para doctores: funciones, cómo empezar, planes, preguntas, entrar o crear cuenta).
   El inicio (`index.html`) es solo para pacientes: buscar y agendar; su botón "Soy especialista" lleva a esa página. Los estilos de ambas están en `assets/home.css`.
+
+## Alertas de citas
+- **En el panel** (navegador o app instalada, con el panel abierto): sonido y aviso en pantalla cuando llega una cita nueva,
+  cuando un paciente sube su comprobante o cancela, y X minutos antes de cada sesión confirmada (5, 10, 15 o 30; por defecto 10).
+  Llegan al instante con Supabase Realtime (`appointments` está en la publicación `supabase_realtime`; RLS hace que cada especialista
+  solo reciba sus citas) y, de respaldo, cada 45 segundos. Con permiso del navegador también sale la notificación del sistema.
+  Se configura en el menú de su foto → "Alertas y sonido". El aviso de "sesión por empezar" trae el botón para escribirle al paciente por WhatsApp
+  (mensaje ya escrito, sale del WhatsApp del especialista) si la cita tiene teléfono.
+- **WhatsApp al especialista** (CallMeBot, gratis, solo a su propio número; se activa en Mi perfil → Alertas por WhatsApp):
+  nueva cita, comprobante recibido y cancelación (función `notify`), y entre 5 y 15 minutos antes de cada sesión
+  (función `event-reminders`, cada 5 minutos; `appointments.psych_soon_at` evita repetirlo).
+- **WhatsApp automático al paciente**: no está activado. Requiere la API oficial de WhatsApp Business (Meta), que cobra por mensaje
+  y pide verificar un negocio; mientras, el especialista lo manda con un toque desde el aviso.

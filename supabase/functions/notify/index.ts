@@ -55,6 +55,13 @@ async function sendEmail(to: string, subject: string, html: string, replyTo?: st
   return { status: 'failed', detail: (await r.text()).slice(0, 300) };
 }
 
+// CallMeBot solo puede escribirle al número de quien lo activó (el especialista).
+async function whatsappPsy(phone: string, key: string, text: string) {
+  const d = phone.replace(/\D/g, ''), num = d.length === 10 ? '52' + d : d;
+  const r = await fetch(`https://api.callmebot.com/whatsapp.php?phone=${num}&text=${encodeURIComponent(text)}&apikey=${encodeURIComponent(key)}`, { signal: AbortSignal.timeout(15000) });
+  return r.ok;
+}
+
 async function handle(event: string, appointmentId: string) {
   const { data: a } = await db.from('appointments').select('*').eq('id', appointmentId).maybeSingle();
   if (!a) return;
@@ -95,6 +102,21 @@ async function handle(event: string, appointmentId: string) {
     toPatient(`¿Cómo te fue con ${p.full_name}?`, layout(`Hola ${first}, ¿cómo te fue?`, `Tu opinión ayuda a otras personas a elegir. Solo quienes tuvieron cita pueden opinar, y se publican todas las calificaciones.`, rows, ['Dejar mi opinión', citaUrl + '#opinar']));
   } else if (event === 'reminder') {
     toPatient('Recordatorio: tu cita es mañana', layout(`Hola ${first}, tu cita es mañana`, 'Te recordamos tu cita. Si no puedes asistir, cancélala para liberar el horario.', rows, ['Ver mi cita', citaUrl]));
+  }
+
+  // WhatsApp al especialista con CallMeBot (si lo activó en su panel): nueva cita, comprobante y cancelación del paciente
+  const waText = event === 'booked' ? `MiConsulta: nueva cita de ${a.patient_name} para el ${when(a, tz)} (${MODE[a.mode] || a.mode}). Tel.: ${a.patient_phone}.`
+    : event === 'review' ? `MiConsulta: ${a.patient_name} subió su comprobante de pago de la cita del ${when(a, tz)}. Revísalo en tu panel.`
+    : event === 'cancelled' && a.cancelled_by === 'patient' ? `MiConsulta: ${a.patient_name} canceló su cita del ${when(a, tz)}. El horario quedó libre.` : '';
+  if (waText) {
+    const { data: st } = await db.from('professional_settings').select('wa_phone,callmebot_key').eq('user_id', a.psychologist_id).maybeSingle();
+    const phone = st?.wa_phone || p.whatsapp;
+    if (st?.callmebot_key && phone) {
+      let ok = false;
+      try { ok = await whatsappPsy(phone, st.callmebot_key, `${waText} ${panelUrl}`); } catch (_) { ok = false; }
+      await db.from('notifications').insert({ psychologist_id: a.psychologist_id, appointment_id: a.id, event, recipient: 'psychologist', channel: 'whatsapp',
+        to_address: phone, status: ok ? 'sent' : 'failed', detail: ok ? null : 'CallMeBot no respondió' });
+    }
   }
 
   for (const m of out) {

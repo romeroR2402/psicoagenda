@@ -1,7 +1,8 @@
 // Recordatorios de conferencias: un día antes y una hora antes.
 // - Al especialista: WhatsApp con CallMeBot (si lo activó) y correo (si hay servicio de correo).
 // - A los asistentes confirmados con correo: correo un día antes.
-// La llama la base de datos cada 15 minutos con la clave compartida x-notify-secret.
+// Además: WhatsApp al especialista unos minutos antes de cada sesión confirmada.
+// La llama la base de datos cada 5 minutos con la clave compartida x-notify-secret.
 import { createClient } from 'npm:@supabase/supabase-js@2.45.4';
 
 const SITE = (Deno.env.get('SITE_URL') || 'https://romeror2402.github.io/psicoagenda/').replace(/\/?$/, '/');
@@ -74,6 +75,30 @@ Deno.serve(async (req) => {
         card(`Hola ${String(a.name).split(' ')[0]}, la conferencia es mañana`, `${esc(e.title)} · ${esc(cuando)} · ${esc(lugar)}.`, ['Ver detalles', `${SITE}evento.html?i=${a.token}`]));
       out.push({ event: e.id, kind, wa, mail, attendees: conf.length });
     }
+  }
+  // Sesiones por empezar: WhatsApp al especialista (CallMeBot) entre 5 y 15 minutos antes, una sola vez.
+  const { data: soon } = await db.from('appointments').select('id,psychologist_id,starts_at,mode,location_id,patient_name,patient_phone')
+    .eq('status', 'confirmed').is('psych_soon_at', null)
+    .gte('starts_at', new Date(now).toISOString()).lte('starts_at', new Date(now + 16 * 60e3).toISOString());
+  for (const a of soon || []) {
+    await db.from('appointments').update({ psych_soon_at: new Date().toISOString() }).eq('id', a.id);
+    const [{ data: p }, { data: st }, { data: loc }] = await Promise.all([
+      db.from('profiles').select('full_name,timezone,whatsapp').eq('id', a.psychologist_id).single(),
+      db.from('professional_settings').select('*').eq('user_id', a.psychologist_id).maybeSingle(),
+      a.location_id ? db.from('locations').select('name,kind').eq('id', a.location_id).maybeSingle() : Promise.resolve({ data: null }),
+    ]);
+    const phone = st?.wa_phone || p?.whatsapp;
+    if (!st?.callmebot_key || !phone) continue;
+    const tz = p?.timezone || 'America/Mexico_City';
+    const hora = new Date(a.starts_at).toLocaleTimeString('es-MX', { timeZone: tz, hour: 'numeric', minute: '2-digit' });
+    const mins = Math.max(1, Math.round((new Date(a.starts_at).getTime() - now) / 60e3));
+    const lugar = a.mode === 'en_linea' ? 'En línea' : (loc?.name || 'Presencial');
+    const msg = `MiConsulta: tu sesión con ${a.patient_name} empieza en ${mins} min (${hora}). ${lugar}.${a.patient_phone ? ` Tel. del paciente: ${a.patient_phone}.` : ''} Ver: ${SITE}panel.html#citas`;
+    let wa = false;
+    try { wa = await whatsapp(phone, st.callmebot_key, msg); } catch (_) { wa = false; }
+    await db.from('notifications').insert({ psychologist_id: a.psychologist_id, appointment_id: a.id, event: 'soon', recipient: 'psychologist', channel: 'whatsapp',
+      to_address: phone, status: wa ? 'sent' : 'failed', detail: wa ? null : 'CallMeBot no respondió' });
+    out.push({ appointment: a.id, soon: true, wa });
   }
   return json({ ok: true, sent: out });
 });
