@@ -476,7 +476,7 @@ function renderAuth() {
     <label class="field"><span>Correo</span><input id="au-email" type="email" autocomplete="email" placeholder="tu@correo.com" value="${esc(new URLSearchParams(location.search).get('correo') || '')}"></label>
     ${m !== 'forgot' ? `<label class="field"><span>Contraseña</span><input id="au-pass" type="password" autocomplete="${m === 'signup' ? 'new-password' : 'current-password'}" placeholder="${m === 'signup' ? 'Mínimo 8 caracteres' : ''}"></label>` : ''}
     ${S.linkErr ? `<div class="banner-acc warn">${ic('lock', 16)}<span>${esc(S.linkErr)}</span></div>` : ''}
-    ${m === 'signup' ? `<label class="consent"><input type="checkbox" id="au-privacy"><span>He leído y acepto el <a href="aviso-privacidad.html?para=especialista" target="_blank" rel="noopener">Aviso de privacidad</a>. Me comprometo a cuidar los datos de mis pacientes.</span></label>` : ''}
+    ${m === 'signup' ? `<label class="consent"><input type="checkbox" id="au-privacy"><span>He leído y acepto el <a href="aviso-privacidad.html?para=especialista" target="_blank" rel="noopener">Aviso de privacidad</a>. Soy responsable de los datos de mis pacientes y me comprometo a cuidarlos.</span></label>` : ''}
     <p class="err" id="au-err"></p><p class="ok-msg" id="au-ok"></p>
     <button class="btn neu" id="au-resend" data-a="resend" hidden>Reenviar correo de confirmación</button>
     <button class="btn pri big" data-a="auth">${{ login: 'Entrar', signup: 'Crear cuenta', forgot: 'Enviar correo' }[m]}</button>

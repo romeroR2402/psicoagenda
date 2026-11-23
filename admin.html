@@ -449,7 +449,7 @@ function settingsView() {
       <label class="field"><span>Tu contacto para renovar el acceso</span><textarea id="st-contact" maxlength="300" placeholder="Ej. WhatsApp 55 1234 5678 · correo@ejemplo.com">${esc(st.admin_contact || '')}</textarea><small class="muted">Lo ven los especialistas cuando su prueba está por vencer o ya venció.</small></label>
       <h3 style="margin-top:8px">Aviso de privacidad</h3><p class="muted small" style="margin:0">Estos datos aparecen en el <a href="aviso-privacidad.html" target="_blank" rel="noopener">aviso de privacidad</a> como responsable de los datos.</p>
       <label class="field"><span>Responsable (tu nombre o razón social)</span><input id="st-pown" maxlength="200" value="${esc(st.privacy_owner || '')}" placeholder="Ej. Nombre completo o empresa"></label>
-      <label class="field"><span>Domicilio para oír y recibir notificaciones</span><input id="st-padd" maxlength="300" value="${esc(st.privacy_address || '')}" placeholder="Calle, número, colonia, alcaldía, C.P., ciudad"></label>
+      <label class="field"><span>Domicilio para oír y recibir notificaciones</span><input id="st-padd" maxlength="300" value="${esc(st.privacy_address || 'Calle Elsa 102, Col. Guadalupe Tepeyac, Alcaldía Gustavo A. Madero, C.P. 07840, Ciudad de México')}" placeholder="Calle, número, colonia, alcaldía, C.P., ciudad"></label>
       <label class="field"><span>Correo para temas de privacidad</span><input id="st-pmail" type="email" maxlength="200" value="${esc(st.privacy_email || '')}" placeholder="privacidad@tudominio.com"></label>
       <p class="err" id="st-err"></p><button class="btn pri" data-a="saveSettings">Guardar ajustes</button></section>
     ${demoCard()}`;

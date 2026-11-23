@@ -81,7 +81,7 @@ function render() {
         <label class="field"><span>Nombre completo</span><input id="rg-name" autocomplete="name"></label>
         <label class="field"><span>Teléfono (WhatsApp)</span><input id="rg-phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="Ej. 55 1234 5678"></label>
         <label class="field"><span>Correo (para el recordatorio)</span><input id="rg-email" type="email" autocomplete="email"></label>
-        <label class="consent"><input type="checkbox" id="rg-ok"><span>He leído el <a href="aviso-privacidad.html" target="_blank" rel="noopener">Aviso de privacidad</a> y doy mi consentimiento expreso para el tratamiento de mis datos personales, incluidos los de salud.</span></label>
+        <label class="consent"><input type="checkbox" id="rg-ok"><span>He leído el <a href="aviso-privacidad.html" target="_blank" rel="noopener">Aviso de privacidad</a> y doy mi consentimiento expreso para que el especialista trate mis datos personales, incluidos los de salud.</span></label>
         <p class="err" id="rg-err"></p><button class="btn pri big">Apartar mi lugar</button></form>`;
   root.innerHTML = `<article class="ev">
     ${E.image_url ? `<img class="cover" src="${esc(E.image_url)}" alt="">` : `<div class="cover cover-ph">${ic('users', 48)}</div>`}

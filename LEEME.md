@@ -179,7 +179,9 @@ muestra el resumen del periodo y se descarga en CSV para Excel): registros, pago
   reservar ese horario), no envía correo al paciente y queda marcada como "Registrada por ti" (`appointments.source = 'manual'`).
 
 ## Aviso de privacidad
-`aviso-privacidad.html` tiene dos versiones: **pacientes** y **especialistas** (`?para=especialista`). Explica qué datos se recaban
+`aviso-privacidad.html` tiene dos versiones: **pacientes** y **especialistas** (`?para=especialista`).
+El dueño de la plataforma es **responsable** solo de los datos de los especialistas; cada **especialista es responsable** de los datos de sus pacientes
+y MiConsulta actúa como **encargado**. El skill `.claude/skills/abogado` revisa estos textos con la ley mexicana. Explica qué datos se recaban
 (incluidos los de salud, que son sensibles), para qué, con quién se comparten, los derechos ARCO y cómo ejercerlos.
 El responsable, su domicilio y el correo de privacidad se capturan en **Administración → Ajustes → Aviso de privacidad** (función `public_privacy`).
 Se pide **consentimiento expreso** con una casilla antes de: agendar una cita, registrarse a un taller, contestar una encuesta

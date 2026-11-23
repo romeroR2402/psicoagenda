@@ -236,7 +236,7 @@ function renderBooking(err = '') {
       <label class="field"><span>Teléfono (WhatsApp)</span><input id="bk-phone" type="tel" autocomplete="tel" inputmode="tel" placeholder="Ej. 55 1234 5678" required></label>
       <label class="field"><span>Correo (recomendado)</span><input id="bk-email" type="email" autocomplete="email" placeholder="Para enviarte la confirmación y el recordatorio"></label>
       <label class="field"><span>Motivo de consulta (opcional)</span><textarea id="bk-note" maxlength="500" placeholder="Cuéntale brevemente qué te gustaría trabajar"></textarea></label>
-      <label class="consent"><input type="checkbox" id="bk-ok"><span>He leído el <a href="aviso-privacidad.html" target="_blank" rel="noopener">Aviso de privacidad</a> y doy mi consentimiento expreso para el tratamiento de mis datos personales, incluidos los de salud.</span></label>
+      <label class="consent"><input type="checkbox" id="bk-ok"><span>He leído el <a href="aviso-privacidad.html" target="_blank" rel="noopener">Aviso de privacidad</a> y doy mi consentimiento expreso para que el especialista trate mis datos personales, incluidos los de salud.</span></label>
       <p class="err" id="bk-err">${err && days.length ? esc(err) : ''}</p>
       <div class="policy" style="margin-top:0">${ic('shield', 16)}<span><b style="color:var(--ink)">Cancelación y cambios:</b> ${P.cancel_policy ? esc(P.cancel_policy) + ' ' : ''}Puedes cambiar de horario desde tu link de cita hasta ${hoursTxt(P.cancel_hours ?? 24)} antes, y tu pago se conserva.</span></div>
       <button class="btn pri big" id="bk-go" ${B.slot ? '' : 'disabled'}>${B.slot ? `Solicitar cita · ${fmtTime(B.slot, P.timezone)}` : 'Elige un horario'}</button>
