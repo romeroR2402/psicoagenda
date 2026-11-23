@@ -5,8 +5,9 @@ description: Audita y protege los datos de especialistas y pacientes de MiConsul
 
 # Seguridad de MiConsulta
 
-Objetivo: que nadie pueda leer, cambiar o borrar datos que no son suyos. Los datos de pacientes (expedientes, notas,
-teléfonos, citas, encuestas, comprobantes) son **datos sensibles de salud** (LFPDPPP); una fuga es el peor fallo posible.
+Objetivo: que nadie pueda leer, cambiar o borrar datos que no son suyos. Los datos de pacientes (teléfonos, citas,
+encuestas, comprobantes) pueden ser **datos sensibles** (LFPDPPP); una fuga es el peor fallo posible.
+**MiConsulta no guarda expediente clínico** (diagnósticos, antecedentes, notas de sesión): no agregues tablas ni campos para eso.
 
 ## Modelo de amenaza (piensa siempre en estos tres atacantes)
 

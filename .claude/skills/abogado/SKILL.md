@@ -12,9 +12,12 @@ o si hay un conflicto real, y nunca inventes datos del responsable (nombre, domi
 ## Cómo está organizada la responsabilidad de los datos en MiConsulta
 - **Administrador / dueño de la plataforma (MiConsulta):** es **responsable** solo de los datos de los **especialistas**
   (cuenta, perfil, cédula, certificaciones, cobro de suscripción) y de los visitantes en general.
-- **Cada especialista:** es **responsable** de los datos de **sus pacientes** (contacto, citas, comprobantes, expediente clínico,
-  notas, encuestas, asistentes a sus talleres). MiConsulta actúa como **encargado**: los guarda por cuenta del especialista,
+- **Cada especialista:** es **responsable** de los datos de **sus pacientes** (contacto, citas, comprobantes,
+  encuestas, asistentes a sus talleres). MiConsulta actúa como **encargado**: los guarda por cuenta del especialista,
   con acceso solo para él, y no los usa para fines propios.
+- **MiConsulta NO lleva expediente clínico** (decisión del dueño). No propongas ni aceptes funciones que guarden diagnósticos,
+  antecedentes, tratamientos, medicación o notas de sesión; si alguien lo pide, explica que eso obligaría a cumplir la NOM-004 y la
+  NOM-024 y recomienda que el especialista use un sistema de expediente certificado. Los textos deben decir que la plataforma no es expediente.
 - Mantén esta división en todos los textos: el aviso para pacientes dice que su responsable es el especialista con quien agenda.
 
 ## Marco legal a revisar (verifica vigencia antes de citar artículos)
@@ -23,9 +26,8 @@ o si hay un conflicto real, y nunca inventes datos del responsable (nombre, domi
    con forma de negarse a las adicionales), **datos sensibles de salud con consentimiento expreso** (casilla, no tácito),
    transferencias y remisiones a encargados, derechos ARCO y revocación (plazo de respuesta), limitación de uso, uso de
    tecnologías de rastreo, cambios al aviso, y autoridad ante la que se puede acudir.
-2. **Salud:** Ley General de Salud; NOM-004-SSA3-2012 (expediente clínico: confidencialidad y conservación, mínimo 5 años);
-   NOM-024-SSA3-2012 (sistemas de registro electrónico para la salud: seguridad, confidencialidad, bitácoras);
-   secreto profesional; cuidado especial con menores de edad (consentimiento de madre, padre o tutor).
+2. **Salud:** Ley General de Salud; secreto profesional; NOM-004-SSA3-2012 y NOM-024-SSA3-2012 solo como razón para **no**
+   guardar expediente clínico en la plataforma (si algún día se agrega, aplican ambas completas); cuidado especial con menores de edad (consentimiento de madre, padre o tutor).
 3. **Consumo:** Ley Federal de Protección al Consumidor (Profeco): precios claros, políticas de cancelación y reembolso visibles
    antes de pagar, términos y condiciones de la suscripción para especialistas.
 4. **Publicidad en salud:** no prometer curas ni resultados; perfiles con cédula visible y verificable.

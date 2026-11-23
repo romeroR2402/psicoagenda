@@ -451,7 +451,7 @@ function renderSteps() {
 $('pro-shot').innerHTML = `<div class="fake-in" style="justify-content:space-between"><span>${ic('cal', 18)} Hoy</span><span>3 citas</span></div>
   ${[['AR', 'Ana R.', '10:00 · Presencial', 'Confirmada', '#ddf5ea', '#0a7a52'], ['JM', 'Jorge M.', '12:00 · En línea', 'Pago por revisar', '#fff0d6', '#9a5900'], ['CL', 'Carla L.', '17:30 · Presencial', 'Apartada', '#e6f0ff', '#004eba']]
     .map(([a, n, t, s, bg, c]) => `<div class="row"><span class="ava" style="background:${bg};color:${c}">${a}</span><div><b>${n}</b><small>${t}</small></div><span class="st" style="background:${bg};color:${c}">${s}</span></div>`).join('')}`;
-$('checks').innerHTML = ['Horarios por consultorio, sin empalmes', 'Apruebas cada cita al revisar el comprobante', 'Expediente clínico, encuestas y conferencias']
+$('checks').innerHTML = ['Horarios por consultorio, sin empalmes', 'Apruebas cada cita al revisar el comprobante', 'Pacientes, encuestas y conferencias']
   .map(t => `<li><span>${CHECK}</span>${t}</li>`).join('');
 bookingWidget(); renderSteps();
 const FILTERS = [

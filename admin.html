@@ -460,7 +460,7 @@ function demoCard() {
   if (!d) return '';
   const pub = 'perfil.html?p=' + encodeURIComponent(d.profile.slug), own = 'perfil.html?sitio=' + encodeURIComponent(d.profile.slug);
   return `<section class="card" style="max-width:640px;margin-top:16px"><h2>Cuenta demo</h2>
-    <p class="muted small" style="margin:4px 0 12px">${esc(d.profile.full_name)}: un especialista de ejemplo con citas, pacientes, expedientes, encuestas, talleres y opiniones.
+    <p class="muted small" style="margin:4px 0 12px">${esc(d.profile.full_name)}: un especialista de ejemplo con citas, pacientes, encuestas, talleres y opiniones.
       No aparece en el buscador ni en la cartelera. Úsala para mostrar a tus clientes cómo se ve la plataforma llena.</p>
     <dl class="kv"><dt>Usuario</dt><dd>${esc(d.email)}</dd><dt>Contraseña</dt><dd>La que te compartí. Si no la tienes, asigna una nueva en Contraseña.</dd></dl>
     <div class="acts" style="margin-top:14px"><button class="btn pri sm" data-a="demoEnter" data-e="${esc(d.email)}">Entrar al panel del demo</button>
@@ -636,8 +636,8 @@ document.addEventListener('click', async e => {
       const name = isU ? (u.profile?.full_name || u.email) : c.full_name;
       openModal(`<h3>Eliminar ${isU ? 'especialista' : 'paciente'}</h3><p class="sub">${esc(name)}${isU ? ' · ' + esc(u.email) : c.phone ? ' · ' + esc(c.phone) : ''}</p>
         <div class="banner-acc warn" style="margin:12px 0">${ic('lock', 16)}<span>${isU
-          ? `Se borra su cuenta y <b>todo</b> lo suyo: perfil, horarios, ubicaciones, citas, pacientes, expedientes, encuestas, conferencias, pagos y fotos. Ya no podrá entrar.`
-          : `Se borra de la lista de pacientes de su especialista, junto con su expediente clínico, notas y encuestas. Sus citas pasadas se conservan en el historial.`} No se puede deshacer.</span></div>
+          ? `Se borra su cuenta y <b>todo</b> lo suyo: perfil, horarios, ubicaciones, citas, pacientes, encuestas, conferencias, pagos y fotos. Ya no podrá entrar.`
+          : `Se borra de la lista de pacientes de su especialista, junto con sus encuestas. Sus citas pasadas se conservan en el historial.`} No se puede deshacer.</span></div>
         <label class="field"><span>Escribe <b>ELIMINAR</b> para confirmar</span><input id="del-ok" autocomplete="off"></label>
         <p class="err" id="del-err"></p>
         <div class="acts"><button class="btn danger" data-a="doDelete" data-k="${isU ? 'u' : 'c'}" data-id="${d.id}">Eliminar definitivamente</button><button class="btn neu" data-a="closeModal">Cancelar</button></div>`);

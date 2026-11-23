@@ -35,7 +35,7 @@ Los horarios libres salen del horario semanal, menos los días de descanso y las
 - `admins`: cuentas de super administrador.
 - Bucket privado `receipts`: comprobantes de pago.
 - Función `admin-users` (`supabase/functions/admin-users`): asignar contraseña, confirmar correo o eliminar la cuenta de un especialista (con todos sus datos y archivos), solo para administradores.
-- `admin_delete_client`: el administrador elimina un paciente con su expediente; sus citas pasadas se conservan.
+- `admin_delete_client`: el administrador elimina un paciente con sus encuestas; sus citas pasadas se conservan.
 
 Cada psicólogo solo ve sus datos. El administrador puede ver los de todos, pero las contraseñas
 están cifradas y nadie puede verlas: el administrador puede asignar una nueva o enviar un correo de restablecimiento.
@@ -78,21 +78,18 @@ También funciona con Resend: usa `RESEND_API_KEY` en lugar de `BREVO_API_KEY`.
 `drive-pagos.gs` es un Apps Script que guarda imágenes en una carpeta "Pagos" de Drive.
 Hoy los comprobantes se guardan en Supabase (`receipts`); el script queda como opción futura.
 
-## Expediente del paciente
-En **Pacientes** cada paciente tiene su expediente con pestañas:
+## Ficha del paciente (sin expediente clínico)
+**MiConsulta no lleva expedientes clínicos** (sin diagnósticos, antecedentes, tratamientos ni notas de sesión), por decisión
+del dueño para no asumir las obligaciones de la NOM-004 y la NOM-024. En **Pacientes** cada paciente tiene una ficha con pestañas:
 - **Datos:** nombre, teléfono, correo, nacimiento, sexo, ocupación, dirección, contacto de emergencia,
   origen (particular, empresa, referido, redes, buscador, encuesta) y detalle (por ejemplo, el nombre de la empresa).
-- **Expediente clínico:** campos según la especialidad del profesional (psicología, psicoterapia, tanatología, medicina u odontología).
-- **Notas de evolución** con fecha y tipo (sesión, consulta, llamada, nota).
 - **Encuestas** enviadas a ese paciente, con sus respuestas.
 - **Citas** del paciente.
-
-El expediente clínico y las notas solo los ve el profesional (`clinical_records`, `clinical_notes`); el administrador no tiene acceso.
 
 ## Encuestas con link abierto
 Cada encuesta puede tener un **link abierto** (`responder.html?s=…`) para personas que aún no son pacientes:
 escriben su nombre y teléfono, contestan y quedan registradas como pacientes con origen "Encuesta".
-Si el teléfono ya es de un paciente, la respuesta se agrega a su expediente.
+Si el teléfono ya es de un paciente, la respuesta se agrega a su ficha.
 
 ## Conferencias
 En **Conferencias** (menú "Más" en celular) cada especialista crea conferencias presenciales o en línea con imagen,
@@ -155,7 +152,7 @@ Los textos de cada sección están en `HELP` dentro de `panel.html`.
 
 ## Superadministrador y cuenta demo
 - Las cuentas de administrador no tienen panel de especialista: al entrar a `panel.html` van directo a `admin.html`, y su perfil no se publica en el buscador.
-- **Cuenta demo** (`profiles.is_demo`): "Mariana López", un especialista de ejemplo con citas en todos los estados, pacientes con expediente y notas,
+- **Cuenta demo** (`profiles.is_demo`): "Mariana López", un especialista de ejemplo con citas en todos los estados, pacientes,
   encuestas respondidas, talleres con asistentes y opiniones. No aparece en el buscador ni en la cartelera; su perfil muestra el aviso
   "Perfil de demostración". Se entra desde Administración → Ajustes → Cuenta demo. Solo un administrador puede marcar una cuenta como demo.
 
