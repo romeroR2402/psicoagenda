@@ -97,6 +97,8 @@
 .back-link{display:inline-block;color:var(--muted);text-decoration:none;font-weight:600;font-size:13px;margin-bottom:12px}
 .pat-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap}
 .pat-head small{display:block;color:var(--muted)}
+.plan-c.cur{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 30%,transparent)}
+.plan-l{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:4px;font-size:13.5px}.plan-l .n{color:var(--muted);opacity:.7}
 .tour-shade{position:fixed;z-index:70;border-radius:12px;box-shadow:0 0 0 9999px rgba(11,53,88,.55),0 0 0 3px var(--accent);pointer-events:none;transition:all .25s ease}
 .tour-shade.full{inset:0;border-radius:0;box-shadow:none;background:rgba(11,53,88,.55)}
 .tour-card{position:fixed;z-index:71;width:min(340px,calc(100vw - 24px));background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px;box-shadow:var(--shadow-l);animation:up .2s ease-out}
@@ -225,6 +227,18 @@ const S = { linkErr, authKnown: false, user: null, recovery: false, authMode: lo
   apptTab: 'review', week: null, builder: null, sentIds: null };
 const VIEWS = { inicio: ['Inicio', 'home'], calendario: ['Calendario', 'week'], citas: ['Citas', 'cal'], horario: ['Horario', 'clock'], ubicaciones: ['Ubicaciones', 'pin'], perfil: ['Mi perfil', 'user'], pacientes: ['Pacientes', 'users'], conferencias: ['Talleres y conferencias', 'mic'], encuestas: ['Encuestas', 'form'], opiniones: ['Opiniones', 'star'] };
 // Temas sugeridos según la especialidad (la tanatología se detalla por tipo de duelo)
+// Módulos que se venden por paquete (tabla plan_tiers). Las cuentas anteriores a los paquetes (tier 'completo') tienen todo.
+const MODULES = { pacientes: 'Pacientes', citas_manuales: 'Agregar citas por teléfono o en persona', sitio: 'Página propia con código QR',
+  opiniones: 'Opiniones de pacientes', encuestas: 'Encuestas', conferencias: 'Talleres y conferencias (con alertas por WhatsApp)' };
+const VIEW_MOD = { pacientes: 'pacientes', paciente: 'pacientes', conferencias: 'conferencias', encuestas: 'encuestas', opiniones: 'opiniones' };
+function myModules() {
+  const s = S.sub; if (!s || !s.tier || s.tier === 'completo') return null;
+  if (s.modules) return s.modules;
+  const t = (S.tiers || []).find(x => x.key === s.tier); return t ? t.modules : [];
+}
+const hasMod = k => { const m = myModules(); return !m || m.includes(k); };
+const viewOn = k => !VIEW_MOD[k] || hasMod(VIEW_MOD[k]);
+const myTier = () => (S.tiers || []).find(x => x.key === S.sub?.tier);
 const TOPICS_BY = {
   tanatologia: ['Duelo por pérdida del padre', 'Duelo por pérdida de la madre', 'Duelo por pérdida de un hijo', 'Duelo gestacional y perinatal', 'Duelo por divorcio',
     'Duelo por pérdida de mascota', 'Duelo por suicidio', 'Duelo anticipado', 'Duelo migratorio', 'Duelo por pérdida de empleo', 'Enfermedad terminal', 'Cuidados paliativos',
@@ -266,9 +280,9 @@ const keepPrivate = d => d && { ...d, payment_info: S.profile?.payment_info ?? n
 
 async function loadAll() {
   const uid = S.user.id;
-  const [pr, adm, sub, st] = await Promise.all([sb.from('profiles').select(PCOLS).eq('id', uid).maybeSingle(), sb.rpc('is_admin'),
-    sb.from('subscriptions').select('*').eq('user_id', uid).maybeSingle(), sb.from('platform_settings').select('admin_contact').maybeSingle()]);
-  S.profile = await withPrivate(pr.data || null); S.isAdmin = !!adm.data; S.sub = sub.data || null; S.contact = st.data?.admin_contact || '';
+  const [pr, adm, sub, st, tiers] = await Promise.all([sb.from('profiles').select(PCOLS).eq('id', uid).maybeSingle(), sb.rpc('is_admin'),
+    sb.from('subscriptions').select('*').eq('user_id', uid).maybeSingle(), sb.from('platform_settings').select('admin_contact').maybeSingle(), sb.from('plan_tiers').select('*').eq('active', true).order('sort')]);
+  S.profile = await withPrivate(pr.data || null); S.isAdmin = !!adm.data; S.sub = sub.data || null; S.contact = st.data?.admin_contact || ''; S.tiers = tiers.data || [];
   // El superadministrador no usa el panel de especialista: va directo a Administración
   if (S.isAdmin) { location.replace('admin.html'); return; }
   if (S.profile) {
@@ -316,13 +330,14 @@ window.addEventListener('hashchange', () => { const h = location.hash.slice(1);
 let topSig = '';
 function renderTop() {
   const top = document.getElementById('top-user');
-  const sig = [S.user?.id, S.profile?.full_name, S.profile?.photo_url, S.profile?.slug, S.isAdmin].join('|');
+  const sig = [S.user?.id, S.profile?.full_name, S.profile?.photo_url, S.profile?.slug, S.isAdmin, S.sub?.tier, (myModules() || []).join()].join('|');
   if (sig === topSig && top.innerHTML) return; topSig = sig;
   if (!S.user) { top.innerHTML = '<a class="btn neu sm" href="index.html">Ir al buscador</a>'; return; }
   const items = [];
   if (S.profile) items.push({ text: 'Mi perfil', icon: 'user', action: () => { location.hash = '#perfil'; } },
     { text: 'Ver mi perfil público', icon: 'eye', href: 'perfil.html?p=' + encodeURIComponent(S.profile.slug), target: '_blank' },
-    { text: 'Mis opiniones', icon: 'star', action: () => { location.hash = '#opiniones'; } });
+    ...(hasMod('opiniones') ? [{ text: 'Mis opiniones', icon: 'star', action: () => { location.hash = '#opiniones'; } }] : []),
+    { text: 'Mi plan', icon: 'form', action: planModal });
   items.push({ text: 'Cambiar contraseña', icon: 'lock', action: async () => {
     const { error } = await sb.auth.resetPasswordForEmail(S.user.email, { redirectTo: pageUrl('panel.html') });
     toast(error ? 'No se pudo enviar el correo. Intenta más tarde.' : `Te enviamos un enlace a ${S.user.email} para crear tu nueva contraseña.`);
@@ -344,12 +359,33 @@ function render() {
   if (!S.profile) return renderOnboarding();
   const badge = S.appts.filter(a => a.status === 'review').length;
   root.innerHTML = `<div class="app"><nav class="side" aria-label="Secciones">
-      ${Object.entries(VIEWS).map(([k, [t, i]]) => `<a href="#${k}" ${S.view === k || (S.view === 'paciente' && k === 'pacientes') ? 'aria-current="page"' : ''}>${ic(i, 18)}${t}${k === 'citas' && badge ? `<span class="badge">${badge}</span>` : ''}</a>`).join('')}
+      ${Object.entries(VIEWS).filter(([k]) => viewOn(k)).map(([k, [t, i]]) => `<a href="#${k}" ${S.view === k || (S.view === 'paciente' && k === 'pacientes') ? 'aria-current="page"' : ''}>${ic(i, 18)}${t}${k === 'citas' && badge ? `<span class="badge">${badge}</span>` : ''}</a>`).join('')}
       <hr><a href="perfil.html?p=${encodeURIComponent(S.profile.slug)}" target="_blank" rel="noopener">${ic('eye', 18)}Ver perfil público</a>
       ${S.isAdmin ? `<a href="admin.html">${ic('shield', 18)}Administración</a>` : ''}
-    </nav><main class="content gutter"><div class="wrap">${trialBanner()}${V[S.view]()}</div></main></div>${tabbar(badge)}`;
+    </nav><main class="content gutter"><div class="wrap">${trialBanner()}${viewOn(S.view) ? V[S.view]() : lockedView(S.view)}</div></main></div>${tabbar(badge)}`;
   if (S.view === 'pacientes') filterClients();
   if (!TOUR.checked) { TOUR.checked = true; if (!tourDone()) setTimeout(() => startTour(false), 700); }
+}
+
+/* ---------- paquetes: sección fuera del plan y "Mi plan" ---------- */
+const askAdmin = () => S.contact ? 'Para cambiar de plan, contacta al administrador: ' + esc(S.contact) : 'Para cambiar de plan, contacta al administrador.';
+function lockedView(k) {
+  const mod = VIEW_MOD[k], incl = (S.tiers || []).filter(t => t.modules.includes(mod));
+  return `<section class="card" style="text-align:center;padding:34px 22px"><span class="ic-box" style="margin:0 auto 12px">${ic('lock', 20)}</span>
+    <h1 style="font-size:22px">${esc(VIEWS[k]?.[0] || MODULES[mod] || 'Esta sección')} no está en tu plan</h1>
+    <p class="muted">${incl.length ? `Está incluida en ${incl.map(t => `<b>${esc(t.name)}</b> (${money(t.price)} al mes)`).join(' y ')}. ` : ''}${askAdmin()}</p>
+    <div class="acts" style="justify-content:center;margin-top:12px"><button class="btn pri" data-a="planModal">Ver planes</button><a class="btn neu" href="#inicio">Volver al inicio</a></div></section>`;
+}
+function planModal() {
+  const cur = S.sub?.tier, mine = myModules();
+  const row = t => `<article class="card plan-c ${t.key === cur ? 'cur' : ''}"><div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap"><b style="font-size:17px">${esc(t.name)}</b>
+      <span style="font-size:20px;font-weight:800">${money(t.price)}</span><small class="muted">al mes</small>${t.key === cur ? '<span class="pill p-ok" style="margin-left:auto">Tu plan</span>' : ''}</div>
+      ${t.description ? `<p class="muted small" style="margin:6px 0">${esc(t.description)}</p>` : ''}
+      <ul class="plan-l">${Object.entries(MODULES).map(([k, n]) => `<li class="${t.modules.includes(k) ? 'y' : 'n'}">${t.modules.includes(k) ? '✓' : '—'} ${esc(n)}</li>`).join('')}</ul></article>`;
+  openModal(`<h3>Mi plan</h3><p class="sub">${!mine ? 'Tu cuenta tiene <b>todas las funciones</b> incluidas. ' : myTier() ? `Tienes el plan <b>${esc(myTier().name)}</b>${S.sub.modules ? ' con módulos a tu medida' : ''}. ` : 'Tu plan es a tu medida. '}
+    Todos los planes incluyen agenda en línea, perfil en el buscador, horarios, consultorios y cobro con comprobante.</p>
+    <div class="stack">${(S.tiers || []).map(row).join('')}</div>
+    <p class="muted small" style="margin-top:12px">${askAdmin()}</p>`, true);
 }
 
 /* ---------- recorrido de bienvenida y guía del panel ---------- */
@@ -373,8 +409,8 @@ function tourSteps() {
   const mobile = matchMedia('(max-width:900px)').matches, first = S.profile.full_name.split(' ')[0];
   const nav = k => mobile ? `.tabbar a[href="#${k}"]` : `.side a[href="#${k}"]`;
   const st = [{ title: `¡Bienvenido a tu panel, ${first}!`, text: 'Te mostramos en un minuto para qué sirve cada sección. Puedes saltarlo y volver a verlo cuando quieras desde tu foto, arriba a la derecha.' }];
-  (mobile ? TABS : Object.keys(VIEWS)).forEach(k => st.push({ sel: nav(k), title: VIEWS[k][0], text: HELP[k][0] }));
-  if (mobile) st.push({ sel: '.tabbar [data-a="more"]', title: 'Más', text: 'Aquí están el resto de las secciones: ' + MORE.map(k => VIEWS[k][0]).join(', ') + '. En "Guía de cada sección" (en tu foto) se explica cada una.' });
+  (mobile ? TABS.filter(viewOn) : Object.keys(VIEWS).filter(viewOn)).forEach(k => st.push({ sel: nav(k), title: VIEWS[k][0], text: HELP[k][0] }));
+  if (mobile) st.push({ sel: '.tabbar [data-a="more"]', title: 'Más', text: 'Aquí están el resto de las secciones: ' + MORE.filter(viewOn).map(k => VIEWS[k][0]).join(', ') + '. En "Guía de cada sección" (en tu foto) se explica cada una.' });
   else st.push({ sel: '.side a[href^="perfil.html"]', title: 'Ver perfil público', text: 'Abre tu perfil tal como lo ven tus pacientes en el buscador.' });
   st.push({ sel: '.acc-btn', title: 'Tu cuenta', text: 'Toca tu foto para ver tu perfil público, cambiar tu contraseña, repetir este recorrido, ver la guía de cada sección o cerrar sesión.' });
   st.push({ title: 'Listo para empezar', text: 'Tu primer paso: completa tu perfil, agrega tu consultorio y tu horario. Después activa "Mostrar mi perfil en el buscador" y empezarás a recibir citas.', end: true });
@@ -429,8 +465,8 @@ document.addEventListener('keydown', e => {
 addEventListener('resize', () => TOUR.on && tourDraw());
 function guideModal() {
   openModal(`<h3>Guía de cada sección</h3><p class="sub">Qué encuentras en cada parte de tu panel.</p><div class="guide">
-    ${Object.entries(VIEWS).map(([k, [t, i]]) => `<a class="guide-it" href="#${k}" data-close><span class="ic-box">${ic(i, 18)}</span><span><b>${t}</b><small>${HELP[k][0]}</small></span></a>`).join('')}
-    <div class="guide-it"><span class="ic-box">${ic('eye', 18)}</span><span><b>Tu página propia</b><small>Un enlace con tu nombre arriba y sin el buscador, para compartir en redes y WhatsApp. Está en Mi perfil, con su código QR.</small></span></div>
+    ${Object.entries(VIEWS).filter(([k]) => viewOn(k)).map(([k, [t, i]]) => `<a class="guide-it" href="#${k}" data-close><span class="ic-box">${ic(i, 18)}</span><span><b>${t}</b><small>${HELP[k][0]}</small></span></a>`).join('')}
+    ${hasMod('sitio') ? `<div class="guide-it"><span class="ic-box">${ic('eye', 18)}</span><span><b>Tu página propia</b><small>Un enlace con tu nombre arriba y sin el buscador, para compartir en redes y WhatsApp. Está en Mi perfil, con su código QR.</small></span></div>` : ''}
     <div class="guide-it"><span class="ic-box">${ic('user', 18)}</span><span><b>Tu cuenta (tu foto)</b><small>Ver tu perfil público, cambiar contraseña, repetir el recorrido o cerrar sesión.</small></span></div></div>
     <div class="acts" style="margin-top:14px"><button class="btn pri" data-a="tourAgain">Ver el recorrido</button></div>`, true);
 }
@@ -442,13 +478,14 @@ const MORE = ['conferencias', 'opiniones', 'horario', 'ubicaciones', 'perfil', '
 const DOTS = '<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>';
 function tabbar(badge) {
   const cur = S.view === 'paciente' ? 'pacientes' : S.view;
-  return `<nav class="tabbar" aria-label="Menú principal">${TABS.map(k => `<a href="#${k}" ${cur === k ? 'aria-current="page"' : ''}>${ic(VIEWS[k][1], 22)}<span>${VIEWS[k][0]}</span>${k === 'citas' && badge ? `<b class="tb-badge">${badge}</b>` : ''}</a>`).join('')}
+  const tabs = TABS.filter(viewOn);
+  return `<nav class="tabbar" aria-label="Menú principal" style="grid-template-columns:repeat(${tabs.length + 1},1fr)">${tabs.map(k => `<a href="#${k}" ${cur === k ? 'aria-current="page"' : ''}>${ic(VIEWS[k][1], 22)}<span>${VIEWS[k][0]}</span>${k === 'citas' && badge ? `<b class="tb-badge">${badge}</b>` : ''}</a>`).join('')}
     <button data-a="more" ${MORE.includes(cur) ? 'aria-current="page"' : ''}>${DOTS}<span>Más</span></button></nav>`;
 }
 function moreSheet() {
   const item = (href, icon, text, extra = '') => `<a class="more-it" href="${href}" ${extra}>${ic(icon, 20)}<span>${text}</span><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></a>`;
   openModal(`<h3>Más opciones</h3><p class="sub">${esc(S.profile.full_name)}</p><div class="more-list">
-    ${MORE.map(k => item('#' + k, VIEWS[k][1], VIEWS[k][0], `data-close ${S.view === k ? 'aria-current="page"' : ''}`)).join('')}
+    ${MORE.filter(viewOn).map(k => item('#' + k, VIEWS[k][1], VIEWS[k][0], `data-close ${S.view === k ? 'aria-current="page"' : ''}`)).join('')}
     ${item('perfil.html?p=' + encodeURIComponent(S.profile.slug), 'eye', 'Ver mi perfil público', 'target="_blank" rel="noopener"')}
     ${S.isAdmin ? item('admin.html', 'shield', 'Administración') : ''}</div>
     <p class="muted small" style="margin:14px 0 0">Para cerrar sesión, toca tu foto arriba a la derecha.</p>`);
@@ -736,7 +773,7 @@ V.calendario = () => {
     return `<button class="ev s-conf" data-a="attendees" data-id="${e.id}" ${pos ? `style="top:${px(t0)}px;height:${Math.max(px(t1) - px(t0) - 2, 22)}px"` : ''}><b>${ic('mic', 12)} ${esc(e.title)}</b>${fmtTime(e.starts_at, tz())} · ${S.attendees.filter(a => a.event_id === e.id && a.status === 'confirmado').length} asistentes</button>`; };
   const nowMin = localMin(new Date().toISOString());
   const title = `${keyLabel(days[0], { day: 'numeric', month: 'short' })} – ${keyLabel(days[6], { day: 'numeric', month: 'short', year: 'numeric' })}`;
-  return `<div class="title-row"><h1>Calendario</h1><button class="btn pri sm" data-a="manualForm">+ Agregar cita</button></div>
+  return `<div class="title-row"><h1>Calendario</h1>${hasMod('citas_manuales') ? '<button class="btn pri sm" data-a="manualForm">+ Agregar cita</button>' : ''}</div>
     <div class="cal-bar"><h2>${title}</h2><button class="btn neu sm" data-a="calMove" data-d="-7" aria-label="Semana anterior">‹ Anterior</button><button class="btn neu sm" data-a="calMove" data-d="0">Hoy</button><button class="btn neu sm" data-a="calMove" data-d="7" aria-label="Semana siguiente">Siguiente ›</button></div>
     <div class="legend">${S.locations.map(l => `<span><i style="background:${locColor(l.id)};opacity:.5"></i>${esc(l.name)}</span>`).join('')}<span><i style="background:#9b4dca"></i>Conferencia</span><span><i style="background:var(--ok);"></i>Confirmada</span><span><i style="background:var(--calm)"></i>Pago por revisar</span><span><i style="background:var(--warn)"></i>Sin pago</span><span><i style="background:repeating-linear-gradient(135deg,var(--bg) 0 3px,var(--line) 3px 4px)"></i>Descanso</span></div>
     <div class="cal"><div class="cal-grid" style="--hp:${HP}px">
@@ -766,7 +803,7 @@ V.citas = () => {
   };
   const list = S.appts.filter(TABS[S.apptTab][1]);
   if (S.apptTab === 'history') list.reverse();
-  return `<div class="title-row"><h1>Citas</h1><div class="acts"><button class="btn neu sm" data-a="reload">Actualizar</button><button class="btn pri sm" data-a="manualForm">+ Agregar cita</button></div></div>
+  return `<div class="title-row"><h1>Citas</h1><div class="acts"><button class="btn neu sm" data-a="reload">Actualizar</button>${hasMod('citas_manuales') ? '<button class="btn pri sm" data-a="manualForm">+ Agregar cita</button>' : ''}</div></div>
     <p class="muted small" style="margin:-8px 0 14px">¿Ya tenías citas acordadas por teléfono o en persona? Agrégalas con "+ Agregar cita" para que ocupen tu agenda y nadie más reserve ese horario.</p>
     <div class="seg" role="group" aria-label="Filtrar citas">${Object.entries(TABS).map(([k, [t, f]]) => `<button data-a="apptTab" data-t="${k}" aria-pressed="${S.apptTab === k}">${t} (${S.appts.filter(f).length})</button>`).join('')}</div>
     <div class="grid" style="margin-top:16px">${list.map(apptCard).join('') || '<div class="empty">No hay citas en esta lista.</div>'}</div>`;
@@ -1068,6 +1105,7 @@ V.perfil = () => `<div class="title-row"><h1>Mi perfil</h1><a class="btn neu sm"
 /* Página propia: enlace del especialista que se ve como su propia página (sin el buscador de MiConsulta) */
 const siteUrl = () => pageUrl('perfil.html?sitio=' + encodeURIComponent(S.profile.slug));
 function siteCard() {
+  if (!hasMod('sitio')) return '';
   const u = siteUrl();
   setTimeout(drawQR, 0);
   return `<section class="card site-card"><div class="site-grid"><div>
@@ -1158,13 +1196,13 @@ V.paciente = () => {
   const c = S.clients.find(x => x.id === S.clientId);
   if (!c) return '<div class="empty">Este paciente ya no existe.</div><a class="btn neu" href="#pacientes">Volver</a>';
   const age = ageOf(c.birth_date), links = S.links.filter(l => l.client_id === c.id), ap = apptsOf(c);
-  const TABS = [['datos', 'Datos'], ['encuestas', `Encuestas (${links.length})`], ['citas', `Citas (${ap.length})`]];
+  const TABS = [['datos', 'Datos'], ...(hasMod('encuestas') ? [['encuestas', `Encuestas (${links.length})`]] : []), ['citas', `Citas (${ap.length})`]];
   return `<a class="back-link" href="#pacientes">← Pacientes</a>
     <section class="card pat-head"><div class="who">${av(c.full_name, 'lg')}<div><h1 style="font-size:24px">${esc(c.full_name)}</h1>
       <small>${[age != null ? age + ' años' : '', c.sex ? { mujer: 'Mujer', hombre: 'Hombre', otro: 'Otro' }[c.sex] : '', c.occupation].filter(Boolean).map(esc).join(' · ') || 'Completa sus datos generales'}</small>
       <div class="tags" style="margin-top:8px"><span class="pill ${CSTATUS[c.status || 'activo'][1]}">${CSTATUS[c.status || 'activo'][0]}</span>${c.source ? `<span class="tag">${SOURCE_SHORT[c.source]}${c.source_detail ? ' · ' + esc(c.source_detail) : ''}</span>` : ''}</div></div></div>
       <div class="acts"><a class="btn sec sm" href="${esc(waLink(c.phone, `Hola ${c.full_name.split(' ')[0]}, te escribe ${S.profile.full_name}.`))}" target="_blank" rel="noopener">${ic('phone', 14)} WhatsApp</a>
-        ${S.surveys.length ? `<button class="btn neu sm" data-a="sendTo" data-id="${c.id}">${ic('form', 14)} Enviar encuesta</button>` : ''}</div></section>
+        ${hasMod('encuestas') && S.surveys.length ? `<button class="btn neu sm" data-a="sendTo" data-id="${c.id}">${ic('form', 14)} Enviar encuesta</button>` : ''}</div></section>
     <div class="seg" role="tablist" style="margin:16px 0">${TABS.map(([k, t]) => `<button data-a="pTab" data-t="${k}" aria-pressed="${S.pTab === k}">${t}</button>`).join('')}</div>
     ${{ datos: patDatos, encuestas: patEncuestas, citas: patCitas }[S.pTab](c)}`;
 };
@@ -1369,6 +1407,7 @@ async function invite(id, btn) {
 
 // Alerta por WhatsApp con CallMeBot (en Mi perfil)
 function waAlertCard() {
+  if (!hasMod('conferencias')) return '';
   const st = S.psettings || {};
   return `<section class="card form" style="margin-top:16px"><h3>Alertas por WhatsApp</h3>
     <p class="muted small" style="margin:0">Te mandamos un WhatsApp un día antes y una hora antes de cada conferencia. Usa el servicio gratuito CallMeBot, que solo puede escribirle a tu propio número.</p>
@@ -1621,6 +1660,7 @@ document.addEventListener('click', async e => {
     case 'topic': el.setAttribute('aria-pressed', el.getAttribute('aria-pressed') !== 'true'); if (el.closest('#pf-extra')) refreshTopics(); break;
     case 'saveProfile': saveProfile(el); break;
     case 'manualForm': manualForm(); break;
+    case 'planModal': closeModal(); planModal(); break;
     case 'manualSave': manualSave(el); break;
     case 'tourAgain': startTour(true); break;
     case 'svcAdd': document.getElementById('pf-svcs').insertAdjacentHTML('beforeend', svcRow()); document.querySelector('#pf-svcs .svc:last-child input').focus(); break;

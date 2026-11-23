@@ -249,6 +249,12 @@ span.doc-photo{display:grid;place-items:center}
 .pro-copy .acts{display:flex;gap:20px;align-items:center;flex-wrap:wrap}
 .pro-copy .acts a.ghost{color:var(--ink);font-weight:600;text-decoration:none}
 .pro-copy .acts a.ghost:hover{text-decoration:underline}
+.pricing{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-top:56px}
+.price-c{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:10px}
+.price-c.top{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 25%,transparent)}
+.price-c h3{margin:0;font-size:19px}.price-c .amt{font-size:34px;font-weight:800;color:var(--ink);line-height:1}.price-c .amt small{font-size:14px;font-weight:600;color:var(--muted)}
+.price-c p{margin:0;color:var(--muted);font-size:14.5px;line-height:1.5}.price-c ul{list-style:none;margin:4px 0 8px;padding:0;display:grid;gap:7px;font-size:14.5px}
+.price-c li{display:flex;gap:8px;align-items:flex-start}.price-c li.n{color:var(--muted);opacity:.6}.price-c .btn{margin-top:auto;justify-content:center}
 
 /* pie */
 .foot{background:var(--bg);border-top:1px solid var(--line);padding-block:48px 40px;margin-top:32px}
@@ -359,11 +365,12 @@ span.doc-photo{display:grid;place-items:center}
       <div class="pro-copy">
         <span class="pill">Para especialistas</span>
         <h2 style="margin-top:16px">Tu consulta, organizada en un solo panel</h2>
-        <p>Publica tu perfil gratis, define tus horarios por consultorio y recibe citas con el comprobante de pago ya subido.</p>
+        <p>Publica tu perfil, define tus horarios por consultorio y recibe citas con el comprobante de pago ya subido. Empieza con una prueba gratis.</p>
         <ul class="checks" id="checks"></ul>
-        <div class="acts"><a class="btn pri lg" href="panel.html#registro">Crear mi perfil gratis</a><a class="ghost" href="panel.html">Ya tengo cuenta →</a></div>
+        <div class="acts"><a class="btn pri lg" href="panel.html#registro">Empezar prueba gratis</a><a class="ghost" href="panel.html">Ya tengo cuenta →</a></div>
       </div>
     </div>
+    <div class="pricing" id="pricing" hidden></div>
   </div></section>
 </main>
 
@@ -453,7 +460,22 @@ $('pro-shot').innerHTML = `<div class="fake-in" style="justify-content:space-bet
     .map(([a, n, t, s, bg, c]) => `<div class="row"><span class="ava" style="background:${bg};color:${c}">${a}</span><div><b>${n}</b><small>${t}</small></div><span class="st" style="background:${bg};color:${c}">${s}</span></div>`).join('')}`;
 $('checks').innerHTML = ['Horarios por consultorio, sin empalmes', 'Apruebas cada cita al revisar el comprobante', 'Pacientes, encuestas y conferencias']
   .map(t => `<li><span>${CHECK}</span>${t}</li>`).join('');
-bookingWidget(); renderSteps();
+bookingWidget(); renderSteps(); renderPricing();
+// Planes para especialistas (se editan en Administración, Ajustes, Planes y precios)
+async function renderPricing() {
+  if (!sb) return;
+  const { data } = await sb.from('plan_tiers').select('key,name,price,description,modules').eq('active', true).order('sort');
+  if (!data || !data.length) return;
+  const BASE = ['Perfil en el buscador y agenda en línea', 'Horarios y consultorios', 'Cobro con comprobante y recordatorios'];
+  const MODS = [['pacientes', 'Lista de pacientes'], ['citas_manuales', 'Citas por teléfono o en persona'], ['sitio', 'Página propia con código QR'],
+    ['opiniones', 'Opiniones de pacientes'], ['encuestas', 'Encuestas'], ['conferencias', 'Talleres y conferencias']];
+  const top = data.length > 2 ? data[Math.floor(data.length / 2)].key : null, el = $('pricing');
+  el.innerHTML = data.map(t => `<article class="price-c ${t.key === top ? 'top' : ''}">${t.key === top ? '<span class="pill" style="align-self:flex-start">Más elegido</span>' : ''}
+    <h3>${PA.esc(t.name)}</h3><div class="amt">$${Number(t.price).toLocaleString('es-MX')} <small>MXN al mes</small></div>${t.description ? `<p>${PA.esc(t.description)}</p>` : ''}
+    <ul>${BASE.map(b => `<li><span>${CHECK}</span>${b}</li>`).join('')}${MODS.map(([k, n]) => `<li class="${t.modules.includes(k) ? '' : 'n'}"><span>${t.modules.includes(k) ? CHECK : '—'}</span>${n}</li>`).join('')}</ul>
+    <a class="btn ${t.key === top ? 'pri' : 'neu'}" href="panel.html#registro">Empezar prueba gratis</a></article>`).join('');
+  el.hidden = false;
+}
 const FILTERS = [
   ['Disponibilidad', [['today', 'Disponibles hoy'], ['in3', 'Disponibles en 3 días']]],
   ['Precio', [['cheap', 'Menos de $600 MXN']]],

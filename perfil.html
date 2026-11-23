@@ -106,11 +106,15 @@ const locOf = id => (P.locations || []).find(l => l.id === id);
 
 function fail(msg) { root.innerHTML = `${SITE ? '' : '<a class="back" href="index.html">← Volver al buscador</a>'}<div class="card"><h2>No encontramos este perfil</h2><p class="muted">${msg}</p></div>`; }
 
+let MODS = null;
 async function load() {
   if (!sb) return fail('No se pudo cargar la conexión.');
   const { data, error } = await sb.from('profiles').select('id,is_demo,full_name,slug,specialty,specialties,services,credentials,title,license,license_verified,cancel_policy,cancel_hours,bio,topics,price,session_minutes,timezone,photo_url,whatsapp,languages,locations(id,kind,name,address,city,lat,lng,maps_url),schedules(weekday,start_time,end_time,location_id)')
     .eq('slug', slug).eq('is_listed', true).eq('is_active', true).maybeSingle();
   if (error || !data) return fail('Puede que el link esté mal escrito o que el especialista ya no esté disponible.');
+  // La página propia (?sitio=) es parte del plan: sin el módulo se muestra el perfil normal
+  const { data: mods } = await sb.rpc('public_modules', { p_psych: data.id }); MODS = mods || null;
+  if (SITE && mods && !mods.includes('sitio')) { try { sessionStorage.removeItem('mc_sitio'); } catch (e) {} location.replace('perfil.html?p=' + encodeURIComponent(data.slug) + location.hash); return; }
   P = data; document.title = SITE ? `${P.full_name} · Agenda tu cita` : `${P.full_name} · MiConsulta`;
   if (SITE) PA.siteBrand({ name: P.full_name, title: P.title, photo: P.photo_url, slug: P.slug });
   render();
@@ -152,6 +156,7 @@ function hoursOf(l) {
 
 function renderReviews() {
   const el = document.getElementById('reviews'), top = document.getElementById('rating-top'); if (!el || !RV) return;
+  if (MODS && !MODS.includes('opiniones')) { el.remove(); top?.remove(); return; }
   if (top) top.innerHTML = RV.count ? `<a class="rating-l" href="#reviews">${starsI(RV.avg, 15)} ${RV.avg} · ${RV.count} ${RV.count === 1 ? 'opinión' : 'opiniones'}</a>` : '<span class="muted small">Aún sin opiniones</span>';
   const first = P.full_name.split(' ')[0];
   if (!RV.count) { el.innerHTML = `<h3>Opiniones</h3><p class="muted" style="margin:8px 0 0">${esc(first)} aún no tiene opiniones. Solo pueden opinar pacientes que tuvieron una cita confirmada.</p>`; return; }

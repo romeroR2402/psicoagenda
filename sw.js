@@ -1,7 +1,7 @@
 // MiConsulta como app: guarda las páginas en el celular para abrirlas rápido y aunque falle la conexión.
 // Siempre intenta primero la red (para tener la última versión); si no hay conexión, usa la copia guardada.
 // Supabase, mapas y fuentes pasan directo (no se guardan).
-const C = 'miconsulta-v5', BASE = new URL('./', self.location).href;
+const C = 'miconsulta-v6', BASE = new URL('./', self.location).href;
 const FILES = ['./', 'index.html', 'perfil.html', 'cita.html', 'evento.html', 'eventos.html', 'responder.html', 'aviso-privacidad.html', 'panel.html', 'admin.html',
   'assets/app.css', 'assets/common.js', 'config.js', 'site.webmanifest', 'assets/favicon.svg', 'assets/favicon-32.png', 'assets/favicon-192.png', 'assets/icon-512.png'];
 

@@ -78,7 +78,7 @@ async function handle(event: string, appointmentId: string) {
 
   if (event === 'booked') {
     toPatient('Tu horario está apartado', layout(`Hola ${first}, tu horario está apartado`, 'Para confirmar tu cita, haz tu pago y sube tu comprobante desde tu link de cita.', rows, ['Ver mi cita y pagar', citaUrl], 'Guarda este correo: el botón te lleva a tu cita para pagar o cancelar.'));
-    toPsy(`Nueva cita solicitada: ${a.patient_name}`, layout('Tienes una nueva solicitud de cita', `${esc(a.patient_name)} apartó un horario contigo. Se confirmará cuando revises su pago.`, [...psyRows, ...(a.patient_note ? [['Motivo', esc(a.patient_note)] as [string, string]] : [])], ['Abrir mi panel', panelUrl]));
+    toPsy(`Nueva cita solicitada: ${a.patient_name}`, layout('Tienes una nueva solicitud de cita', `${esc(a.patient_name)} apartó un horario contigo. Se confirmará cuando revises su pago.`, [...psyRows, ...(a.patient_note ? [['Comentario', esc(a.patient_note)] as [string, string]] : [])], ['Abrir mi panel', panelUrl]));
   } else if (event === 'review') {
     toPsy(`${a.patient_name} subió su comprobante`, layout('Hay un pago por revisar', `${esc(a.patient_name)} subió su comprobante de pago. Revísalo y aprueba la cita para apartarla.`, [...psyRows, ['Referencia', esc(a.payment_ref || '—')]], ['Revisar el pago', panelUrl]));
   } else if (event === 'confirmed') {
@@ -119,9 +119,12 @@ Deno.serve(async (req) => {
         await handle('reminder', a.id);
       }
       // Un día después de la cita confirmada, pedimos su opinión al paciente (una sola vez)
-      const { data: done } = await db.from('appointments').select('id').eq('status', 'confirmed').is('review_requested_at', null)
+      const { data: done } = await db.from('appointments').select('id,psychologist_id').eq('status', 'confirmed').is('review_requested_at', null)
         .not('patient_email', 'is', null).lte('ends_at', new Date(now - 2 * 3600e3).toISOString()).gte('ends_at', new Date(now - 72 * 3600e3).toISOString());
       for (const a of done || []) {
+        // Solo se piden opiniones si el plan del especialista incluye el módulo de opiniones
+        const { data: on } = await db.rpc('has_module', { p_uid: a.psychologist_id, p_key: 'opiniones' });
+        if (on === false) continue;
         await db.from('appointments').update({ review_requested_at: new Date().toISOString() }).eq('id', a.id);
         await handle('review_request', a.id);
       }

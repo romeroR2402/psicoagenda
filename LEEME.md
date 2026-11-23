@@ -193,3 +193,16 @@ y en el menú de la cuenta del especialista.
   solo el dueño con `my_private_profile()` y el paciente de una cita dentro de `get_appointment`.
 - Los comprobantes de pago están en un bucket privado. Las claves de servicios viven solo en los secretos de Supabase.
 - Para revisar la seguridad usa el skill `seguridad` (`.claude/skills/seguridad/SKILL.md`).
+
+## Planes y módulos (lo que se vende a los especialistas)
+- Planes en la tabla `plan_tiers` (se editan en **Administración → Ajustes → Planes y precios**): Básico $199, Profesional $349 y Premium $499 al mes.
+- Módulos: `pacientes`, `citas_manuales`, `sitio` (página propia con QR), `opiniones`, `encuestas`, `conferencias` (incluye alertas por WhatsApp).
+  Agenda, perfil, horarios, consultorios y cobro con comprobante siempre están incluidos.
+- `subscriptions.tier` guarda el plan de cada cuenta y `subscriptions.modules` (opcional) los módulos a la medida.
+  Las cuentas que existían antes de los planes tienen `tier = 'completo'`: todo incluido, no se les cierra nada.
+- Las cuentas nuevas empiezan con `platform_settings.default_tier` (Premium por defecto, también durante la prueba gratis).
+- El administrador cambia el plan de cada especialista en **Acceso** (`admin_set_tier`). Lo que no está en su plan desaparece de su menú;
+  si entra por el enlace ve "no está en tu plan" con los precios. En el menú de su foto está **Mi plan**.
+- También lo respeta la base de datos (`has_module`): sin el módulo no puede crear encuestas ni eventos, sus eventos no salen en la cartelera,
+  sus opiniones no se muestran ni se piden, y su página propia (`?sitio=`) se abre como perfil normal.
+- La página de inicio muestra los planes activos en la sección "Para especialistas".

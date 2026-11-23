@@ -129,6 +129,9 @@ td.num{font-variant-numeric:tabular-nums;text-align:center}
 .log-it.err .ic-box{background:var(--bad-soft);color:var(--bad)}
 .log-it.adm .ic-box{background:var(--warn-soft);color:var(--warn)}
 .note{background:var(--calm-soft);color:var(--calm);border-radius:14px;padding:12px 14px;font-size:13px;font-weight:600}
+.tier-l{display:block;margin-top:4px;color:var(--muted);font-size:12px}
+.mod-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:6px 14px;margin:4px 0}
+.plans{display:grid;gap:12px}.plan-ed{box-shadow:none;border:1px solid var(--line);display:flex;flex-direction:column;gap:10px}
 </style>
 </head>
 <body class="wash">
@@ -164,10 +167,10 @@ async function load() {
   const { data } = await sb.rpc('is_admin');
   S.isAdmin = !!data;
   if (S.isAdmin) {
-    const [r, st, cl, db, ac] = await Promise.all([sb.rpc('admin_list_psychologists'), sb.from('platform_settings').select('*').maybeSingle(),
+    const [r, st, cl, db, ac, tr] = await Promise.all([sb.rpc('admin_list_psychologists'), sb.from('platform_settings').select('*').maybeSingle(),
       sb.from('clients').select('id,full_name,email,phone,created_at,owner_id').order('created_at', { ascending: false }).limit(2000),
-      sb.rpc('admin_dashboard'), sb.rpc('admin_activity', { p_limit: 300 })]);
-    S.users = r.error ? [] : r.data; S.settings = st.data; S.clients = cl.data || [];
+      sb.rpc('admin_dashboard'), sb.rpc('admin_activity', { p_limit: 300 }), sb.from('plan_tiers').select('*').order('sort')]);
+    S.users = r.error ? [] : r.data; S.settings = st.data; S.tiers = tr.data || []; S.clients = cl.data || [];
     S.dash = db.error ? null : db.data; S.act = ac.error ? [] : ac.data; S.loadedAt = new Date();
   }
   render();
@@ -214,13 +217,48 @@ function render() {
     <div class="tbl-wrap"><table><thead><tr><th>Especialista</th><th>Acceso</th><th>Perfil</th><th>Último acceso</th><th>Actividad</th><th class="right">Acciones</th></tr></thead><tbody>
       ${rows.map(u => { const p = u.profile;
         const st = !u.confirmed ? '<span class="pill p-warn">Correo sin confirmar</span>' : !p ? '<span class="pill p-mute">Sin perfil</span>' : !p.is_active ? '<span class="pill p-bad">Desactivado</span>' : p.is_listed ? '<span class="pill p-ok">Publicado</span>' : '<span class="pill p-mute">No publicado</span>';
-        return `<tr><td><div class="who">${av(p?.full_name || u.email, 'sm', p?.photo_url)}<div><b>${esc(p?.full_name || 'Sin nombre')}${p?.title ? ` <span class="ttl">· ${esc(p.title)}</span>` : ''}</b><small>${p?.is_demo ? '<span class="pill p-warn" style="margin-right:6px">Demo</span>' : ''}${esc(u.email)} · desde ${date(u.created_at)}</small></div></div></td><td>${accPill(u)}</td><td>${st}</td><td class="date">${date(u.last_sign_in_at)}</td>
+        return `<tr><td><div class="who">${av(p?.full_name || u.email, 'sm', p?.photo_url)}<div><b>${esc(p?.full_name || 'Sin nombre')}${p?.title ? ` <span class="ttl">· ${esc(p.title)}</span>` : ''}</b><small>${p?.is_demo ? '<span class="pill p-warn" style="margin-right:6px">Demo</span>' : ''}${esc(u.email)} · desde ${date(u.created_at)}</small></div></div></td><td>${accPill(u)}${u.is_admin ? '' : `<small class="tier-l">${esc(tierLabel(u))}</small>`}</td><td>${st}</td><td class="date">${date(u.last_sign_in_at)}</td>
           <td class="act"><span title="Citas">${ic('cal', 14)} ${u.appointments}</span><span title="Pacientes">${ic('users', 14)} ${u.clients}</span><span title="Encuestas">${ic('form', 14)} ${u.surveys}</span></td>
           <td class="right"><div class="acts">${u.is_admin ? '' : `<button class="abtn" data-a="access" data-id="${u.id}">Acceso</button>`}<button class="ibtn" data-a="detail" data-id="${u.id}" title="Ver detalle" aria-label="Ver detalle">${ic('eye', 16)}</button><button class="ibtn" data-a="pass" data-id="${u.id}" title="Contraseña" aria-label="Contraseña">${ic('key', 16)}</button>${u.is_admin || u.id === S.user.id ? '<span class="ibtn ph" aria-hidden="true"></span>' : `<button class="ibtn del" data-a="delUser" data-id="${u.id}" title="Eliminar cuenta" aria-label="Eliminar cuenta">${ic('trash', 16)}</button>`}</div></td></tr>`; }).join('') || '<tr><td colspan="6"><div class="empty">Sin resultados.</div></td></tr>'}
     </tbody></table></div>`;
 }
 
 const userOf = id => S.users.find(u => u.id === id);
+// Paquetes y módulos (tabla plan_tiers). 'completo' = cuentas anteriores a los paquetes: tienen todo.
+const MODULES = { pacientes: 'Pacientes', citas_manuales: 'Agregar citas por teléfono o en persona', sitio: 'Página propia con código QR',
+  opiniones: 'Opiniones de pacientes', encuestas: 'Encuestas', conferencias: 'Talleres y conferencias (con alertas por WhatsApp)' };
+const tierOf = k => (S.tiers || []).find(t => t.key === k);
+function tierLabel(u) {
+  const s = u.subscription; if (!s || !s.tier || s.tier === 'completo') return 'Todo incluido (cuenta anterior)';
+  const t = tierOf(s.tier); return (t ? t.name : s.tier) + (s.modules ? ' · a la medida' : '');
+}
+const modChecks = mods => `<div class="mod-grid">${Object.entries(MODULES).map(([k, n]) => `<label class="check"><input type="checkbox" data-mod="${k}" ${mods.includes(k) ? 'checked' : ''}> ${esc(n)}</label>`).join('')}</div>`;
+function tierCard(u) {
+  const s = u.subscription || {}, cur = s.tier || 'completo', t = tierOf(cur), mods = s.modules || (t ? t.modules : Object.keys(MODULES));
+  return `<div class="card" style="box-shadow:none;border:1px solid var(--line);margin-bottom:12px"><h4 style="margin:0 0 10px">Paquete y módulos</h4><div class="form">
+    <label class="field"><span>Paquete</span><select id="tr-tier">
+      <option value="completo" ${cur === 'completo' ? 'selected' : ''}>Todo incluido (como las cuentas anteriores)</option>
+      ${(S.tiers || []).map(x => `<option value="${esc(x.key)}" ${cur === x.key ? 'selected' : ''}>${esc(x.name)} · $${Number(x.price).toLocaleString('es-MX')} al mes${x.active ? '' : ' (oculto)'}</option>`).join('')}</select></label>
+    <label class="check"><input type="checkbox" id="tr-custom" ${s.modules ? 'checked' : ''}> Elegir los módulos a mano para esta cuenta</label>
+    <div id="tr-mods" ${s.modules ? '' : 'hidden'}>${modChecks(mods)}</div>
+    <p class="small muted" style="margin:0">Lo que no esté incluido desaparece de su menú. Agenda, perfil, horarios, consultorios y cobro con comprobante siempre están incluidos.</p>
+    <p class="err" id="tr-err"></p><button class="btn pri" data-a="saveTier" data-id="${u.id}">Guardar paquete</button></div></div>`;
+}
+function plansCard() {
+  const st = S.settings || {};
+  return `<section class="card form" style="max-width:860px;margin-top:16px"><h3>Planes y precios</h3>
+    <p class="muted small" style="margin:0">Lo que vendes a los especialistas. Si cambias un plan, cambia para todos los que lo tienen. Las cuentas anteriores tienen "Todo incluido" y no se les cierra nada.</p>
+    <label class="field" style="max-width:420px"><span>Plan para las cuentas nuevas</span><select id="pl-default">${(S.tiers || []).map(t => `<option value="${esc(t.key)}" ${st.default_tier === t.key ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}</select>
+      <small class="muted">Con el que empiezan, también durante su prueba gratis. Después le cambias el plan a cada uno en "Acceso".</small></label>
+    <div class="plans">${(S.tiers || []).map(t => `<div class="card plan-ed" data-tier="${esc(t.key)}">
+      <div class="row2"><label class="field"><span>Nombre</span><input data-f="name" maxlength="40" value="${esc(t.name)}"></label>
+        <label class="field"><span>Precio al mes (MXN)</span><input data-f="price" type="number" min="0" step="1" value="${Number(t.price)}"></label></div>
+      <label class="field"><span>Descripción</span><input data-f="description" maxlength="300" value="${esc(t.description || '')}"></label>
+      ${modChecks(t.modules)}
+      <label class="check"><input type="checkbox" data-f="active" ${t.active ? 'checked' : ''}> Se ofrece (lo ven los especialistas en "Mi plan")</label>
+      <small class="muted">${S.users.filter(u => u.subscription?.tier === t.key).length} especialista(s) con este plan</small></div>`).join('')}</div>
+    <p class="err" id="pl-err"></p><button class="btn pri" data-a="savePlans">Guardar planes</button></section>`;
+}
 const PLAN = { prueba: 'Prueba', mensual: 'Mensual', trimestral: 'Trimestral', semestral: 'Semestral', anual: 'Anual', personalizado: 'Personalizado', sin_acceso: 'Sin acceso' };
 // Estado de acceso: admin, trial (prueba vigente), ok (pagado vigente) u off (vencido o sin acceso)
 function acc(u) {
@@ -241,9 +279,10 @@ async function accessModal(id) {
   const u = userOf(id), a = acc(u), def = S.settings?.auto_trial_days || 14;
   const { data: pays } = await sb.from('subscription_payments').select('*').eq('user_id', id).order('created_at', { ascending: false });
   openModal(`<h3>Acceso de ${esc(u.profile?.full_name || u.email)}</h3>
-    <p class="sub">${esc(u.email)} · ${accPill(u)}${u.paid_total > 0 ? ` · Total pagado: <b>$${Number(u.paid_total).toLocaleString('es-MX')} MXN</b>` : ''}</p>
+    <p class="sub">${esc(u.email)} · ${accPill(u)} · ${esc(tierLabel(u))}${u.paid_total > 0 ? ` · Total pagado: <b>$${Number(u.paid_total).toLocaleString('es-MX')} MXN</b>` : ''}</p>
+    ${tierCard(u)}
     <div class="card" style="box-shadow:none;border:1px solid var(--line)"><h4 style="margin:0 0 10px">Registrar un pago</h4><div class="form">
-      <div class="row2"><label class="field"><span>Monto (MXN)</span><input id="ac-amount" type="number" min="0" step="50" placeholder="Ej. 499"></label>
+      <div class="row2"><label class="field"><span>Monto (MXN)</span><input id="ac-amount" type="number" min="0" step="50" placeholder="Ej. ${tierOf(u.subscription?.tier)?.price ?? 499}"></label>
         <label class="field"><span>Método</span><select id="ac-method"><option>Transferencia</option><option>Efectivo</option><option>Depósito</option><option>Tarjeta</option><option>Otro</option></select></label></div>
       <div class="row2"><label class="field"><span>Periodo que cubre</span><select id="ac-period"><option value="mensual|30">1 mes</option><option value="trimestral|90">3 meses</option><option value="semestral|180">6 meses</option><option value="anual|365">1 año</option><option value="personalizado|0">Otro (días)</option></select></label>
         <label class="field" id="ac-days-w" hidden><span>Días</span><input id="ac-days" type="number" min="1" max="3660" value="30"></label></div>
@@ -452,7 +491,7 @@ function settingsView() {
       <label class="field"><span>Domicilio para oír y recibir notificaciones</span><input id="st-padd" maxlength="300" value="${esc(st.privacy_address || 'Calle Elsa 102, Col. Guadalupe Tepeyac, Alcaldía Gustavo A. Madero, C.P. 07840, Ciudad de México')}" placeholder="Calle, número, colonia, alcaldía, C.P., ciudad"></label>
       <label class="field"><span>Correo para temas de privacidad</span><input id="st-pmail" type="email" maxlength="200" value="${esc(st.privacy_email || '')}" placeholder="privacidad@tudominio.com"></label>
       <p class="err" id="st-err"></p><button class="btn pri" data-a="saveSettings">Guardar ajustes</button></section>
-    ${demoCard()}`;
+    ${plansCard()}${demoCard()}`;
 }
 // Cuenta demo: un especialista ficticio con todo lleno para mostrar la plataforma. No aparece en el buscador.
 function demoCard() {
@@ -540,7 +579,12 @@ document.addEventListener('input', e => {
   if (id === 'q' || id === 'cq') { S[id] = e.target.value; const pos = e.target.selectionStart; render(); const q = document.getElementById(id); q.focus(); q.setSelectionRange(pos, pos); }
 });
 document.addEventListener('click', e => { if (S.rOpen && !e.target.closest('.rng')) { S.rOpen = false; render(); } }, true);
-document.addEventListener('change', e => { if (e.target.id === 'ac-period') document.getElementById('ac-days-w').hidden = !e.target.value.endsWith('|0'); });
+document.addEventListener('change', e => {
+  if (e.target.id === 'ac-period') document.getElementById('ac-days-w').hidden = !e.target.value.endsWith('|0');
+  if (e.target.id === 'tr-custom') document.getElementById('tr-mods').hidden = !e.target.checked;
+  // Al elegir otro plan, las casillas a la medida parten de lo que incluye ese plan
+  if (e.target.id === 'tr-tier') { const t = tierOf(e.target.value), m = t ? t.modules : Object.keys(MODULES); document.querySelectorAll('#tr-mods [data-mod]').forEach(x => { x.checked = m.includes(x.dataset.mod); }); }
+});
 document.addEventListener('click', async e => {
   const el = e.target.closest('[data-a]'); if (!el || el.disabled) return;
   const d = el.dataset;
@@ -576,6 +620,30 @@ document.addEventListener('click', async e => {
     case 'logDemo': S.logDemo = !S.logDemo; render(); break;
     case 'goPro': S.tab = 'pros'; render(); detail(d.id); break;
     case 'access': accessModal(d.id); break;
+    case 'saveTier': {
+      const tier = val('tr-tier'), custom = document.getElementById('tr-custom').checked;
+      const mods = custom ? [...document.querySelectorAll('#tr-mods [data-mod]:checked')].map(x => x.dataset.mod) : null;
+      el.disabled = true;
+      const { error } = await sb.rpc('admin_set_tier', { p_user: d.id, p_tier: tier, p_modules: mods });
+      if (error) { el.disabled = false; return setErr('tr-err', 'No se pudo guardar: ' + error.message); }
+      await load(); accessModal(d.id); toast('Plan guardado'); break;
+    }
+    case 'savePlans': {
+      const rows = [...document.querySelectorAll('.plan-ed')].map(c => ({ key: c.dataset.tier, name: c.querySelector('[data-f="name"]').value.trim(),
+        price: Number(c.querySelector('[data-f="price"]').value), description: c.querySelector('[data-f="description"]').value.trim() || null,
+        active: c.querySelector('[data-f="active"]').checked, modules: [...c.querySelectorAll('[data-mod]:checked')].map(x => x.dataset.mod) }));
+      if (rows.some(r => r.name.length < 2 || !(r.price >= 0))) return setErr('pl-err', 'Cada plan necesita nombre y un precio válido.');
+      el.disabled = true;
+      for (const r of rows) {
+        const { key, ...upd } = r;
+        const { error } = await sb.from('plan_tiers').update({ ...upd, updated_at: new Date().toISOString() }).eq('key', key);
+        if (error) { el.disabled = false; return setErr('pl-err', 'No se pudo guardar ' + r.name + ': ' + error.message); }
+      }
+      const { error } = await sb.from('platform_settings').update({ default_tier: val('pl-default') }).eq('id', true);
+      el.disabled = false;
+      if (error) return setErr('pl-err', 'No se pudo guardar el plan de las cuentas nuevas.');
+      await load(); toast('Planes guardados'); break;
+    }
     case 'pay': {
       const amount = Number(val('ac-amount')), [plan, n] = val('ac-period').split('|'), days = +n || Math.round(Number(val('ac-days')));
       if (!(amount >= 0) || val('ac-amount') === '') return setErr('ac-err', 'Escribe el monto que te pagó (puede ser 0).');

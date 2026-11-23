@@ -64,7 +64,7 @@ async function load() {
   const { data, error } = await sb.rpc('get_appointment', { p_token: token });
   if (error || !data) { root.innerHTML = '<div class="card"><h2>No encontramos tu cita</h2><p class="muted">Revisa que copiaste el link completo o pide ayuda a tu especialista.</p></div>'; return; }
   A = data;
-  SITE = PA.siteSlug(A.psych_slug); if (SITE) PA.siteBrand({ name: A.psych_name, title: A.psych_title, photo: A.photo_url, slug: A.psych_slug });
+  SITE = A.site_on === false ? null : PA.siteSlug(A.psych_slug); if (SITE) PA.siteBrand({ name: A.psych_name, title: A.psych_title, photo: A.photo_url, slug: A.psych_slug });
   render();
 }
 
@@ -104,7 +104,7 @@ function render() {
         <dt>Especialista</dt><dd><a href="perfil.html?${SITE ? 'sitio' : 'p'}=${encodeURIComponent(A.psych_slug)}">${esc(A.psych_name)}</a></dd>
         <dt>Costo</dt><dd>${money(A.price)}</dd>
       </dl></section>
-    ${past ? reviewCard() : ''}
+    ${past && A.reviews_on !== false ? reviewCard() : ''}
     ${active ? `<section class="card"><h3>Organiza tu cita</h3>
       <div class="cal-add" style="margin-top:10px"><a class="btn neu sm" href="${esc(gcal)}" target="_blank" rel="noopener">${ic('cal', 15)} Agregar a Google Calendar</a><button class="btn neu sm" id="ics">${ic('cal', 15)} Agregar a otro calendario (.ics)</button>
         ${canMove ? `<button class="btn calm sm" id="move">${ic('clock', 15)} Cambiar de horario</button>` : ''}</div>
