@@ -80,6 +80,9 @@ textarea{clear:both;display:block;width:100%;min-height:110px;padding:12px;borde
 .foot{display:flex;gap:8px;align-items:flex-start;color:var(--muted);font-size:12.5px;margin:18px 4px 0}
 .foot svg{flex:none;margin-top:2px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.consent{display:flex;gap:10px;align-items:flex-start;font-size:13px;line-height:1.45;color:var(--muted);cursor:pointer}
+.consent input{margin-top:1px;width:18px;height:18px;flex:none;accent-color:var(--accent)}
+.consent a{color:var(--accent);font-weight:600}
 </style>
 </head>
 <body>
@@ -176,6 +179,7 @@ function stepSurvey() {
     <div class="progress"><small><span id="pg-t">0 de ${qs.length} respondidas</span><span>${qs.length} preguntas</span></small><div class="bar"><i id="pg"></i></div></div>
     <form id="f-survey" novalidate>
       ${qs.map((q, i) => `<fieldset class="q" id="fs-${i}">${questionHtml(q, i)}</fieldset>`).join('')}
+      <label class="consent" style="margin:4px 0 12px"><input type="checkbox" id="pv-ok"><span>He leído el <a href="aviso-privacidad.html" target="_blank" rel="noopener">Aviso de privacidad</a> y doy mi consentimiento expreso para el tratamiento de mis datos personales, incluidos los de salud.</span></label>
       <p class="err" id="err"></p>
       <button class="btn" id="send">Enviar respuestas</button>
     </form>`;
@@ -198,6 +202,7 @@ function stepSurvey() {
       if (bad) { document.getElementById('fs-id').classList.add('miss'); document.getElementById('fs-id').scrollIntoView({ behavior: 'smooth', block: 'center' }); err.textContent = bad; return; }
     }
     if (miss >= 0) { markMissing(miss); err.textContent = `Falta responder la pregunta ${miss + 1}.`; return; }
+    if (!document.getElementById('pv-ok').checked) { err.textContent = 'Para enviar tus respuestas, acepta el Aviso de privacidad.'; return; }
     err.textContent = ''; btn.disabled = true; btn.textContent = 'Enviando…';
     const clean = answers.map(a => a === null ? '' : a);
     const r = openTok
@@ -232,5 +237,6 @@ else stepPhone();
 })();
 </script>
 <script>if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) navigator.serviceWorker.register('sw.js').catch(() => {});</script>
+<footer style="text-align:center;padding:0 16px 28px;font-size:12.5px"><a href="aviso-privacidad.html" style="color:var(--muted)">Aviso de privacidad</a></footer>
 </body>
 </html>

@@ -177,3 +177,11 @@ muestra el resumen del periodo y se descarga en CSV para Excel): registros, pago
 - **+ Agregar cita** (en Citas y Calendario, función `add_manual_appointment`): para las citas que el especialista ya tenía acordadas.
   Elige paciente existente o nuevo, fecha, hora, duración, lugar y si ya está pagada o pendiente. Ocupa la agenda (nadie más puede
   reservar ese horario), no envía correo al paciente y queda marcada como "Registrada por ti" (`appointments.source = 'manual'`).
+
+## Aviso de privacidad
+`aviso-privacidad.html` tiene dos versiones: **pacientes** y **especialistas** (`?para=especialista`). Explica qué datos se recaban
+(incluidos los de salud, que son sensibles), para qué, con quién se comparten, los derechos ARCO y cómo ejercerlos.
+El responsable, su domicilio y el correo de privacidad se capturan en **Administración → Ajustes → Aviso de privacidad** (función `public_privacy`).
+Se pide **consentimiento expreso** con una casilla antes de: agendar una cita, registrarse a un taller, contestar una encuesta
+y crear una cuenta de especialista (se guarda `privacy_accepted_at` en la cuenta). Hay un enlace al aviso en el pie de las páginas públicas
+y en el menú de la cuenta del especialista.

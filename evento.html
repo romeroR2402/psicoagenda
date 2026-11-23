@@ -37,6 +37,8 @@
 </div></header>
 <main class="page gutter"><div class="stack" id="root"><div class="empty">Cargando evento…</div></div></main>
 
+<footer class="mini-foot"><a href="aviso-privacidad.html">Aviso de privacidad</a></footer>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="config.js"></script>
 <script src="assets/common.js"></script>
@@ -79,6 +81,7 @@ function render() {
         <label class="field"><span>Nombre completo</span><input id="rg-name" autocomplete="name"></label>
         <label class="field"><span>Teléfono (WhatsApp)</span><input id="rg-phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="Ej. 55 1234 5678"></label>
         <label class="field"><span>Correo (para el recordatorio)</span><input id="rg-email" type="email" autocomplete="email"></label>
+        <label class="consent"><input type="checkbox" id="rg-ok"><span>He leído el <a href="aviso-privacidad.html" target="_blank" rel="noopener">Aviso de privacidad</a> y doy mi consentimiento expreso para el tratamiento de mis datos personales, incluidos los de salud.</span></label>
         <p class="err" id="rg-err"></p><button class="btn pri big">Apartar mi lugar</button></form>`;
   root.innerHTML = `<article class="ev">
     ${E.image_url ? `<img class="cover" src="${esc(E.image_url)}" alt="">` : `<div class="cover cover-ph">${ic('users', 48)}</div>`}
@@ -114,6 +117,7 @@ document.addEventListener('submit', async e => {
   const err = document.getElementById('rg-err'), btn = e.target.querySelector('button');
   const name = val('rg-name'), phone = val('rg-phone'), email = val('rg-email');
   if (name.length < 3) return err.textContent = 'Escribe tu nombre completo.';
+  if (!document.getElementById('rg-ok').checked) return err.textContent = 'Para registrarte, acepta el Aviso de privacidad.';
   if (phone.replace(/\D/g, '').length < 8) return err.textContent = 'Escribe tu teléfono con al menos 8 dígitos.';
   if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return err.textContent = 'Revisa tu correo.';
   btn.disabled = true; btn.textContent = 'Apartando…';

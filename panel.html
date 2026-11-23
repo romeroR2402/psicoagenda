@@ -319,6 +319,7 @@ function renderTop() {
     toast(error ? 'No se pudo enviar el correo. Intenta más tarde.' : `Te enviamos un enlace a ${S.user.email} para crear tu nueva contraseña.`);
   } });
   if (S.profile) items.push({ text: 'Recorrido por el panel', icon: 'eye', action: () => startTour(true) }, { text: 'Guía de cada sección', icon: 'form', action: guideModal });
+  items.push({ text: 'Aviso de privacidad', icon: 'shield', href: 'aviso-privacidad.html?para=especialista', target: '_blank' });
   items.push({ text: 'Ir al buscador', icon: 'search', href: 'index.html' });
   PA.accountMenu(top, { name: S.profile?.full_name || 'Mi cuenta', email: S.user.email, photo: S.profile?.photo_url, items,
     onLogout: async () => { await sb.auth.signOut(); S.recovery = false; location.hash = ''; } });
@@ -475,6 +476,7 @@ function renderAuth() {
     <label class="field"><span>Correo</span><input id="au-email" type="email" autocomplete="email" placeholder="tu@correo.com" value="${esc(new URLSearchParams(location.search).get('correo') || '')}"></label>
     ${m !== 'forgot' ? `<label class="field"><span>Contraseña</span><input id="au-pass" type="password" autocomplete="${m === 'signup' ? 'new-password' : 'current-password'}" placeholder="${m === 'signup' ? 'Mínimo 8 caracteres' : ''}"></label>` : ''}
     ${S.linkErr ? `<div class="banner-acc warn">${ic('lock', 16)}<span>${esc(S.linkErr)}</span></div>` : ''}
+    ${m === 'signup' ? `<label class="consent"><input type="checkbox" id="au-privacy"><span>He leído y acepto el <a href="aviso-privacidad.html?para=especialista" target="_blank" rel="noopener">Aviso de privacidad</a>. Me comprometo a cuidar los datos de mis pacientes.</span></label>` : ''}
     <p class="err" id="au-err"></p><p class="ok-msg" id="au-ok"></p>
     <button class="btn neu" id="au-resend" data-a="resend" hidden>Reenviar correo de confirmación</button>
     <button class="btn pri big" data-a="auth">${{ login: 'Entrar', signup: 'Crear cuenta', forgot: 'Enviar correo' }[m]}</button>
@@ -512,7 +514,8 @@ async function doAuth(btn) {
     const name = val('au-name');
     if (name.length < 3) { busy(btn, false); return setErr('au-err', 'Escribe tu nombre completo.'); }
     if (pass.length < 8) { busy(btn, false); return setErr('au-err', 'La contraseña debe tener al menos 8 caracteres.'); }
-    r = await sb.auth.signUp({ email, password: pass, options: { data: { full_name: name, specialty: val('au-spec') || 'psicologia' }, emailRedirectTo: back } });
+    if (!document.getElementById('au-privacy').checked) { busy(btn, false); return setErr('au-err', 'Para crear tu cuenta, acepta el Aviso de privacidad.'); }
+    r = await sb.auth.signUp({ email, password: pass, options: { data: { full_name: name, specialty: val('au-spec') || 'psicologia', privacy_accepted_at: new Date().toISOString() }, emailRedirectTo: back } });
     busy(btn, false);
     if (r.error) return setErr('au-err', authMsg(r.error));
     // Supabase no devuelve error si el correo ya existe: lo indica con una cuenta sin identidades.

@@ -447,6 +447,10 @@ function settingsView() {
     <section class="card form" style="max-width:640px">
       <label class="field"><span>Días de prueba gratis al registrarse</span><input id="st-trial" type="number" min="0" max="365" value="${st.auto_trial_days ?? 14}"><small class="muted">Pon 0 si prefieres activar a cada especialista a mano.</small></label>
       <label class="field"><span>Tu contacto para renovar el acceso</span><textarea id="st-contact" maxlength="300" placeholder="Ej. WhatsApp 55 1234 5678 · correo@ejemplo.com">${esc(st.admin_contact || '')}</textarea><small class="muted">Lo ven los especialistas cuando su prueba está por vencer o ya venció.</small></label>
+      <h3 style="margin-top:8px">Aviso de privacidad</h3><p class="muted small" style="margin:0">Estos datos aparecen en el <a href="aviso-privacidad.html" target="_blank" rel="noopener">aviso de privacidad</a> como responsable de los datos.</p>
+      <label class="field"><span>Responsable (tu nombre o razón social)</span><input id="st-pown" maxlength="200" value="${esc(st.privacy_owner || '')}" placeholder="Ej. Nombre completo o empresa"></label>
+      <label class="field"><span>Domicilio para oír y recibir notificaciones</span><input id="st-padd" maxlength="300" value="${esc(st.privacy_address || '')}" placeholder="Calle, número, colonia, alcaldía, C.P., ciudad"></label>
+      <label class="field"><span>Correo para temas de privacidad</span><input id="st-pmail" type="email" maxlength="200" value="${esc(st.privacy_email || '')}" placeholder="privacidad@tudominio.com"></label>
       <p class="err" id="st-err"></p><button class="btn pri" data-a="saveSettings">Guardar ajustes</button></section>
     ${demoCard()}`;
 }
@@ -599,7 +603,9 @@ document.addEventListener('click', async e => {
       const days = Math.round(Number(val('st-trial')));
       if (!(days >= 0 && days <= 365)) return setErr('st-err', 'Los días de prueba deben ser de 0 a 365.');
       el.disabled = true;
-      const { data, error } = await sb.from('platform_settings').update({ auto_trial_days: days, admin_contact: val('st-contact') || null, updated_at: new Date().toISOString() }).eq('id', true).select().single();
+      const { data, error } = await sb.from('platform_settings').update({ auto_trial_days: days, admin_contact: val('st-contact') || null, updated_at: new Date().toISOString(),
+        privacy_owner: val('st-pown') || null, privacy_address: val('st-padd') || null, privacy_email: val('st-pmail') || null,
+        ...((val('st-pown') || null) !== (S.settings?.privacy_owner || null) || (val('st-padd') || null) !== (S.settings?.privacy_address || null) || (val('st-pmail') || null) !== (S.settings?.privacy_email || null) ? { privacy_updated: new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' }) } : {}) }).eq('id', true).select().single();
       el.disabled = false;
       if (error) return setErr('st-err', 'No se pudo guardar.');
       S.settings = data; setErr('st-err', ''); toast('Ajustes guardados'); break;
