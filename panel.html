@@ -255,11 +255,20 @@ else sb.auth.onAuthStateChange((ev, session) => {
   render();
 });
 
+// Columnas públicas del perfil. Los datos privados (cuenta para cobrar, avisos por correo) se piden aparte con my_private_profile.
+const PCOLS = 'id,full_name,slug,specialty,title,license,bio,topics,price,session_minutes,slot_minutes,min_notice_hours,timezone,is_listed,is_active,created_at,whatsapp,photo_url,gender,languages,license_verified,cancel_policy,cancel_hours,specialties,services,credentials,is_demo';
+async function withPrivate(p) {
+  if (!p) return p;
+  const { data } = await sb.rpc('my_private_profile');
+  return { ...p, payment_info: data?.payment_info ?? null, notify_email: data?.notify_email ?? true };
+}
+const keepPrivate = d => d && { ...d, payment_info: S.profile?.payment_info ?? null, notify_email: S.profile?.notify_email ?? true };
+
 async function loadAll() {
   const uid = S.user.id;
-  const [pr, adm, sub, st] = await Promise.all([sb.from('profiles').select('*').eq('id', uid).maybeSingle(), sb.rpc('is_admin'),
+  const [pr, adm, sub, st] = await Promise.all([sb.from('profiles').select(PCOLS).eq('id', uid).maybeSingle(), sb.rpc('is_admin'),
     sb.from('subscriptions').select('*').eq('user_id', uid).maybeSingle(), sb.from('platform_settings').select('admin_contact').maybeSingle()]);
-  S.profile = pr.data || null; S.isAdmin = !!adm.data; S.sub = sub.data || null; S.contact = st.data?.admin_contact || '';
+  S.profile = await withPrivate(pr.data || null); S.isAdmin = !!adm.data; S.sub = sub.data || null; S.contact = st.data?.admin_contact || '';
   // El superadministrador no usa el panel de especialista: va directo a Administración
   if (S.isAdmin) { location.replace('admin.html'); return; }
   if (S.profile) {
@@ -653,10 +662,10 @@ async function saveProfile(btn) {
   }
   busy(btn, true, 'Guardando…');
   const q = creating ? sb.from('profiles').insert({ id: S.user.id, ...row }) : sb.from('profiles').update(row).eq('id', S.user.id);
-  const { data, error } = await q.select().single();
+  const { data, error } = await q.select(PCOLS).single();
   busy(btn, false);
   if (error) return setErr('pf-err', /slug|unique|duplicate/i.test(error.message) ? 'Esa dirección de perfil ya está ocupada. Prueba otra.' : 'No se pudo guardar: ' + error.message);
-  S.profile = data;
+  S.profile = { ...data, payment_info: row.payment_info ?? null, notify_email: row.notify_email ?? S.profile?.notify_email ?? true };
   if (creating) { S.view = 'inicio'; location.hash = 'inicio'; toast('Perfil creado'); }
   else toast('Perfil guardado');
   render();
@@ -901,10 +910,10 @@ V.horario = () => {
 
 async function saveSession(btn) {
   busy(btn, true);
-  const { data, error } = await sb.from('profiles').update({ session_minutes: +val('hr-dur'), slot_minutes: +val('hr-step'), min_notice_hours: +val('hr-notice') }).eq('id', S.user.id).select().single();
+  const { data, error } = await sb.from('profiles').update({ session_minutes: +val('hr-dur'), slot_minutes: +val('hr-step'), min_notice_hours: +val('hr-notice') }).eq('id', S.user.id).select(PCOLS).single();
   busy(btn, false);
   if (error) return setErr('hr-err1', 'No se pudo guardar.');
-  S.profile = data; toast('Ajustes de sesión guardados');
+  S.profile = keepPrivate(data); toast('Ajustes de sesión guardados');
 }
 
 // Cambios del horario sin guardar: muestra la barra para guardar y avisa antes de salir
@@ -1580,9 +1589,9 @@ function squareJpeg(file, size = 512) {
 const photoPath = u => u ? decodeURIComponent(u.split('/object/public/avatars/')[1] || '').split('?')[0] : '';
 async function setPhoto(url) {
   const old = photoPath(S.profile.photo_url);
-  const { data, error } = await sb.from('profiles').update({ photo_url: url }).eq('id', S.user.id).select().single();
+  const { data, error } = await sb.from('profiles').update({ photo_url: url }).eq('id', S.user.id).select(PCOLS).single();
   if (error) return setErr('ph-err', 'No se pudo guardar la foto.');
-  S.profile = data;
+  S.profile = keepPrivate(data);
   if (old) await sb.storage.from('avatars').remove([old]);
   render(); toast(url ? 'Foto actualizada' : 'Foto quitada');
 }

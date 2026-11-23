@@ -187,3 +187,12 @@ El responsable, su domicilio y el correo de privacidad se capturan en **Administ
 Se pide **consentimiento expreso** con una casilla antes de: agendar una cita, registrarse a un taller, contestar una encuesta
 y crear una cuenta de especialista (se guarda `privacy_accepted_at` en la cuenta). Hay un enlace al aviso en el pie de las páginas públicas
 y en el menú de la cuenta del especialista.
+
+## Seguridad de los datos
+
+- Todas las tablas tienen RLS: cada especialista solo ve sus pacientes, citas, notas, encuestas y eventos; el
+  administrador puede verlos para dar soporte. Los pacientes entran con enlaces de token aleatorio, sin cuenta.
+- Los datos privados del perfil (cuenta para cobrar y avisos por correo) **no** se pueden leer desde la API pública:
+  solo el dueño con `my_private_profile()` y el paciente de una cita dentro de `get_appointment`.
+- Los comprobantes de pago están en un bucket privado. Las claves de servicios viven solo en los secretos de Supabase.
+- Para revisar la seguridad usa el skill `seguridad` (`.claude/skills/seguridad/SKILL.md`).
