@@ -57,7 +57,7 @@ async function load() {
   if (!sb || !/^[a-f0-9]{16,}$/.test(token)) return fail();
   const { data, error } = await sb.rpc('get_event', { p_token: token });
   if (error || !data || !data.ok) return fail();
-  E = data; joinUrl = data.online_url || joinUrl;
+  E = data; joinUrl = (/^https:\/\/\S+$/i.test(data.online_url || '') ? data.online_url : null) || joinUrl;
   SITE = PA.siteSlug(E.professional?.slug);
   if (SITE) PA.siteBrand({ name: E.professional.name, title: E.professional.title, photo: E.professional.photo_url, slug: E.professional.slug });
   document.title = `${E.title} · ${SITE ? E.professional.name : 'MiConsulta'}`; render();

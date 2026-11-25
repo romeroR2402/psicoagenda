@@ -192,7 +192,10 @@ y en el menú de la cuenta del especialista.
 - Los datos privados del perfil (cuenta para cobrar y avisos por correo) **no** se pueden leer desde la API pública:
   solo el dueño con `my_private_profile()` y el paciente de una cita dentro de `get_appointment`.
 - Los comprobantes de pago están en un bucket privado. Las claves de servicios viven solo en los secretos de Supabase.
+- Los enlaces que guardan los especialistas (mapa, conferencia en línea, fotos) solo pueden ser `https://`, y quien no ha
+  iniciado sesión no puede escribir en ninguna tabla: los pacientes solo agendan, pagan u opinan con su link (funciones con token).
 - Para revisar la seguridad usa el skill `seguridad` (`.claude/skills/seguridad/SKILL.md`).
+- Última auditoría: 25 nov 2026 (sin fugas; se cerró el riesgo de enlaces maliciosos).
 
 ## Planes y módulos (lo que se vende a los especialistas)
 - Planes en la tabla `plan_tiers` (se editan en **Administración → Ajustes → Planes y precios**): Básico $199, Profesional $349 y Premium $499 al mes.

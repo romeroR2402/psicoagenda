@@ -41,6 +41,12 @@ la base de datos (RLS, permisos por columna y funciones).
   `maps-link` solo sigue redirecciones a dominios de Google (evita SSRF).
 - Claves de servicios (Brevo, CallMeBot, service role) **solo** en los secretos de Supabase, nunca en el repositorio ni
   en el chat.
+- **Enlaces guardados por especialistas solo `https://`** (restricciones en la base: `locations.maps_url`, `events.online_url`,
+  `events.image_url`, `profiles.photo_url`; y en la página `PA.gmaps` solo acepta enlaces de Google Maps). Toda columna nueva que
+  guarde un enlace lleva su `check (... ~* '^https://[^\s<>"]+$')`.
+- `anon` no tiene permisos de escritura en ninguna tabla de `public` (ni para tablas nuevas: `alter default privileges`).
+  Los pacientes solo escriben con funciones con token.
+- Realtime: solo `appointments` está en la publicación `supabase_realtime`; los cambios llegan solo a quien su RLS deja leer.
 - En el HTML todo dato de usuario se pinta con `PA.esc()` (evita XSS). Nunca metas texto de usuario en `innerHTML` sin
   escapar, ni en atributos `href` sin validar `https://`.
 
@@ -80,7 +86,7 @@ la base de datos (RLS, permisos por columna y funciones).
    `get_appointment`, `cancel_appointment`, `reschedule_appointment`, `report_payment`, `receipt_upload_ok`,
    `submit_review`, `public_reviews`, `public_ratings`, `get_event`, `event_register`, `event_rsvp`, `public_events`,
    `public_upcoming_events`, `open_survey`, `submit_survey`, `open_public_survey`, `submit_public_survey`,
-   `public_privacy`, `is_admin`, `has_access`, `is_public_profile`. Cada función `SECURITY DEFINER` nueva debe:
+   `public_privacy`, `is_admin`, `has_access`, `is_public_profile`, `has_module`, `public_modules` (solo dicen qué módulos tiene un plan). Cada función `SECURITY DEFINER` nueva debe:
    `set search_path = ''`, validar entradas, filtrar por token o `auth.uid()`, y devolver solo lo necesario.
    Las que no son para pacientes: `revoke execute ... from public, anon`.
 6. **Storage**: `select * from storage.buckets` y las políticas de `storage.objects`. Ningún bucket con datos de
